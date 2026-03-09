@@ -2,6 +2,7 @@
 // app/page.tsx — JARVIS Chat v20 Upgraded
 // Dexie DB | Proactive | Memory | Feedback loop | Weather header
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import BottomNav from '../components/shared/BottomNav'
 import NavDrawer from '../components/shared/NavDrawer'
 import Toast from '../components/shared/Toast'
@@ -459,6 +460,49 @@ export default function Page() {
   const [weeklyPrompt,setWeeklyPrompt]=useState(false)
   const [syncOk,setSyncOk]=useState<boolean|null>(null)
   const [navOpen,setNavOpen]=useState(false)
+  const router = useRouter()
+
+  // ── JARVIS App Control — executes commands from AI response ──────────
+  const execAppCommand = useCallback((cmd: string) => {
+    if (!cmd) return
+    const [action, ...args] = cmd.split(':')
+    const arg = args.join(':').trim()
+    switch(action) {
+      case 'navigate':
+        if (arg) { setNavOpen(false); router.push(arg) } break
+      case 'openNav':    setNavOpen(true); break
+      case 'closeNav':   setNavOpen(false); break
+      case 'setMode':
+        if (['flash','think','deep'].includes(arg)) setMode(arg as any); break
+      case 'clearChat':
+        setMsgs([]); break
+      case 'toast':
+        if (arg) setToast({ msg: arg, type: 'info' }); break
+      case 'toastOk':
+        if (arg) setToast({ msg: arg, type: 'success' }); break
+      case 'toastErr':
+        if (arg) setToast({ msg: arg, type: 'error' }); break
+      case 'openSearch':  setSearchOpen(true); break
+      case 'closeSearch': setSearchOpen(false); break
+      case 'setInput':
+        if (arg) setInput(arg); break
+      case 'addReminder': {
+        const [time, ...rest] = arg.split('|')
+        const msg = rest.join('|') || time
+        const parsed = parseReminderTime(msg)
+        if (parsed) addReminder({ message: msg, time: parsed, repeat: false }).then(() =>
+          setToast({ msg: `⏰ Reminder set: ${msg}`, type: 'success' })
+        ); break
+      }
+      case 'openSettings': router.push('/settings'); break
+      case 'openStudy':    router.push('/study'); break
+      case 'openApps':     router.push('/apps'); break
+      case 'openStudio':   router.push('/studio'); break
+      case 'openIndia':    router.push('/india'); break
+      case 'openMedia':    router.push('/media'); break
+      case 'openVoice':    router.push('/voice'); break
+    }
+  }, [router])
   const taRef=useRef<HTMLTextAreaElement>(null)
   const botRef=useRef<HTMLDivElement>(null)
   // Smart contextual chips based on last AI message topic
@@ -772,6 +816,7 @@ export default function Page() {
                 const c=cleanResponse(full)
                 const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode,card:d.card||undefined}
                 setMsgs(p=>p.map(m=>m.id===aId?fin:m))
+                if(d.appCommand) execAppCommand(d.appCommand)
                 const assistantTs = Date.now()
                 saveChat({role:'assistant',content:c,timestamp:assistantTs}).catch(()=>{})
                 syncSaveChat({role:'assistant',content:c,timestamp:assistantTs,mode}).catch(()=>{})

@@ -16,7 +16,19 @@ Hinglish mein baat karo. Short (1-4 lines max). Sarcastic but caring. Direct ans
 Math → seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
 NEET/JEE: proper formulas aur LaTeX use karo.
 [LEARN: type=data] format mein user ke baare mein naya fact yaad rakho.
-Memory types: fact, habit, preference, correction`
+Memory types: fact, habit, preference, correction
+
+APP CONTROL: Tum poori JARVIS app control kar sakte ho. 
+Jab user navigate karna chahe:
+- "Study/NEET kholo" → seedha /study page pe le jao
+- "Settings kholo" → /settings pe le jao
+- "Apps kholo" → /apps pe le jao
+- "India Hub kholo" → /india pe le jao
+- "Studio kholo" → /studio pe le jao
+- "Voice mode" → /voice pe le jao
+- "Mode change karo" → flash/think/deep switch
+- "Chat clear karo" → chat khali karo
+Tum actual Tony Stark ke JARVIS jaisi full app control rakhte ho.`
 
 // Module cache - lazy loaded once per category
 const _mods: Record<string, Record<string, Function>> = {}
@@ -397,7 +409,43 @@ export async function POST(req: NextRequest) {
 
     } catch {}
 
-    send({ type: 'done', toolsUsed, reply, card, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
+    // ── 7. App Control Commands ───────────────────────────────────────────
+    // Detect if user wants to navigate/control the app
+    let appCommand = ''
+    try {
+      const q = message.toLowerCase()
+      // Navigation commands
+      if (/\b(study|neet|quiz)\b.*\b(kholo|open|jao|le jao|chalo)\b|\b(kholo|open|jao)\b.*\b(study|neet|quiz)\b/.test(q))
+        appCommand = 'navigate:/study'
+      else if (/\b(settings|setting)\b.*\b(kholo|open|jao)\b|\b(kholo|open)\b.*\b(settings?)\b/.test(q))
+        appCommand = 'navigate:/settings'
+      else if (/\b(apps?|app hub)\b.*\b(kholo|open|jao)\b|\b(kholo|open)\b.*\b(apps?)\b/.test(q))
+        appCommand = 'navigate:/apps'
+      else if (/\b(studio)\b.*\b(kholo|open|jao)\b|\b(kholo|open)\b.*\b(studio)\b/.test(q))
+        appCommand = 'navigate:/studio'
+      else if (/\b(india|india hub)\b.*\b(kholo|open|jao)\b|\b(kholo|open)\b.*\b(india)\b/.test(q))
+        appCommand = 'navigate:/india'
+      else if (/\b(media|gallery)\b.*\b(kholo|open|jao)\b|\b(kholo|open)\b.*\b(media|gallery)\b/.test(q))
+        appCommand = 'navigate:/media'
+      else if (/\b(voice|mic)\b.*\b(kholo|open|jao)\b|\b(kholo|open)\b.*\b(voice|mic)\b/.test(q))
+        appCommand = 'navigate:/voice'
+      // Mode switching
+      else if (/think.*mode|deep.*think|reason.*mode|sochke.*baat/.test(q))
+        appCommand = 'setMode:think'
+      else if (/fast.*mode|flash.*mode|quick.*mode|jaldi.*jaldi/.test(q))
+        appCommand = 'setMode:flash'
+      else if (/deep.*mode|deep.*search|deep.*analysis/.test(q))
+        appCommand = 'setMode:deep'
+      // UI controls
+      else if (/chat.*clear|clear.*chat|naya.*chat|new.*chat|sab.*hata/.test(q))
+        appCommand = 'clearChat'
+      else if (/menu.*kholo|nav.*kholo|navigation.*open|kholo.*menu/.test(q))
+        appCommand = 'openNav'
+      else if (/search.*kholo|search.*open|dhundho.*chat/.test(q))
+        appCommand = 'openSearch'
+    } catch {}
+
+    send({ type: 'done', toolsUsed, reply, card, appCommand: appCommand || undefined, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
 
     w.close()
   })()
