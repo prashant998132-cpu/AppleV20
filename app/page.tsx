@@ -473,6 +473,7 @@ export default function Page() {
   const [syncOk,setSyncOk]=useState<boolean|null>(null)
   const [navOpen,setNavOpen]=useState(false)
   const [plusOpen,setPlusOpen]=useState(false)
+  const [compressOpen,setCompressOpen]=useState(false)
   const router = useRouter()
 
   // ── JARVIS App Control — executes commands from AI response ──────────
@@ -1228,50 +1229,104 @@ export default function Page() {
 
       <div style={{padding:'8px 12px',borderTop:'1px solid rgba(255,255,255,.05)',background:'rgba(9,13,24,.97)',flexShrink:0,position:'relative'}}>
 
-        {/* ── Plus Popup ─────────────────────────────── */}
+        {/* ── Plus Popup (compact) ─────────────────── */}
         {plusOpen&&(
           <>
             <div onClick={()=>setPlusOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
-            <div style={{position:'absolute',bottom:'calc(100% + 8px)',left:12,zIndex:50,background:'rgba(9,13,24,.98)',border:'1px solid rgba(0,229,255,.15)',borderRadius:16,padding:'14px',minWidth:210,boxShadow:'0 -8px 32px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
-
-              <div style={{fontSize:9,color:'#1e4060',letterSpacing:2,fontWeight:700,marginBottom:8,fontFamily:"'Space Mono',monospace"}}>MODE</div>
-              {([['auto','🤖','Auto','Smart routing'],['flash','⚡','Flash','Groq Fast'],['think','🧠','Think','DeepSeek R1'],['deep','🔬','Deep','Tools + Search']] as const).map(([m,ic,lb,sub])=>(
-                <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}}
-                  style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'8px 10px',borderRadius:10,background:mode===m?'rgba(0,229,255,.1)':'transparent',border:`1px solid ${mode===m?'rgba(0,229,255,.25)':'transparent'}`,cursor:'pointer',marginBottom:4}}>
-                  <span style={{fontSize:18,width:24,textAlign:'center'as const}}>{ic}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:mode===m?'#00e5ff':'#ddeeff',textAlign:'left'as const}}>{lb}</div>
-                    <div style={{fontSize:9,color:'#2a6080',textAlign:'left'as const}}>{sub}</div>
-                  </div>
-                  {mode===m&&<span style={{color:'#00e5ff',fontSize:10}}>●</span>}
-                </button>
-              ))}
-
-              <div style={{height:1,background:'rgba(255,255,255,.06)',margin:'10px 0'}}/>
-              <div style={{fontSize:9,color:'#1e4060',letterSpacing:2,fontWeight:700,marginBottom:8,fontFamily:"'Space Mono',monospace"}}>ATTACH</div>
+            <div style={{position:'absolute',bottom:'calc(100% + 6px)',left:12,zIndex:50,
+              background:'rgba(10,15,26,.98)',border:'1px solid rgba(0,229,255,.12)',
+              borderRadius:14,padding:'10px',width:185,
+              boxShadow:'0 -6px 24px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
+              <div style={{fontSize:8,color:'#1a3a50',letterSpacing:2,fontWeight:700,marginBottom:6}}>MODE</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:8}}>
+                {([['auto','🤖','Auto'],['flash','⚡','Flash'],['think','🧠','Think'],['deep','🔬','Deep']] as const).map(([m,ic,lb])=>(
+                  <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}}
+                    style={{display:'flex',alignItems:'center',gap:5,padding:'6px 7px',borderRadius:8,
+                      background:mode===m?'rgba(0,229,255,.1)':'rgba(255,255,255,.03)',
+                      border:`1px solid ${mode===m?'rgba(0,229,255,.2)':'rgba(255,255,255,.05)'}`,cursor:'pointer'}}>
+                    <span style={{fontSize:13}}>{ic}</span>
+                    <span style={{fontSize:11,color:mode===m?'#00e5ff':'#8899aa',fontWeight:mode===m?600:400}}>{lb}</span>
+                  </button>
+                ))}
+              </div>
+              <div style={{height:1,background:'rgba(255,255,255,.05)',marginBottom:7}}/>
+              <div style={{fontSize:8,color:'#1a3a50',letterSpacing:2,fontWeight:700,marginBottom:5}}>ATTACH</div>
               {([
                 ['📷','Camera',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';(i as any).capture='environment';i.onchange=(e:any)=>{const f=e.target.files[0];if(f)setToast({msg:`📷 ${f.name}`,type:'info'})};i.click();setPlusOpen(false)}],
                 ['🖼️','Image',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=(e:any)=>{const f=e.target.files[0];if(f)setToast({msg:`🖼️ ${f.name}`,type:'info'})};i.click();setPlusOpen(false)}],
                 ['📄','PDF',()=>{const i=document.createElement('input');i.type='file';i.accept='.pdf';i.onchange=(e:any)=>{const f=e.target.files[0];if(f)setToast({msg:`📄 ${f.name}`,type:'info'})};i.click();setPlusOpen(false)}],
-                ['🎵','Voice note',()=>{setPlusOpen(false);window.location.href='/voice'}],
+                ['🎵','Voice',()=>{setPlusOpen(false);window.location.href='/voice'}],
               ] as [string,string,()=>void][]).map(([ic,lb,fn])=>(
                 <button key={lb} onClick={fn}
-                  style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'8px 10px',borderRadius:10,background:'transparent',border:'1px solid transparent',cursor:'pointer',marginBottom:4}}>
-                  <span style={{fontSize:20,width:24,textAlign:'center'as const}}>{ic}</span>
-                  <span style={{fontSize:12,color:'#ddeeff'}}>{lb}</span>
+                  style={{display:'flex',alignItems:'center',gap:7,width:'100%',padding:'5px 6px',
+                    borderRadius:7,background:'transparent',border:'none',cursor:'pointer',marginBottom:2}}>
+                  <span style={{fontSize:14,width:18,textAlign:'center'as const}}>{ic}</span>
+                  <span style={{fontSize:11,color:'#99aabb'}}>{lb}</span>
                 </button>
               ))}
+            </div>
+          </>
+        )}
 
-              <div style={{height:1,background:'rgba(255,255,255,.06)',margin:'10px 0'}}/>
-              <button onClick={()=>setPlusOpen(false)} style={{width:'100%',padding:'6px',background:'none',border:'none',color:'#1e4060',fontSize:10,cursor:'pointer',textAlign:'center'as const}}>ESC · tap outside to close</button>
+        {/* ── Compress popup (typed text) ──────────── */}
+        {compressOpen&&(
+          <>
+            <div onClick={()=>setCompressOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
+            <div style={{position:'absolute',bottom:'calc(100% + 6px)',right:12,zIndex:50,
+              background:'rgba(10,15,26,.98)',border:'1px solid rgba(167,139,250,.2)',
+              borderRadius:12,padding:'8px',width:158,
+              boxShadow:'0 -6px 20px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
+              <div style={{fontSize:8,color:'#4a3080',letterSpacing:2,fontWeight:700,marginBottom:6}}>COMPRESS TO</div>
+              {([
+                ['📝','Medium','Thoda chhota karo'],
+                ['📌','Short','2-3 lines mein'],
+                ['⚡','Tiny','Ek line mein'],
+              ] as [string,string,string][]).map(([ic,lb,hint])=>(
+                <button key={lb} onClick={async()=>{
+                  setCompressOpen(false)
+                  if(!input.trim()){setToast({msg:'Pehle kuch likho!',type:'info'});return}
+                  setToast({msg:`⏳ ${lb} mein compress ho raha hai...`,type:'info'})
+                  try{
+                    const res=await fetch('/api/jarvis/stream',{method:'POST',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({
+                        message:`Yeh message ko ${lb==='Medium'?'thoda shorter aur cleaner rewrite karo':lb==='Short'?'2-3 lines mein rewrite karo':'bilkul ek chhoti line mein likhdo'}. Sirf rewritten message do, koi explanation nahi. Hindi/Hinglish style same rakho:\n\n"${input}"`,
+                        chatMode:'flash',history:[],memoryContext:''
+                      })})
+                    if(!res.ok||!res.body)throw new Error('fail')
+                    const reader=res.body.getReader();const dec=new TextDecoder();let out=''
+                    while(true){
+                      const{done,value}=await reader.read();if(done)break
+                      for(const line of dec.decode(value).split('\n')){
+                        if(!line.startsWith('data: '))continue
+                        try{const d=JSON.parse(line.slice(6));if(d.type==='token')out+=d.token}catch{}
+                      }
+                    }
+                    const cleaned=out.trim().replace(/^["']|["']$/g,'')
+                    if(cleaned){setInput(cleaned);setToast({msg:`✅ ${lb} mein compress hua!`,type:'success'})}
+                  }catch{setToast({msg:'Compress fail hua',type:'error'})}
+                }}
+                  style={{display:'flex',alignItems:'center',gap:7,width:'100%',padding:'7px 8px',
+                    borderRadius:8,background:'rgba(167,139,250,.06)',
+                    border:'1px solid rgba(167,139,250,.12)',cursor:'pointer',marginBottom:4}}>
+                  <span style={{fontSize:14}}>{ic}</span>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:600,color:'#a78bfa',textAlign:'left'as const}}>{lb}</div>
+                    <div style={{fontSize:8,color:'#4a3080',textAlign:'left'as const}}>{hint}</div>
+                  </div>
+                </button>
+              ))}
             </div>
           </>
         )}
 
         {/* ── Input Row ──────────────────────────────── */}
-        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
-          <button onClick={()=>setPlusOpen(p=>!p)}
-            style={{width:42,height:42,borderRadius:12,flexShrink:0,background:plusOpen?'rgba(0,229,255,.12)':'rgba(255,255,255,.04)',border:`1px solid ${plusOpen?'rgba(0,229,255,.3)':'rgba(255,255,255,.08)'}`,color:plusOpen?'#00e5ff':'#2a6080',fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',fontWeight:300}}>
+        <div style={{display:'flex',gap:6,alignItems:'flex-end'}}>
+          <button onClick={()=>{setPlusOpen(p=>!p);setCompressOpen(false)}}
+            style={{width:40,height:40,borderRadius:11,flexShrink:0,
+              background:plusOpen?'rgba(0,229,255,.12)':'rgba(255,255,255,.04)',
+              border:`1px solid ${plusOpen?'rgba(0,229,255,.3)':'rgba(255,255,255,.08)'}`,
+              color:plusOpen?'#00e5ff':'#2a6080',fontSize:22,cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',fontWeight:300}}>
             {plusOpen?'×':'+'}
           </button>
           <textarea ref={taRef} value={input}
@@ -1279,78 +1334,32 @@ export default function Page() {
             onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(input)}}}
             placeholder={loading?'Soch raha hun...':'Kuch poocho ya batao...'}
             rows={1} disabled={loading}
-            style={{flex:1,padding:'10px 12px',borderRadius:12,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',color:'#e8f4ff',fontSize:14,resize:'none',outline:'none',lineHeight:1.5,maxHeight:120,overflow:'hidden',fontFamily:'inherit'}}/>
+            style={{flex:1,padding:'10px 12px',borderRadius:12,background:'rgba(255,255,255,.04)',
+              border:'1px solid rgba(255,255,255,.08)',color:'#e8f4ff',fontSize:14,resize:'none',
+              outline:'none',lineHeight:1.5,maxHeight:120,overflow:'hidden',fontFamily:'inherit'}}/>
           <button onClick={()=>send(input)} disabled={!input.trim()||loading}
-            style={{width:42,height:42,borderRadius:12,background:input.trim()&&!loading?'rgba(0,229,255,.15)':'rgba(255,255,255,.03)',border:`1px solid ${input.trim()&&!loading?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,color:input.trim()&&!loading?'#00e5ff':'#1e3858',fontSize:18,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            style={{width:40,height:40,borderRadius:11,
+              background:input.trim()&&!loading?'rgba(0,229,255,.15)':'rgba(255,255,255,.03)',
+              border:`1px solid ${input.trim()&&!loading?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,
+              color:input.trim()&&!loading?'#00e5ff':'#1e3858',fontSize:18,cursor:'pointer',
+              flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
             {loading?<span style={{width:14,height:14,border:'2px solid rgba(0,229,255,.3)',borderTopColor:'#00e5ff',borderRadius:'50%',animation:'spin .8s linear infinite',display:'block'}}/>:'↑'}
           </button>
         </div>
 
-        {/* ── Bottom strip: mode indicator + compress ── */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:5}}>
+        {/* ── Bottom strip ──────────────────────────── */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:4}}>
           <div style={{fontSize:8,color:'#0d2030'}}>
-            {mode==='auto'?`🤖 Auto → ${
-              (() => {
-                const q2=input.toLowerCase()
-                return /solve|neet|jee|math|reason|explain.*step/i.test(q2)?'Think':
-                       /news|weather|image|search|movie|song|map|live/i.test(q2)?'Deep':'Flash'
-              })()
-            }`:mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'} · Enter to send
+            {mode==='auto'?`🤖 Auto → ${(()=>{const q2=input.toLowerCase();return /solve|neet|jee|math|reason|explain.*step/i.test(q2)?'Think':/news|weather|image|search|movie|song|map|live/i.test(q2)?'Deep':'Flash'})()}`:mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'} · Enter to send
           </div>
-          {/* Small compress button */}
-          <button
-            onClick={async ()=>{
-              const KEEP_RECENT = 5 // last 5 messages waise hi rahenge
-              if(msgs.length <= KEEP_RECENT){
-                setToast({msg:'Compress karne ke liye kafi messages nahi hain',type:'info'}); return
-              }
-              const oldMsgs = msgs.slice(0, msgs.length - KEEP_RECENT)
-              const recentMsgs = msgs.slice(msgs.length - KEEP_RECENT)
-              const txt = oldMsgs.map(m=>`${m.role==='user'?'Tu':'J'}: ${m.content.slice(0,300)}`).join('\n')
-              setToast({msg:'⏳ Purani chat compress ho rahi hai...',type:'info'})
-              try {
-                const res = await fetch('/api/jarvis/stream',{method:'POST',headers:{'Content-Type':'application/json'},
-                  body:JSON.stringify({
-                    message:`Yeh conversation ka ek concise summary banao 4-5 lines mein. Format: "📦 [Summary: ...]". Sirf summary do, kuch aur mat likho.\n\n${txt}`,
-                    chatMode:'flash',history:[],memoryContext:''
-                  })
-                })
-                if(!res.ok||!res.body){throw new Error('failed')}
-                const reader=res.body.getReader(); const dec=new TextDecoder(); let summary=''
-                while(true){
-                  const{done,value}=await reader.read(); if(done) break
-                  for(const line of dec.decode(value).split('\n')){
-                    if(!line.startsWith('data: ')) continue
-                    try{const d=JSON.parse(line.slice(6)); if(d.type==='token') summary+=d.token}catch{}
-                  }
-                }
-                if(!summary.trim()){throw new Error('empty')}
-                // Replace old messages with one summary message
-                const summaryMsg:Msg = {
-                  id:'compressed-'+Date.now(),
-                  role:'assistant',
-                  content: summary.trim(),
-                  timestamp: oldMsgs[oldMsgs.length-1]?.timestamp || Date.now(),
-                  isSystem: true,
-                }
-                setMsgs([summaryMsg, ...recentMsgs])
-                setToast({msg:`✅ ${oldMsgs.length} messages compress hogaye!`,type:'success'})
-              } catch {
-                // Fallback: simple local compression
-                const fallbackSummary = `📦 **Compressed (${oldMsgs.length} messages):** ${oldMsgs.slice(0,3).map(m=>m.content.slice(0,60)).join(' • ')}...`
-                const summaryMsg:Msg = {
-                  id:'compressed-'+Date.now(),
-                  role:'assistant',
-                  content: fallbackSummary,
-                  timestamp: oldMsgs[oldMsgs.length-1]?.timestamp || Date.now(),
-                  isSystem: true,
-                }
-                setMsgs([summaryMsg, ...recentMsgs])
-                setToast({msg:`✅ ${oldMsgs.length} messages compress hogaye (local)`,type:'success'})
-              }
+          <button onClick={()=>{
+              if(!input.trim()){setToast({msg:'Pehle type karo, phir compress!',type:'info'});return}
+              setCompressOpen(p=>!p);setPlusOpen(false)
             }}
-            title={`Purane messages compress karo, last ${5} rakhein`}
-            style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:8,background:'rgba(167,139,250,.08)',border:'1px solid rgba(167,139,250,.18)',color:'#6a50c0',fontSize:10,cursor:'pointer'}}>
+            style={{display:'flex',alignItems:'center',gap:3,padding:'3px 7px',borderRadius:7,
+              background:input.trim()?'rgba(167,139,250,.1)':'rgba(255,255,255,.02)',
+              border:`1px solid ${input.trim()?'rgba(167,139,250,.2)':'rgba(255,255,255,.04)'}`,
+              color:input.trim()?'#a78bfa':'#2a2050',fontSize:10,cursor:'pointer',transition:'all .2s'}}>
             🗜️ <span style={{fontSize:9}}>Compress</span>
           </button>
         </div>
