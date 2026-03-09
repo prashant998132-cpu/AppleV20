@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
       }
 
       // WEATHER card
-      if (firstResult?.id?.includes('weather') || intent.cat === 'weather') {
+      if (firstResult?.id?.includes('weather') || intent.categories[0] === 'weather') {
         const d = firstResult?.data
         if (d?.temperature !== undefined || d?.current) {
           const temp = d.temperature || d.current?.temperature_2m
@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
       }
 
       // NEWS card
-      if (firstResult?.id?.includes('news') || intent.cat === 'news') {
+      if (firstResult?.id?.includes('news') || intent.categories[0] === 'news') {
         const d = firstResult?.data
         const arts = d?.results || d?.articles || d?.data || []
         if (arts.length > 0) {

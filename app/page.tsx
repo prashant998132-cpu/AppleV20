@@ -490,9 +490,10 @@ export default function Page() {
         const [time, ...rest] = arg.split('|')
         const msg = rest.join('|') || time
         const parsed = parseReminderTime(msg)
-        if (parsed) addReminder({ message: msg, time: parsed, repeat: false }).then(() =>
+        if (parsed) {
+          addReminder(msg, parsed)
           setToast({ msg: `⏰ Reminder set: ${msg}`, type: 'success' })
-        ); break
+        }; break
       }
       case 'openSettings': router.push('/settings'); break
       case 'openStudy':    router.push('/study'); break
