@@ -546,6 +546,8 @@ export default function Page() {
 
   // Init
   useEffect(()=>{
+    // Pre-load Puter in background so first message is instant
+    loadPuter().catch(()=>{})
     // DB maintenance on start
     runMaintenance().catch(()=>{})
     setOnline(navigator.onLine)

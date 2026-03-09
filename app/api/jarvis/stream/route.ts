@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
 
         // ── THINK: DeepSeek R1 → Gemini ──────────────────
         if(chatMode==='think'){
-          const orKey=process.env.OPENROUTER_API_KEY; let ok=false
+          const orKey=process.env.OPENROUTER_API_KEY; const gkT=process.env.GEMINI_API_KEY
+          if(!orKey && !gkT){ send({type:'error',message:'server_providers_failed'}); send({type:'done'}); ctrl.close(); return }
+          let ok=false
           if(orKey){
             try{
               const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
@@ -92,8 +94,16 @@ export async function POST(req: NextRequest) {
         // ── FLASH: 4-level cascade ────────────────────────
         let ok=false
 
-        // L1: Groq llama-3.1-8b (fastest)
+        // Fast-path: no keys → skip to Puter instantly
         const groqKey=process.env.GROQ_API_KEY
+        const toKey2=process.env.TOGETHER_API_KEY
+        const gemKey2=process.env.GEMINI_API_KEY
+        if(!groqKey && !toKey2 && !gemKey2){
+          send({type:'error',message:'server_providers_failed'})
+          send({type:'done'}); ctrl.close(); return
+        }
+
+        // L1: Groq llama-3.1-8b (fastest)
         if(groqKey){
           ok=await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',
             {Authorization:`Bearer ${groqKey}`},
