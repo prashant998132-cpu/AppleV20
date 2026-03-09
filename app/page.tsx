@@ -1299,12 +1299,57 @@ export default function Page() {
           </div>
           {/* Small compress button */}
           <button
-            onClick={()=>{
-              if(!msgs.length){setToast({msg:'Koi chat nahi compress karne ko',type:'info'});return}
-              const txt=msgs.slice(-20).map(m=>`${m.role==='user'?'Tu':'J'}: ${m.content.slice(0,200)}`).join('\n')
-              send(`Yeh conversation ko 3-4 lines mein compress karke summary do:\n\n${txt}`)
+            onClick={async ()=>{
+              const KEEP_RECENT = 5 // last 5 messages waise hi rahenge
+              if(msgs.length <= KEEP_RECENT){
+                setToast({msg:'Compress karne ke liye kafi messages nahi hain',type:'info'}); return
+              }
+              const oldMsgs = msgs.slice(0, msgs.length - KEEP_RECENT)
+              const recentMsgs = msgs.slice(msgs.length - KEEP_RECENT)
+              const txt = oldMsgs.map(m=>`${m.role==='user'?'Tu':'J'}: ${m.content.slice(0,300)}`).join('\n')
+              setToast({msg:'⏳ Purani chat compress ho rahi hai...',type:'info'})
+              try {
+                const res = await fetch('/api/jarvis/stream',{method:'POST',headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({
+                    message:`Yeh conversation ka ek concise summary banao 4-5 lines mein. Format: "📦 [Summary: ...]". Sirf summary do, kuch aur mat likho.\n\n${txt}`,
+                    chatMode:'flash',history:[],memoryContext:''
+                  })
+                })
+                if(!res.ok||!res.body){throw new Error('failed')}
+                const reader=res.body.getReader(); const dec=new TextDecoder(); let summary=''
+                while(true){
+                  const{done,value}=await reader.read(); if(done) break
+                  for(const line of dec.decode(value).split('\n')){
+                    if(!line.startsWith('data: ')) continue
+                    try{const d=JSON.parse(line.slice(6)); if(d.type==='token') summary+=d.token}catch{}
+                  }
+                }
+                if(!summary.trim()){throw new Error('empty')}
+                // Replace old messages with one summary message
+                const summaryMsg:Msg = {
+                  id:'compressed-'+Date.now(),
+                  role:'assistant',
+                  content: summary.trim(),
+                  timestamp: oldMsgs[oldMsgs.length-1]?.timestamp || Date.now(),
+                  isSystem: true,
+                }
+                setMsgs([summaryMsg, ...recentMsgs])
+                setToast({msg:`✅ ${oldMsgs.length} messages compress hogaye!`,type:'success'})
+              } catch {
+                // Fallback: simple local compression
+                const fallbackSummary = `📦 **Compressed (${oldMsgs.length} messages):** ${oldMsgs.slice(0,3).map(m=>m.content.slice(0,60)).join(' • ')}...`
+                const summaryMsg:Msg = {
+                  id:'compressed-'+Date.now(),
+                  role:'assistant',
+                  content: fallbackSummary,
+                  timestamp: oldMsgs[oldMsgs.length-1]?.timestamp || Date.now(),
+                  isSystem: true,
+                }
+                setMsgs([summaryMsg, ...recentMsgs])
+                setToast({msg:`✅ ${oldMsgs.length} messages compress hogaye (local)`,type:'success'})
+              }
             }}
-            title="Compress chat"
+            title={`Purane messages compress karo, last ${5} rakhein`}
             style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:8,background:'rgba(167,139,250,.08)',border:'1px solid rgba(167,139,250,.18)',color:'#6a50c0',fontSize:10,cursor:'pointer'}}>
             🗜️ <span style={{fontSize:9}}>Compress</span>
           </button>
