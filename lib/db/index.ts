@@ -417,3 +417,102 @@ export async function updateSessionTitle(id: number, title: string): Promise<voi
   try { const db = await getSessionDB(); await db?.sessions.update(id, { title }) }
   catch {}
 }
+
+// ══════════════════════════════════════════════════════════
+// CHAT HISTORY v21 — Pin + Auto-Compress (15 din)
+// ══════════════════════════════════════════════════════════
+
+export interface HistorySession {
+  id: string
+  title: string
+  messages: Array<{ role: string; content: string; timestamp: number; card?: unknown }>
+  createdAt: number
+  updatedAt: number
+  pinned: boolean
+  compressed: boolean
+  summary?: string
+  messageCount: number
+}
+
+let _histDb: any = null
+async function getHistDB() {
+  if (_histDb) return _histDb
+  if (typeof window === 'undefined') return null
+  const Dexie = (await import('dexie')).default
+  class HistDB extends Dexie {
+    sessions!: any
+    constructor() {
+      super('JarvisHistoryDB_v1')
+      this.version(1).stores({ sessions: 'id, createdAt, updatedAt, pinned, compressed' })
+    }
+  }
+  _histDb = new HistDB()
+  return _histDb
+}
+
+export async function createHistorySession(title: string): Promise<string> {
+  try {
+    const db = await getHistDB()
+    if (!db) return ''
+    const id = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+    const session: HistorySession = {
+      id, title: title.slice(0, 60) || 'New Chat',
+      messages: [], createdAt: Date.now(), updatedAt: Date.now(),
+      pinned: false, compressed: false, messageCount: 0,
+    }
+    await db.sessions.add(session)
+    return id
+  } catch { return '' }
+}
+
+export async function updateHistorySession(
+  id: string,
+  messages: HistorySession['messages'],
+  title?: string
+): Promise<void> {
+  try {
+    const db = await getHistDB()
+    if (!db || !id) return
+    const updates: Partial<HistorySession> = { messages, updatedAt: Date.now(), messageCount: messages.length }
+    if (title) updates.title = title.slice(0, 60)
+    await db.sessions.update(id, updates)
+  } catch {}
+}
+
+export async function getAllHistorySessions(): Promise<HistorySession[]> {
+  try {
+    const db = await getHistDB()
+    if (!db) return []
+    return await db.sessions.orderBy('updatedAt').reverse().toArray()
+  } catch { return [] }
+}
+
+export async function getHistorySession(id: string): Promise<HistorySession | null> {
+  try { const db = await getHistDB(); return (await db?.sessions.get(id)) ?? null } catch { return null }
+}
+
+export async function deleteHistorySession(id: string): Promise<void> {
+  try { const db = await getHistDB(); await db?.sessions.delete(id) } catch {}
+}
+
+export async function pinHistorySession(id: string, pinned: boolean): Promise<void> {
+  try { const db = await getHistDB(); await db?.sessions.update(id, { pinned }) } catch {}
+}
+
+export async function getSessionsToCompress(): Promise<HistorySession[]> {
+  try {
+    const db = await getHistDB()
+    if (!db) return []
+    const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000
+    const all: HistorySession[] = await db.sessions.toArray()
+    return all.filter(s => !s.pinned && !s.compressed && s.updatedAt < cutoff && s.messages.length > 2)
+  } catch { return [] }
+}
+
+export async function markSessionCompressed(id: string, summary: string): Promise<void> {
+  try {
+    const db = await getHistDB()
+    if (!db) return
+    await db.sessions.update(id, { compressed: true, summary, messages: [] })
+  } catch {}
+}

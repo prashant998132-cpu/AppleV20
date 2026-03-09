@@ -20,7 +20,8 @@ import { flushSyncQueue } from '../lib/providers/syncManager'
 import { generateAndSaveTitle, startNewSession, trackSessionMessage } from '../lib/chat/autoTitle'
 import { shouldShowWeeklySummary, generateWeeklySummary, trackWeeklyChat } from '../lib/proactive/weekly'
 import { parseRepeatPattern } from '../lib/reminders'
-import { runMaintenance, searchChats } from '../lib/db'
+import { runMaintenance, searchChats, createHistorySession, updateHistorySession, getHistorySession, getSessionsToCompress, markSessionCompressed, type HistorySession } from '../lib/db'
+import ChatHistorySidebar from '../components/shared/ChatHistorySidebar'
 import { saveChat as syncSaveChat, syncAll, flushSyncQueue as syncFlush, isSupabaseConfigured, setLastSyncTime } from '../lib/providers/syncManager'
 import { buildSemanticContext, invalidateMemoryCache } from '../lib/memory/vectorSearch'
 import { useOnlineStatus, cacheAIResponse, getOfflineFallback, getStaticOfflineReply } from '../lib/offline/status'
@@ -474,6 +475,8 @@ export default function Page() {
   const [navOpen,setNavOpen]=useState(false)
   const [plusOpen,setPlusOpen]=useState(false)
   const [compressOpen,setCompressOpen]=useState(false)
+  const [historyOpen,setHistoryOpen]=useState(false)
+  const [currentSessionId,setCurrentSessionId]=useState('')
   const router = useRouter()
 
   // ── JARVIS App Control — executes commands from AI response ──────────
@@ -551,6 +554,27 @@ export default function Page() {
     loadPuter().catch(()=>{})
     // DB maintenance on start
     runMaintenance().catch(()=>{})
+    // Create new session for this chat
+    createHistorySession('New Chat').then(id => { if(id) setCurrentSessionId(id) }).catch(()=>{})
+    // Auto-compress sessions older than 15 days (silent background)
+    setTimeout(async () => {
+      try {
+        const toCompress = await getSessionsToCompress()
+        for (const session of toCompress) {
+          try {
+            const preview = session.messages.slice(0,15).map(m=>`${m.role==='user'?'User':'JARVIS'}: ${m.content.slice(0,80)}`).join('\n')
+            const res = await fetch('/api/jarvis/stream',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({message:`Yeh poori chat ka 3-4 line summary banao (Hinglish mein). Sirf summary do:\n\n${preview}`,chatMode:'flash',history:[],memoryContext:''})})
+            if(!res.ok||!res.body) continue
+            const reader=res.body.getReader();const dec=new TextDecoder();let summary=''
+            while(true){const{done,value}=await reader.read();if(done)break
+              for(const line of dec.decode(value).split('\n')){if(!line.startsWith('data: '))continue
+                try{const d=JSON.parse(line.slice(6));if(d.type==='token')summary+=d.token}catch{}}}
+            if(summary.trim()) await markSessionCompressed(session.id,summary.trim())
+          } catch {}
+        }
+      } catch {}
+    }, 5000)
     setOnline(navigator.onLine)
     const handleOnline = () => {
       setOnline(true)
@@ -609,6 +633,16 @@ export default function Page() {
   },[])
 
   useEffect(()=>{ botRef.current?.scrollIntoView({behavior:msgs.length>3?'smooth':'instant'}) },[msgs,loading])
+
+  // Save current messages to history session
+  useEffect(()=>{
+    if(!currentSessionId||msgs.length<2) return
+    const nonSystem=msgs.filter(m=>!m.isSystem&&!m.streaming)
+    if(!nonSystem.length) return
+    const histMsgs=nonSystem.map(m=>({role:m.role,content:m.content,timestamp:m.timestamp,card:m.card}))
+    const firstUser=nonSystem.find(m=>m.role==='user')?.content||'New Chat'
+    updateHistorySession(currentSessionId,histMsgs,sessionTitle||firstUser.slice(0,50)).catch(()=>{})
+  },[msgs,currentSessionId,sessionTitle])
 
   const handleInput=(v:string)=>{
     setInput(v)
@@ -1102,6 +1136,7 @@ export default function Page() {
       <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 14px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,background:'rgba(9,13,24,.96)',backdropFilter:'blur(10px)',zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <div onClick={()=>setNavOpen(true)} style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,rgba(0,229,255,.15),rgba(109,40,217,.15))',border:'1px solid rgba(0,229,255,.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:'#00e5ff',fontFamily:"'Space Mono',monospace",cursor:'pointer',userSelect:'none'}}>J</div>
+          <button onClick={()=>setHistoryOpen(true)} title="Chat History" style={{width:28,height:28,borderRadius:8,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.07)',color:'#2a5070',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🕐</button>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:'#e8f4ff',letterSpacing:3,fontFamily:"'Space Mono',monospace"}}>JARVIS</div>
             <div style={{fontSize:8,color:'#0e1e30',letterSpacing:1}}>{name?name.toUpperCase():'AI'} · v20</div>
@@ -1366,6 +1401,29 @@ export default function Page() {
       </div>
 
       <NavDrawer open={navOpen} onClose={()=>setNavOpen(false)}/>
+      <ChatHistorySidebar
+        open={historyOpen}
+        onClose={()=>setHistoryOpen(false)}
+        currentSessionId={currentSessionId}
+        onNewChat={async()=>{
+          setMsgs([]);setSessionTitle('');startNewSession()
+          const id=await createHistorySession('New Chat').catch(()=>'')
+          if(id) setCurrentSessionId(id)
+        }}
+        onSelectSession={(session)=>{
+          setCurrentSessionId(session.id)
+          setSessionTitle(session.title)
+          if(session.compressed){
+            setMsgs([{id:'comp_'+Date.now(),role:'assistant',content:`📦 **Yeh chat compress ho gayi hai**\n\n${session.summary||''}`,timestamp:Date.now(),isSystem:true}])
+          } else {
+            const loaded=session.messages.map((m,i)=>({
+              id:`hist_${i}_${m.timestamp}`,role:m.role as 'user'|'assistant',
+              content:m.content,timestamp:m.timestamp,card:m.card as any,
+            }))
+            setMsgs(loaded)
+          }
+        }}
+      />
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
       <style>{`
         @keyframes blink{50%{opacity:0}}
