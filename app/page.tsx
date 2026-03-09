@@ -390,30 +390,42 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
           <div style={{fontSize:11,color:'#2a3060',padding:'6px 8px',background:'rgba(100,80,200,.06)',borderRadius:8,marginTop:4,maxHeight:100,overflow:'auto',whiteSpace:'pre-wrap'}}>{m.thinking}</div>
         </details>
       )}
-      <div style={{maxWidth:'85%',padding:'10px 13px',borderRadius:isU?'16px 16px 4px 16px':'4px 16px 16px 16px',
-        background:isU?'rgba(0,229,255,.12)':isErr?'rgba(255,80,80,.08)':'rgba(255,255,255,.04)',
-        border:`1px solid ${isU?'rgba(0,229,255,.2)':isErr?'rgba(255,80,80,.2)':'rgba(255,255,255,.06)'}`,
-        color:'#ddeeff',fontSize:13.5,lineHeight:1.6}}>
-        {m.streaming&&!clean?<span style={{color:'#2a5070'}}>...</span>:
-          clean.includes('|||MAP|||') ? (() => {
-            const [title, url] = clean.split('|||MAP|||')
-            return (<>
-              {title && <div style={{fontWeight:600,marginBottom:8,fontSize:12}}>{title}</div>}
-              <iframe src={url} width="100%" height={200} style={{borderRadius:8,border:'none'}} loading="lazy" title="Map"/>
-            </>)
-          })() :
-          /!\[image\]\(https?:/.test(clean) ? (() => {
-            const imgMatch = clean.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
-            const textPart = clean.replace(/!\[.*?\]\(https?:\/\/[^\)]+\)/g,'').trim()
-            return (<>
-              {textPart && <div style={{marginBottom:8}} dangerouslySetInnerHTML={{__html:html(textPart)}}/>}
-              {imgMatch && <img src={imgMatch[1]} alt="Generated" style={{maxWidth:'100%',borderRadius:8,display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
-            </>)
-          })() :
+      {isU ? (
+        /* USER — bubble style */
+        <div style={{maxWidth:'85%',padding:'10px 13px',borderRadius:'16px 16px 4px 16px',
+          background:'rgba(0,229,255,.1)',
+          border:'1px solid rgba(0,229,255,.18)',
+          color:'#ddeeff',fontSize:13.5,lineHeight:1.6}}>
           <span dangerouslySetInnerHTML={{__html:html(clean)}}/>
-        }
-        {m.streaming&&<span style={{display:'inline-block',width:2,height:14,background:'#00e5ff',marginLeft:2,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/>}
-      </div>
+        </div>
+      ) : (
+        /* JARVIS — no bubble, plain on background */
+        <div style={{maxWidth:'92%',paddingLeft:4}}>
+          {m.streaming&&!clean ? <span style={{color:'#2a5070'}}>...</span> :
+            clean.includes('|||MAP|||') ? (() => {
+              const [title, url] = clean.split('|||MAP|||')
+              return (<>
+                {title && <div style={{fontWeight:600,marginBottom:8,fontSize:12,color:'#ddeeff'}}>{title}</div>}
+                <iframe src={url} width="100%" height={200} style={{borderRadius:8,border:'none'}} loading="lazy" title="Map"/>
+              </>)
+            })() :
+            /!\[image\]\(https?:/.test(clean) ? (() => {
+              const imgMatch = clean.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
+              const textPart = clean.replace(/!\[.*?\]\(https?:\/\/[^\)]+\)/g,'').trim()
+              return (<>
+                {textPart && <div style={{marginBottom:8,color:'#c8e8ff',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(textPart)}}/>}
+                {imgMatch && <img src={imgMatch[1]} alt="Generated" style={{maxWidth:'100%',borderRadius:8,display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
+              </>)
+            })() :
+            isErr ? (
+              <div style={{color:'#ff6060',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
+            ) : (
+              <div style={{color:'#c8e8ff',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
+            )
+          }
+          {m.streaming&&<span style={{display:'inline-block',width:2,height:14,background:'#00e5ff',marginLeft:2,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/>}
+        </div>
+      )}
       <div style={{display:'flex',alignItems:'center',gap:8,marginTop:3}}>
         <span style={{fontSize:9,color:'#1a3050',fontFamily:'monospace'}}>{time}</span>
         {isU&&!m.streaming&&<button onClick={()=>onEdit?.(m.id,m.content)} style={{background:'none',border:'none',color:'#1a3050',fontSize:10,cursor:'pointer'}} title="Edit">✏️</button>}
@@ -437,7 +449,7 @@ export default function Page() {
   const [msgs,setMsgs]=useState<Msg[]>([])
   const [input,setInput]=useState('')
   const [loading,setLoad]=useState(false)
-  const [mode,setMode]=useState<'flash'|'think'|'deep'>('flash')
+  const [mode,setMode]=useState<'flash'|'think'|'deep'|'auto'>('auto')
   const [online,setOnline]=useState(true)
   const [syncStatus,setSyncStatus]=useState<'idle'|'syncing'|'done'|'error'>('idle')
   const [sessionTitle,setSessionTitle]=useState('')
@@ -474,7 +486,7 @@ export default function Page() {
       case 'openNav':    setNavOpen(true); break
       case 'closeNav':   setNavOpen(false); break
       case 'setMode':
-        if (['flash','think','deep'].includes(arg)) setMode(arg as any); break
+        if (['flash','think','deep','auto'].includes(arg)) setMode(arg as any); break
       case 'clearChat':
         setMsgs([]); break
       case 'toast':
@@ -800,7 +812,15 @@ export default function Page() {
         buildSemanticContext(text, 600).catch(()=>''),
       ])
       const memCtx = semanticCtx || basicCtx
-      if(mode==='deep'){
+      // ── Auto mode routing ────────────────────────────────
+      const q = text.toLowerCase()
+      const effectiveMode = mode === 'auto' ? (
+        /\b(solve|proof|derive|explain.*step|why.*happen|reason|analyze|neet|jee|math|physics|chemistry|theorem|proof|calculate.*complex|strategy|essay|story|poem|soch ke|samajh ke|deep|research)\b/i.test(text) ? 'think' :
+        /\b(news|weather|mausam|image|photo|wallpaper|search|github|movie|song|gana|map|location|stock|crypto|price|trending|latest|aaj ka|current|live)\b/i.test(text) ? 'deep' :
+        'flash'
+      ) : mode
+
+      if(effectiveMode==='deep'){
         const res=await fetch('/api/jarvis/deep-stream',{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({message:text,history:msgs.slice(-10).map(m=>({role:m.role,content:m.content})),memoryContext:memCtx})})
         if(!res.ok||!res.body) throw new Error('deep_failed')
@@ -816,7 +836,7 @@ export default function Page() {
               else if(d.type==='tool_perf'){/* silently track perf */}
               else if(d.type==='done'){
                 const c=cleanResponse(full)
-                const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode,card:d.card||undefined}
+                const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode:effectiveMode,card:d.card||undefined}
                 setMsgs(p=>p.map(m=>m.id===aId?fin:m))
                 if(d.appCommand) execAppCommand(d.appCommand)
                 const assistantTs = Date.now()
@@ -831,7 +851,7 @@ export default function Page() {
         }
       } else {
         const res=await fetch('/api/jarvis/stream',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({message:text,chatMode:mode,history:msgs.slice(-10).map(m=>({role:m.role,content:m.content})),memoryContext:memCtx})})
+          body:JSON.stringify({message:text,chatMode:effectiveMode,history:msgs.slice(-10).map(m=>({role:m.role,content:m.content})),memoryContext:memCtx})})
         if(!res.ok||!res.body) throw new Error('stream_failed')
         const reader=res.body.getReader(); const dec=new TextDecoder(); let full='',thk=''
         while(true){
@@ -1087,10 +1107,10 @@ export default function Page() {
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <BatteryBadge/>
-          {(['flash','think','deep'] as const).map(m=>(
+          {(['auto','flash','think','deep'] as const).map(m=>(
             <button key={m} onClick={()=>setMode(m)}
               style={{padding:'3px 9px',borderRadius:10,fontSize:10,cursor:'pointer',border:`1px solid ${mode===m?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:mode===m?'rgba(0,229,255,.1)':'transparent',color:mode===m?'#00e5ff':'#1e3858'}}>
-              {m==='flash'?'⚡':m==='think'?'🧠':'🔬'}
+              {m==='auto'?'🤖':m==='flash'?'⚡':m==='think'?'🧠':'🔬'}
             </button>
           ))}
           {sessionTitle&&<span style={{fontSize:9,color:'#1e4060',maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sessionTitle}</span>}
@@ -1213,7 +1233,7 @@ export default function Page() {
             <div style={{position:'absolute',bottom:'calc(100% + 8px)',left:12,zIndex:50,background:'rgba(9,13,24,.98)',border:'1px solid rgba(0,229,255,.15)',borderRadius:16,padding:'14px',minWidth:210,boxShadow:'0 -8px 32px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
 
               <div style={{fontSize:9,color:'#1e4060',letterSpacing:2,fontWeight:700,marginBottom:8,fontFamily:"'Space Mono',monospace"}}>MODE</div>
-              {([['flash','⚡','Flash','Groq Fast'],['think','🧠','Think','DeepSeek R1'],['deep','🔬','Deep','Tools + Search']] as const).map(([m,ic,lb,sub])=>(
+              {([['auto','🤖','Auto','Smart routing'],['flash','⚡','Flash','Groq Fast'],['think','🧠','Think','DeepSeek R1'],['deep','🔬','Deep','Tools + Search']] as const).map(([m,ic,lb,sub])=>(
                 <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}}
                   style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'8px 10px',borderRadius:10,background:mode===m?'rgba(0,229,255,.1)':'transparent',border:`1px solid ${mode===m?'rgba(0,229,255,.25)':'transparent'}`,cursor:'pointer',marginBottom:4}}>
                   <span style={{fontSize:18,width:24,textAlign:'center'as const}}>{ic}</span>
@@ -1241,18 +1261,7 @@ export default function Page() {
               ))}
 
               <div style={{height:1,background:'rgba(255,255,255,.06)',margin:'10px 0'}}/>
-              <button onClick={()=>{
-                setPlusOpen(false)
-                if(!msgs.length){setToast({msg:'Koi chat nahi compress karne ko',type:'info'});return}
-                const txt=msgs.slice(-20).map(m=>`${m.role==='user'?'Tu':'J'}: ${m.content.slice(0,200)}`).join('\n')
-                send(`Yeh conversation ko 3-4 lines mein compress karke summary do:\n\n${txt}`)
-              }} style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'9px 10px',borderRadius:10,background:'rgba(167,139,250,.08)',border:'1px solid rgba(167,139,250,.2)',cursor:'pointer'}}>
-                <span style={{fontSize:18,width:24,textAlign:'center'as const}}>🗜️</span>
-                <div style={{textAlign:'left'as const}}>
-                  <div style={{fontSize:12,fontWeight:600,color:'#a78bfa'}}>Compress</div>
-                  <div style={{fontSize:9,color:'#4a3080'}}>Chat summary banao</div>
-                </div>
-              </button>
+              <button onClick={()=>setPlusOpen(false)} style={{width:'100%',padding:'6px',background:'none',border:'none',color:'#1e4060',fontSize:10,cursor:'pointer',textAlign:'center'as const}}>ESC · tap outside to close</button>
             </div>
           </>
         )}
@@ -1274,8 +1283,29 @@ export default function Page() {
             {loading?<span style={{width:14,height:14,border:'2px solid rgba(0,229,255,.3)',borderTopColor:'#00e5ff',borderRadius:'50%',animation:'spin .8s linear infinite',display:'block'}}/>:'↑'}
           </button>
         </div>
-        <div style={{fontSize:8,color:'#080f1a',textAlign:'center',marginTop:4}}>
-          {mode==='flash'?'⚡ Groq Fast':mode==='think'?'🧠 DeepSeek R1':' 🔬 Gemini + Tools'} · Enter to send · v20
+
+        {/* ── Bottom strip: mode indicator + compress ── */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:5}}>
+          <div style={{fontSize:8,color:'#0d2030'}}>
+            {mode==='auto'?`🤖 Auto → ${
+              (() => {
+                const q2=input.toLowerCase()
+                return /solve|neet|jee|math|reason|explain.*step/i.test(q2)?'Think':
+                       /news|weather|image|search|movie|song|map|live/i.test(q2)?'Deep':'Flash'
+              })()
+            }`:mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'} · Enter to send
+          </div>
+          {/* Small compress button */}
+          <button
+            onClick={()=>{
+              if(!msgs.length){setToast({msg:'Koi chat nahi compress karne ko',type:'info'});return}
+              const txt=msgs.slice(-20).map(m=>`${m.role==='user'?'Tu':'J'}: ${m.content.slice(0,200)}`).join('\n')
+              send(`Yeh conversation ko 3-4 lines mein compress karke summary do:\n\n${txt}`)
+            }}
+            title="Compress chat"
+            style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:8,background:'rgba(167,139,250,.08)',border:'1px solid rgba(167,139,250,.18)',color:'#6a50c0',fontSize:10,cursor:'pointer'}}>
+            🗜️ <span style={{fontSize:9}}>Compress</span>
+          </button>
         </div>
       </div>
 
