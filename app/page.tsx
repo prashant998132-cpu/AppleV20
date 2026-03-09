@@ -460,6 +460,7 @@ export default function Page() {
   const [weeklyPrompt,setWeeklyPrompt]=useState(false)
   const [syncOk,setSyncOk]=useState<boolean|null>(null)
   const [navOpen,setNavOpen]=useState(false)
+  const [plusOpen,setPlusOpen]=useState(false)
   const router = useRouter()
 
   // ── JARVIS App Control — executes commands from AI response ──────────
@@ -1203,8 +1204,65 @@ export default function Page() {
         </div>
       )}
 
-      <div style={{padding:'8px 12px',borderTop:'1px solid rgba(255,255,255,.05)',background:'rgba(9,13,24,.97)',flexShrink:0}}>
+      <div style={{padding:'8px 12px',borderTop:'1px solid rgba(255,255,255,.05)',background:'rgba(9,13,24,.97)',flexShrink:0,position:'relative'}}>
+
+        {/* ── Plus Popup ─────────────────────────────── */}
+        {plusOpen&&(
+          <>
+            <div onClick={()=>setPlusOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
+            <div style={{position:'absolute',bottom:'calc(100% + 8px)',left:12,zIndex:50,background:'rgba(9,13,24,.98)',border:'1px solid rgba(0,229,255,.15)',borderRadius:16,padding:'14px',minWidth:210,boxShadow:'0 -8px 32px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
+
+              <div style={{fontSize:9,color:'#1e4060',letterSpacing:2,fontWeight:700,marginBottom:8,fontFamily:"'Space Mono',monospace"}}>MODE</div>
+              {([['flash','⚡','Flash','Groq Fast'],['think','🧠','Think','DeepSeek R1'],['deep','🔬','Deep','Tools + Search']] as const).map(([m,ic,lb,sub])=>(
+                <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}}
+                  style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'8px 10px',borderRadius:10,background:mode===m?'rgba(0,229,255,.1)':'transparent',border:`1px solid ${mode===m?'rgba(0,229,255,.25)':'transparent'}`,cursor:'pointer',marginBottom:4}}>
+                  <span style={{fontSize:18,width:24,textAlign:'center'as const}}>{ic}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:12,fontWeight:600,color:mode===m?'#00e5ff':'#ddeeff',textAlign:'left'as const}}>{lb}</div>
+                    <div style={{fontSize:9,color:'#2a6080',textAlign:'left'as const}}>{sub}</div>
+                  </div>
+                  {mode===m&&<span style={{color:'#00e5ff',fontSize:10}}>●</span>}
+                </button>
+              ))}
+
+              <div style={{height:1,background:'rgba(255,255,255,.06)',margin:'10px 0'}}/>
+              <div style={{fontSize:9,color:'#1e4060',letterSpacing:2,fontWeight:700,marginBottom:8,fontFamily:"'Space Mono',monospace"}}>ATTACH</div>
+              {([
+                ['📷','Camera',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';(i as any).capture='environment';i.onchange=(e:any)=>{const f=e.target.files[0];if(f)setToast({msg:`📷 ${f.name}`,type:'info'})};i.click();setPlusOpen(false)}],
+                ['🖼️','Image',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=(e:any)=>{const f=e.target.files[0];if(f)setToast({msg:`🖼️ ${f.name}`,type:'info'})};i.click();setPlusOpen(false)}],
+                ['📄','PDF',()=>{const i=document.createElement('input');i.type='file';i.accept='.pdf';i.onchange=(e:any)=>{const f=e.target.files[0];if(f)setToast({msg:`📄 ${f.name}`,type:'info'})};i.click();setPlusOpen(false)}],
+                ['🎵','Voice note',()=>{setPlusOpen(false);window.location.href='/voice'}],
+              ] as [string,string,()=>void][]).map(([ic,lb,fn])=>(
+                <button key={lb} onClick={fn}
+                  style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'8px 10px',borderRadius:10,background:'transparent',border:'1px solid transparent',cursor:'pointer',marginBottom:4}}>
+                  <span style={{fontSize:20,width:24,textAlign:'center'as const}}>{ic}</span>
+                  <span style={{fontSize:12,color:'#ddeeff'}}>{lb}</span>
+                </button>
+              ))}
+
+              <div style={{height:1,background:'rgba(255,255,255,.06)',margin:'10px 0'}}/>
+              <button onClick={()=>{
+                setPlusOpen(false)
+                if(!msgs.length){setToast({msg:'Koi chat nahi compress karne ko',type:'info'});return}
+                const txt=msgs.slice(-20).map(m=>`${m.role==='user'?'Tu':'J'}: ${m.content.slice(0,200)}`).join('\n')
+                send(`Yeh conversation ko 3-4 lines mein compress karke summary do:\n\n${txt}`)
+              }} style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'9px 10px',borderRadius:10,background:'rgba(167,139,250,.08)',border:'1px solid rgba(167,139,250,.2)',cursor:'pointer'}}>
+                <span style={{fontSize:18,width:24,textAlign:'center'as const}}>🗜️</span>
+                <div style={{textAlign:'left'as const}}>
+                  <div style={{fontSize:12,fontWeight:600,color:'#a78bfa'}}>Compress</div>
+                  <div style={{fontSize:9,color:'#4a3080'}}>Chat summary banao</div>
+                </div>
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Input Row ──────────────────────────────── */}
         <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+          <button onClick={()=>setPlusOpen(p=>!p)}
+            style={{width:42,height:42,borderRadius:12,flexShrink:0,background:plusOpen?'rgba(0,229,255,.12)':'rgba(255,255,255,.04)',border:`1px solid ${plusOpen?'rgba(0,229,255,.3)':'rgba(255,255,255,.08)'}`,color:plusOpen?'#00e5ff':'#2a6080',fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',fontWeight:300}}>
+            {plusOpen?'×':'+'}
+          </button>
           <textarea ref={taRef} value={input}
             onChange={e=>{handleInput(e.target.value);handleInputChange(e.target.value)}}
             onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(input)}}}
