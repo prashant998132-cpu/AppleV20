@@ -319,20 +319,86 @@ export async function POST(req: NextRequest) {
       }
 
       // CANVA card (auto-detect design requests)
-      if (!card && /poster|banner|card|flyer|resume|cv|presentation|slides|design|thumbnail/i.test(q)) {
+      if (!card && /poster|banner|card|flyer|resume|cv|presentation|slides|design|thumbnail|logo/i.test(q)) {
         const templateMap: Record<string,string> = {
           poster:'poster',banner:'banner',card:'card',flyer:'flyer',
-          resume:'resume',cv:'resume',presentation:'presentation',slides:'presentation',thumbnail:'youtube-thumbnail'
+          resume:'resume',cv:'resume',presentation:'presentation',slides:'presentation',
+          thumbnail:'youtube-thumbnail',logo:'logo'
         }
         const templateType = Object.entries(templateMap).find(([k])=>q.includes(k))?.[1] || 'design'
-        const topic = message.replace(/poster|banner|card|flyer|design|banao|create|make|bana/gi,'').trim()
+        const topic = message.replace(/poster|banner|card|flyer|design|banao|create|make|bana|logo|resume/gi,'').trim()
         const canvaUrl = `https://www.canva.com/design/new?template=${encodeURIComponent(templateType)}&q=${encodeURIComponent(topic)}`
         card = { type:'canva', designUrl: canvaUrl, title: `${topic || 'Your'} ${templateType}`, templateType: `Canva ${templateType}` }
+      }
+
+      // YOUTUBE card
+      if (!card && /youtube|video dekho|video dikhao|watch.*video|yt.*video/i.test(q)) {
+        const ytQuery = message.replace(/youtube|video dekho|video dikhao|watch|yt|search|dikhao|batao/gi,'').trim()
+        const videoId = firstResult?.data?.items?.[0]?.id?.videoId || ''
+        const title = firstResult?.data?.items?.[0]?.snippet?.title || ytQuery
+        if (videoId) {
+          card = { type:'youtube', videoId, title }
+        } else {
+          // Fallback — search link card
+          card = { type:'links', title:`YouTube: ${ytQuery}`, items:[
+            { icon:'▶️', label:`Search "${ytQuery}" on YouTube`, url:`https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}` },
+            { icon:'🎵', label:'YT Music', url:`https://music.youtube.com/search?q=${encodeURIComponent(ytQuery)}` },
+          ]}
+        }
+      }
+
+      // WOLFRAM card (math/science computation)
+      if (!card && /wolfram|calculate|solve|integral|derivative|equation|expand|simplify|matrix|compute/i.test(q)) {
+        const wolframQ = message.replace(/wolfram|solve karo|calculate|compute|karo/gi,'').trim()
+        card = { type:'wolfram', query: wolframQ,
+          embedUrl: `https://www.wolframalpha.com/input/embed/?i=${encodeURIComponent(wolframQ)}&output=JSON` }
+      }
+
+      // DESMOS card (graph/plot)
+      if (!card && /graph|plot|desmos|function|curve|parabola|sin|cos|tan|draw.*function/i.test(q)) {
+        const expr = message.replace(/graph|plot|desmos|banao|dikhao|draw|function|of/gi,'').trim()
+        card = { type:'desmos', expression: expr || 'y = x^2' }
+      }
+
+      // GOOGLE MAPS card
+      if (!card && /map|location|kahan hai|rasta|navigate|directions|near me|maps/i.test(q)) {
+        const place = message.replace(/map|location|kahan hai|rasta|navigate|directions|near me|maps|dikhao|batao/gi,'').trim()
+        card = { type:'maps', query: place,
+          embedUrl: `https://maps.google.com/maps?q=${encodeURIComponent(place)}&output=embed&z=14` }
+      }
+
+      // REPLIT card (code run)
+      if (!card && /replit|run.*code|code.*run|python.*run|nodejs.*run|execute/i.test(q)) {
+        const langMap: Record<string,string> = { python:'python3', node:'nodejs', js:'nodejs', react:'reactts', java:'java', cpp:'cpp' }
+        const lang = Object.keys(langMap).find(k=>q.includes(k)) || 'python3'
+        card = { type:'replit', lang: lang.toUpperCase(), replUrl: `https://replit.com/new/${langMap[lang]||'python3'}` }
+      }
+
+      // SPOTIFY / MUSIC links fallback
+      if (!card && /spotify|gaana|music|playlist/i.test(q)) {
+        const mq = message.replace(/spotify|gaana|music|playlist|dhundho|search/gi,'').trim()
+        card = { type:'links', title:`🎵 Music: ${mq}`, items:[
+          { icon:'🟢', label:'Spotify pe search karo', url:`https://open.spotify.com/search/${encodeURIComponent(mq)}` },
+          { icon:'🎵', label:'YouTube Music', url:`https://music.youtube.com/search?q=${encodeURIComponent(mq)}` },
+          { icon:'🟠', label:'JioSaavn', url:`https://www.jiosaavn.com/search/${encodeURIComponent(mq)}` },
+          { icon:'🔴', label:'Gaana', url:`https://gaana.com/search/${encodeURIComponent(mq)}` },
+        ]}
+      }
+
+      // FIGMA card
+      if (!card && /figma|ui design|wireframe|prototype|ux design/i.test(q)) {
+        const figQ = message.replace(/figma|banao|design|create|ui|ux|wireframe/gi,'').trim()
+        card = { type:'links', title:'🖊️ Figma — UI Design', items:[
+          { icon:'✨', label:'New Figma File', url:'https://www.figma.com/design/new' },
+          { icon:'🌐', label:`Community: "${figQ}"`, url:`https://www.figma.com/community/search?query=${encodeURIComponent(figQ)}` },
+          { icon:'🟡', label:'New FigJam Board', url:'https://www.figma.com/figjam/new' },
+        ]}
       }
 
     } catch {}
 
     send({ type: 'done', toolsUsed, reply, card, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
+
     w.close()
   })()
 

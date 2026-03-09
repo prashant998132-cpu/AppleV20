@@ -35,6 +35,12 @@ type RichCard =
   | { type:'github';   name:string; desc:string; stars:string; lang:string; url:string; forks:string }
   | { type:'news';     articles:{title:string;source:string;url:string;time:string}[] }
   | { type:'book';     title:string; author:string; year:string; cover:string; desc:string; url:string }
+  | { type:'youtube';  videoId:string; title:string }
+  | { type:'wolfram';  query:string; embedUrl:string }
+  | { type:'desmos';   expression:string }
+  | { type:'replit';   lang:string; replUrl:string }
+  | { type:'maps';     query:string; embedUrl:string }
+  | { type:'links';    title:string; items:{icon:string;label:string;url:string}[] }
 
 interface Msg {
   id: string; role: 'user'|'assistant'; content: string
@@ -186,6 +192,102 @@ function RichCardView({ card }: { card: RichCard }) {
           <div style={S.sub}>✍️ {card.author} · {card.year}</div>
           <div style={{fontSize:10,color:'#2a6080',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.desc}</div>
           {card.url && <a href={card.url} target="_blank" rel="noopener" style={{fontSize:10,color:'#00e5ff',textDecoration:'none',display:'inline-block',marginTop:4}}>Read Online →</a>}
+        </div>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'youtube') return (
+    <div style={S.wrap}>
+      <div style={{position:'relative',paddingBottom:'56.25%',height:0,overflow:'hidden'}}>
+        <iframe
+          src={`https://www.youtube.com/embed/${card.videoId}?rel=0`}
+          style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+          allowFullScreen loading="lazy" title={card.title}
+        />
+      </div>
+      {card.title && <div style={{padding:'6px 10px',fontSize:10,color:'#2a6080'}}>▶️ {card.title}</div>}
+    </div>
+  )
+
+  if (card.type === 'wolfram') return (
+    <div style={S.wrap}>
+      <div style={{padding:'10px 12px'}}>
+        <div style={{fontSize:10,color:'#a78bfa',marginBottom:6}}>🧮 Wolfram Alpha</div>
+        <div style={{fontSize:11,color:'#ddeeff',marginBottom:8,fontStyle:'italic'}}>"{card.query}"</div>
+        <iframe
+          src={card.embedUrl}
+          style={{width:'100%',height:200,border:'none',borderRadius:8,background:'white'}}
+          loading="lazy" title="Wolfram Alpha"
+        />
+        <a href={`https://www.wolframalpha.com/input/?i=${encodeURIComponent(card.query)}`}
+          target="_blank" rel="noopener" style={{...S.btn,display:'inline-block',marginTop:8,padding:'6px 14px'}}>
+          Wolfram pe open karo →
+        </a>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'desmos') return (
+    <div style={S.wrap}>
+      <div style={{padding:'8px 12px 0'}}>
+        <div style={{fontSize:10,color:'#34d399',marginBottom:4}}>📈 Desmos Graph</div>
+        <div style={{fontSize:10,color:'#2a6080',fontFamily:'monospace',marginBottom:6}}>{card.expression}</div>
+      </div>
+      <iframe
+        src={`https://www.desmos.com/calculator?lang=en&embed&expressions=true`}
+        style={{width:'100%',height:250,border:'none',borderRadius:8}}
+        loading="lazy" title="Desmos"
+      />
+      <a href={`https://www.desmos.com/calculator`} target="_blank" rel="noopener"
+        style={{...S.btn,borderRadius:'0 0 12px 12px',marginTop:0,display:'block'}}>
+        📈 Desmos mein edit karo →
+      </a>
+    </div>
+  )
+
+  if (card.type === 'replit') return (
+    <div style={S.wrap}>
+      <div style={{padding:'12px 14px'}}>
+        <div style={{fontSize:10,color:'#f59e0b',marginBottom:4}}>💻 Replit — Run karo browser mein</div>
+        <div style={{fontSize:11,color:'#ddeeff',marginBottom:8}}>Language: <span style={{color:'#fbbf24',fontWeight:700}}>{card.lang}</span></div>
+        <div style={{display:'flex',gap:8}}>
+          <a href={card.replUrl} target="_blank" rel="noopener"
+            style={{...S.btn,display:'inline-block',padding:'8px 16px',flex:1,textAlign:'center'}}>
+            ▶️ Replit mein Run karo →
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'maps') return (
+    <div style={S.wrap}>
+      <div style={{fontSize:10,color:'#fb923c',padding:'8px 12px 4px'}}>📍 {card.query}</div>
+      <iframe
+        src={card.embedUrl}
+        style={{width:'100%',height:220,border:'none'}}
+        loading="lazy" title="Map" allowFullScreen
+      />
+    </div>
+  )
+
+  if (card.type === 'links') return (
+    <div style={S.wrap}>
+      <div style={{padding:'10px 12px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:'#e8f4ff',marginBottom:8}}>🔗 {card.title}</div>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {card.items.map((item,i)=>(
+            <a key={i} href={item.url} target="_blank" rel="noopener"
+              style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,
+                background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',textDecoration:'none',
+                color:'#ddeeff',fontSize:11}}>
+              <span style={{fontSize:16}}>{item.icon}</span>
+              <span>{item.label}</span>
+              <span style={{marginLeft:'auto',color:'#1e4060',fontSize:10}}>→</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>
