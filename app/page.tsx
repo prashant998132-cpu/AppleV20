@@ -3,6 +3,7 @@
 // Dexie DB | Proactive | Memory | Feedback loop | Weather header
 import { useState, useRef, useEffect, useCallback } from 'react'
 import BottomNav from '../components/shared/BottomNav'
+import NavDrawer from '../components/shared/NavDrawer'
 import Toast from '../components/shared/Toast'
 import { cleanResponse, parseLearnTags, detectMood } from '../lib/personality'
 import { renderMarkdown } from '../lib/render/markdown'
@@ -191,6 +192,7 @@ export default function Page() {
   const [showInstall,setShowInstall]=useState(false)
   const [weeklyPrompt,setWeeklyPrompt]=useState(false)
   const [syncOk,setSyncOk]=useState<boolean|null>(null)
+  const [navOpen,setNavOpen]=useState(false)
   const taRef=useRef<HTMLTextAreaElement>(null)
   const botRef=useRef<HTMLDivElement>(null)
   // Smart contextual chips based on last AI message topic
@@ -763,7 +765,7 @@ export default function Page() {
 
       <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 14px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,background:'rgba(9,13,24,.96)',backdropFilter:'blur(10px)',zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <div style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,rgba(0,229,255,.15),rgba(109,40,217,.15))',border:'1px solid rgba(0,229,255,.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:'#00e5ff',fontFamily:"'Space Mono',monospace"}}>J</div>
+          <div onClick={()=>setNavOpen(true)} style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,rgba(0,229,255,.15),rgba(109,40,217,.15))',border:'1px solid rgba(0,229,255,.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:'#00e5ff',fontFamily:"'Space Mono',monospace",cursor:'pointer',userSelect:'none'}}>J</div>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:'#e8f4ff',letterSpacing:3,fontFamily:"'Space Mono',monospace"}}>JARVIS</div>
             <div style={{fontSize:8,color:'#0e1e30',letterSpacing:1}}>{name?name.toUpperCase():'AI'} · v20</div>
@@ -790,7 +792,7 @@ export default function Page() {
         </div>
       </header>
 
-      <main style={{flex:1,overflowY:'auto',paddingBottom:8}}>
+      <main style={{flex:1,overflowY:'auto',paddingBottom:0}}>
         {msgs.length===0?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 16px'}}>
             <Clock name={name}/>
@@ -907,7 +909,7 @@ export default function Page() {
         </div>
       </div>
 
-      <BottomNav active="chat"/>
+      <NavDrawer open={navOpen} onClose={()=>setNavOpen(false)}/>
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
       <style>{`
         @keyframes blink{50%{opacity:0}}
