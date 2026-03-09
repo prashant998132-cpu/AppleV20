@@ -186,10 +186,12 @@ export async function POST(req: NextRequest) {
     const toolsUsed: string[] = []
     let toolData = ''
 
+    let results: Array<{ id: string; data: any; fromCache: boolean }> = []
+
     if (selectedTools.length > 0) {
       for (const t of selectedTools) send({ type: 'tool', tool: t.id, status: 'running' })
 
-      const results = (await Promise.all(
+      results = (await Promise.all(
         selectedTools.map(t => runTool(t, buildArgs(t, message, intent.extractedArgs)))
       )).filter(Boolean) as Array<{ id: string; data: any; fromCache: boolean }>
 
@@ -247,7 +249,90 @@ export async function POST(req: NextRequest) {
       await new Promise(r => setTimeout(r, 12))
     }
 
-    send({ type: 'done', toolsUsed, reply, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
+    // ── 6. Generate rich card from tool results ───────────────────────────
+    let card = null
+    try {
+      const q = message.toLowerCase()
+      const firstResult = results?.[0]
+
+      // IMAGE card
+      if (/image|photo|pic|tasveer|banao.*wallpaper|draw/i.test(q) && !firstResult) {
+        const prompt = message.replace(/image|photo|banao|dikhao|tasveer|please|karo|picture|wallpaper|generate|create|make/gi,'').trim() || message
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&model=flux&nologo=true&seed=${Date.now()}`
+        card = { type:'image', url, prompt }
+      }
+
+      // MUSIC card — deezer result
+      if (firstResult?.id?.includes('deezer') || /music|song|gana|deezer|spotify|track|play.*song/i.test(q)) {
+        const d = firstResult?.data
+        if (d?.data?.[0]) {
+          const t = d.data[0]
+          card = { type:'music', previewUrl: t.preview, title: t.title, artist: t.artist?.name||'', cover: t.album?.cover_medium||'', deezerId: t.id }
+        }
+      }
+
+      // MOVIE card — omdb result
+      if (firstResult?.id?.includes('omdb') || firstResult?.id?.includes('movie') || /movie|film|series|imdb/i.test(q)) {
+        const d = firstResult?.data
+        if (d?.Title) {
+          card = { type:'movie', title:d.Title, year:d.Year||'', rating:d.imdbRating||'?', poster:d.Poster||'', plot:d.Plot||'', genre:d.Genre||'' }
+        }
+      }
+
+      // WEATHER card
+      if (firstResult?.id?.includes('weather') || intent.cat === 'weather') {
+        const d = firstResult?.data
+        if (d?.temperature !== undefined || d?.current) {
+          const temp = d.temperature || d.current?.temperature_2m
+          const feels = d.feelsLike || d.current?.apparent_temperature
+          const desc = d.description || d.conditions || ''
+          const city = d.city || d.location || 'Your Location'
+          const humidity = d.humidity ? `${d.humidity}%` : '—'
+          const wind = d.windSpeed ? `${d.windSpeed} km/h` : '—'
+          const icons: Record<string,string> = {'clear':'☀️','cloud':'⛅','rain':'🌧️','thunder':'⛈️','snow':'❄️','mist':'🌫️','haze':'🌫️'}
+          const icon = Object.entries(icons).find(([k])=>desc.toLowerCase().includes(k))?.[1] || '🌡️'
+          card = { type:'weather', city, temp:`${Math.round(temp)}°C`, feels:`${Math.round(feels||temp)}°C`, desc, humidity, wind, icon }
+        }
+      }
+
+      // GITHUB card
+      if (firstResult?.id?.includes('github') || /github|repo|trending.*code/i.test(q)) {
+        const d = firstResult?.data
+        const repo = d?.data?.[0] || d
+        if (repo?.full_name || repo?.name) {
+          card = { type:'github', name:repo.full_name||repo.name, desc:repo.description||'', stars:String(repo.stargazers_count||repo.stars||0), forks:String(repo.forks_count||0), lang:repo.language||'', url:repo.html_url||repo.url||'' }
+        }
+      }
+
+      // NEWS card
+      if (firstResult?.id?.includes('news') || intent.cat === 'news') {
+        const d = firstResult?.data
+        const arts = d?.results || d?.articles || d?.data || []
+        if (arts.length > 0) {
+          card = { type:'news', articles: arts.slice(0,5).map((a: any) => ({
+            title: a.title||a.headline||'',
+            source: a.source_id||a.source?.name||a.publication||'',
+            url: a.link||a.url||'#',
+            time: a.pubDate||a.publishedAt||''
+          }))}
+        }
+      }
+
+      // CANVA card (auto-detect design requests)
+      if (!card && /poster|banner|card|flyer|resume|cv|presentation|slides|design|thumbnail/i.test(q)) {
+        const templateMap: Record<string,string> = {
+          poster:'poster',banner:'banner',card:'card',flyer:'flyer',
+          resume:'resume',cv:'resume',presentation:'presentation',slides:'presentation',thumbnail:'youtube-thumbnail'
+        }
+        const templateType = Object.entries(templateMap).find(([k])=>q.includes(k))?.[1] || 'design'
+        const topic = message.replace(/poster|banner|card|flyer|design|banao|create|make|bana/gi,'').trim()
+        const canvaUrl = `https://www.canva.com/design/new?template=${encodeURIComponent(templateType)}&q=${encodeURIComponent(topic)}`
+        card = { type:'canva', designUrl: canvaUrl, title: `${topic || 'Your'} ${templateType}`, templateType: `Canva ${templateType}` }
+      }
+
+    } catch {}
+
+    send({ type: 'done', toolsUsed, reply, card, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
     w.close()
   })()
 

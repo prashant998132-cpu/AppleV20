@@ -24,11 +24,174 @@ import { saveChat as syncSaveChat, syncAll, flushSyncQueue as syncFlush, isSupab
 import { buildSemanticContext, invalidateMemoryCache } from '../lib/memory/vectorSearch'
 import { useOnlineStatus, cacheAIResponse, getOfflineFallback, getStaticOfflineReply } from '../lib/offline/status'
 
+// Rich inline card types
+type RichCard =
+  | { type:'image';    url:string; prompt?:string }
+  | { type:'music';    previewUrl:string; title:string; artist:string; cover:string; deezerId?:number }
+  | { type:'movie';    title:string; year:string; rating:string; poster:string; plot:string; genre:string }
+  | { type:'gif';      url:string; title:string }
+  | { type:'canva';    designUrl:string; title:string; templateType:string }
+  | { type:'weather';  city:string; temp:string; feels:string; desc:string; humidity:string; wind:string; icon:string }
+  | { type:'github';   name:string; desc:string; stars:string; lang:string; url:string; forks:string }
+  | { type:'news';     articles:{title:string;source:string;url:string;time:string}[] }
+  | { type:'book';     title:string; author:string; year:string; cover:string; desc:string; url:string }
+
 interface Msg {
   id: string; role: 'user'|'assistant'; content: string
   timestamp: number; streaming?: boolean; thinking?: string
   toolsUsed?: string[]; toolProgress?: string
   feedback?: 'up'|'down'; mode?: string; isSystem?: boolean; pinned?: boolean
+  card?: RichCard
+}
+
+// ── Rich Inline Card Renderer ──────────────────────────────
+function RichCardView({ card }: { card: RichCard }) {
+  const S = {
+    wrap: { marginTop:8, borderRadius:12, overflow:'hidden', border:'1px solid rgba(0,229,255,.12)', background:'rgba(0,0,0,.3)' } as const,
+    row: { display:'flex', gap:10, padding:'10px 12px', alignItems:'center' } as const,
+    title: { fontSize:12, fontWeight:700, color:'#e8f4ff', lineHeight:1.3 } as const,
+    sub: { fontSize:10, color:'#4a7090', marginTop:2 } as const,
+    btn: { display:'block', textAlign:'center' as const, padding:'8px', background:'rgba(0,229,255,.1)', border:'1px solid rgba(0,229,255,.2)', borderRadius:8, color:'#00e5ff', fontSize:11, textDecoration:'none', cursor:'pointer', marginTop:8 } as const,
+  }
+
+  if (card.type === 'image') return (
+    <div style={S.wrap}>
+      <img src={card.url} alt={card.prompt||'AI Image'} style={{width:'100%',display:'block',maxHeight:300,objectFit:'cover'}} loading="lazy"
+        onError={e=>(e.currentTarget.style.display='none')}/>
+      {card.prompt && <div style={{padding:'6px 10px',fontSize:10,color:'#2a6080'}}>{card.prompt}</div>}
+    </div>
+  )
+
+  if (card.type === 'music') return (
+    <div style={S.wrap}>
+      <div style={S.row}>
+        {card.cover && <img src={card.cover} alt="" style={{width:52,height:52,borderRadius:8,objectFit:'cover',flexShrink:0}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={S.title}>{card.title}</div>
+          <div style={S.sub}>🎤 {card.artist}</div>
+          {card.previewUrl && (
+            <audio controls style={{width:'100%',marginTop:6,height:32}} preload="none">
+              <source src={card.previewUrl} type="audio/mpeg"/>
+            </audio>
+          )}
+        </div>
+      </div>
+      {card.deezerId && (
+        <a href={`https://www.deezer.com/track/${card.deezerId}`} target="_blank" rel="noopener" style={{...S.btn,borderRadius:0,marginTop:0,borderTop:'1px solid rgba(255,255,255,.05)'}}>
+          🎵 Deezer pe poora suno →
+        </a>
+      )}
+    </div>
+  )
+
+  if (card.type === 'movie') return (
+    <div style={S.wrap}>
+      <div style={S.row}>
+        {card.poster && card.poster !== 'N/A' && (
+          <img src={card.poster} alt={card.title} style={{width:60,height:90,borderRadius:8,objectFit:'cover',flexShrink:0}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>
+        )}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={S.title}>{card.title} ({card.year})</div>
+          <div style={S.sub}>⭐ {card.rating} · {card.genre}</div>
+          <div style={{fontSize:11,color:'#3a7090',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.plot}</div>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'gif') return (
+    <div style={S.wrap}>
+      <img src={card.url} alt={card.title} style={{width:'100%',maxHeight:200,objectFit:'cover',display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>
+      {card.title && <div style={{padding:'4px 10px',fontSize:9,color:'#2a5070'}}>{card.title}</div>}
+    </div>
+  )
+
+  if (card.type === 'canva') return (
+    <div style={S.wrap}>
+      <div style={{padding:'12px 14px'}}>
+        <div style={{fontSize:11,color:'#4a7090',marginBottom:4}}>🎨 Canva Design Ready</div>
+        <div style={S.title}>{card.title}</div>
+        <div style={S.sub}>{card.templateType}</div>
+        <a href={card.designUrl} target="_blank" rel="noopener" style={{...S.btn,display:'inline-block',marginTop:10,padding:'8px 16px'}}>
+          ✏️ Canva mein Edit Karo →
+        </a>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'weather') return (
+    <div style={S.wrap}>
+      <div style={{padding:'12px 14px'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+          <div>
+            <div style={{fontSize:11,color:'#2a7090'}}>{card.city}</div>
+            <div style={{fontSize:28,fontWeight:700,color:'#00e5ff',lineHeight:1}}>{card.temp}</div>
+            <div style={{fontSize:11,color:'#3a8090',marginTop:2}}>{card.desc}</div>
+          </div>
+          <div style={{fontSize:48}}>{card.icon}</div>
+        </div>
+        <div style={{display:'flex',gap:12,borderTop:'1px solid rgba(0,229,255,.08)',paddingTop:8}}>
+          {[['Feels','🌡️',card.feels],['Humidity','💧',card.humidity],['Wind','💨',card.wind]].map(([l,i,v])=>(
+            <div key={l} style={{textAlign:'center' as const,flex:1}}>
+              <div style={{fontSize:14}}>{i}</div>
+              <div style={{fontSize:11,color:'#00e5ff',fontWeight:700}}>{v}</div>
+              <div style={{fontSize:9,color:'#1e3858'}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'github') return (
+    <div style={S.wrap}>
+      <div style={{padding:'12px 14px'}}>
+        <div style={S.title}>🐙 {card.name}</div>
+        <div style={{fontSize:11,color:'#3a7090',marginTop:4,lineHeight:1.4}}>{card.desc}</div>
+        <div style={{display:'flex',gap:12,marginTop:8}}>
+          {[['⭐',card.stars],['🍴',card.forks],['💻',card.lang]].map(([i,v])=>(
+            <span key={i} style={{fontSize:10,color:'#2a6080'}}>{i} {v}</span>
+          ))}
+        </div>
+        <a href={card.url} target="_blank" rel="noopener" style={{...S.btn,display:'inline-block',marginTop:8,padding:'6px 14px'}}>
+          View on GitHub →
+        </a>
+      </div>
+    </div>
+  )
+
+  if (card.type === 'news') return (
+    <div style={S.wrap}>
+      <div style={{padding:'8px 0'}}>
+        {card.articles.slice(0,4).map((a,i)=>(
+          <a key={i} href={a.url} target="_blank" rel="noopener"
+            style={{display:'block',padding:'8px 12px',borderBottom:'1px solid rgba(255,255,255,.04)',textDecoration:'none',transition:'background .1s'}}>
+            <div style={{fontSize:11,color:'#ddeeff',lineHeight:1.4,marginBottom:3}}>{a.title}</div>
+            <div style={{display:'flex',gap:8}}>
+              <span style={{fontSize:9,color:'#2a5070'}}>{a.source}</span>
+              <span style={{fontSize:9,color:'#1e3858'}}>{a.time}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (card.type === 'book') return (
+    <div style={S.wrap}>
+      <div style={S.row}>
+        {card.cover && <img src={card.cover} alt={card.title} style={{width:52,height:72,borderRadius:6,objectFit:'cover',flexShrink:0}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={S.title}>{card.title}</div>
+          <div style={S.sub}>✍️ {card.author} · {card.year}</div>
+          <div style={{fontSize:10,color:'#2a6080',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.desc}</div>
+          {card.url && <a href={card.url} target="_blank" rel="noopener" style={{fontSize:10,color:'#00e5ff',textDecoration:'none',display:'inline-block',marginTop:4}}>Read Online →</a>}
+        </div>
+      </div>
+    </div>
+  )
+
+  return null
 }
 
 const STARTERS = [
@@ -161,6 +324,7 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
         </>)}
       </div>
       {m.toolsUsed?.length?<div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:2}}>{m.toolsUsed.map(t=><span key={t} style={{fontSize:9,padding:'1px 6px',borderRadius:8,background:'rgba(0,229,255,.06)',color:'#1e4060'}}>{t.replace(/_/g,' ')}</span>)}</div>:null}
+      {m.card && <div style={{maxWidth:'85%'}}><RichCardView card={m.card}/></div>}
     </div>
   )
 }
@@ -504,7 +668,7 @@ export default function Page() {
               else if(d.type==='tool_perf'){/* silently track perf */}
               else if(d.type==='done'){
                 const c=cleanResponse(full)
-                const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode}
+                const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode,card:d.card||undefined}
                 setMsgs(p=>p.map(m=>m.id===aId?fin:m))
                 const assistantTs = Date.now()
                 saveChat({role:'assistant',content:c,timestamp:assistantTs}).catch(()=>{})
