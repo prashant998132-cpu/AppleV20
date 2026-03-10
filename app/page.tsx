@@ -487,6 +487,7 @@ export default function Page() {
   const [oIn,setOIn]=useState('')
   const [urlChip,setUrlChip]=useState('')
   const [proactive,setProactive]=useState<string|null>(null)
+  const [proactiveAction,setProactiveAction]=useState<{msg:string,label:string}|null>(null)
   const [showSummary,setShowSummary]=useState(false)
   const [searchOpen,setSearchOpen]=useState(false)
   const [searchQ,setSearchQ]=useState('')
@@ -658,7 +659,7 @@ export default function Page() {
       checkProactive().then(ev=>{
         if(ev) setTimeout(()=>{
           if(ev.action==='daily_summary') setShowSummary(true)
-          else setProactive(ev.message)
+          else { setProactive(ev.message); if(ev.action) setProactiveAction({msg:ev.action,label:ev.actionLabel||'Haan'}); else setProactiveAction(null) }
         },3000)
       }).catch(()=>{})
       return ()=>clearInterval(ri)
@@ -1291,10 +1292,10 @@ export default function Page() {
             {/* Quick shortcuts row */}
             <div style={{display:'flex',gap:8,marginTop:16,width:'100%',maxWidth:440}}>
               {[
-                {icon:'🇮🇳',label:'India Hub',href:'/india'},
                 {icon:'📚',label:'Study',href:'/study'},
+                {icon:'🧠',label:'Learn',href:'/learn'},
                 {icon:'🌸',label:'Anime',href:'/anime'},
-                {icon:'🎨',label:'Studio',href:'/studio'},
+                {icon:'🔌',label:'APIs',href:'/connected'},
               ].map(({icon,label,href})=>(
                 <a key={href} href={href}
                   style={{flex:1,padding:'8px 4px',borderRadius:10,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:10,textDecoration:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
@@ -1331,8 +1332,11 @@ export default function Page() {
         {proactive&&(
           <div style={{margin:'8px 14px',padding:'10px 14px',background:'rgba(0,229,255,.04)',border:'1px solid rgba(0,229,255,.1)',borderRadius:12,display:'flex',alignItems:'center',gap:8}}>
             <span style={{fontSize:12,color:'var(--text-muted)',flex:1}}>💡 {proactive}</span>
-            <button onClick={()=>send(proactive!)} style={{padding:'4px 10px',borderRadius:10,background:'rgba(0,229,255,.1)',border:'1px solid rgba(0,229,255,.2)',color:'var(--accent)',fontSize:11,cursor:'pointer'}}>Haan</button>
-            <button onClick={()=>setProactive(null)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:14,cursor:'pointer'}}>✕</button>
+            {proactiveAction
+              ? <button onClick={()=>{send(proactiveAction.msg);setProactive(null);setProactiveAction(null)}} style={{padding:'4px 10px',borderRadius:10,background:'rgba(0,229,255,.1)',border:'1px solid rgba(0,229,255,.2)',color:'var(--accent)',fontSize:11,cursor:'pointer',whiteSpace:'nowrap' as const}}>{proactiveAction.label}</button>
+              : <button onClick={()=>send(proactive!)} style={{padding:'4px 10px',borderRadius:10,background:'rgba(0,229,255,.1)',border:'1px solid rgba(0,229,255,.2)',color:'var(--accent)',fontSize:11,cursor:'pointer'}}>Haan</button>
+            }
+            <button onClick={()=>{setProactive(null);setProactiveAction(null)}} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:14,cursor:'pointer'}}>✕</button>
           </div>
         )}
 

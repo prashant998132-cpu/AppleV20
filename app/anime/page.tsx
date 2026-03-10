@@ -105,27 +105,27 @@ export default function AnimePage() {
   useEffect(() => { if (tab === 'top') fetchTop() }, [tab])
 
   function addToWatchlist(a: Anime, status: WatchItem['status'] = 'plan') {
-    const w = watchlist.filter(x => x.mal_id !== a.mal_id)
-    const updated = [...w, { mal_id: a.mal_id, title: a.title_english || a.title, image: a.image, status, totalEp: a.episodes }]
-    setWatchlist(updated); saveWatch(updated)
+    const w = watchlist.filter((x:WatchItem) => x.mal_id !== a.mal_id)
+    const upd = [...w, { mal_id: a.mal_id, title: a.title_english || a.title, image: a.image, status, totalEp: a.episodes }]
+    setWatchlist(upd); saveWatch(upd)
   }
 
   function updateStatus(id: number, status: WatchItem['status']) {
-    const updated = watchlist.map(w => w.mal_id === id ? { ...w, status } : w)
-    setWatchlist(updated); saveWatch(updated)
+    const updated = watchlist.map((w:WatchItem) => w.mal_id === id ? { ...w, status } : w)
+    setWatchlist(upd); saveWatch(upd)
   }
 
   function removeFromList(id: number) {
-    const updated = watchlist.filter(w => w.mal_id !== id)
-    setWatchlist(updated); saveWatch(updated)
+    const updated = watchlist.filter((w:WatchItem) => w.mal_id !== id)
+    setWatchlist(upd); saveWatch(upd)
   }
 
   const GENRES = ['all', 'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Sci-Fi', 'Thriller']
   const filteredTop = genre === 'all' ? topAnime : topAnime.filter(a => a.genres?.includes(genre))
 
-  const watching = watchlist.filter(w => w.status === 'watching')
-  const completed = watchlist.filter(w => w.status === 'completed')
-  const planned = watchlist.filter(w => w.status === 'plan')
+  const watching = watchlist.filter((w:WatchItem) => w.status === 'watching')
+  const completed = watchlist.filter((w:WatchItem) => w.status === 'completed')
+  const planned = watchlist.filter((w:WatchItem) => w.status === 'plan')
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column', color: 'var(--text)' }}>
@@ -163,7 +163,7 @@ export default function AnimePage() {
               ))}
             </div>
             {loading && <div style={{ textAlign: 'center' as const, padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>🌸 Load ho raha hai...</div>}
-            {filteredTop.map(a => <AnimeCard key={a.mal_id} a={a} onAdd={a => addToWatchlist(a)} />)}
+            {filteredTop.map((a:Anime) => <AnimeCard key={a.mal_id} a={a} onAdd={(ani:Anime) => addToWatchlist(ani)} />)}
           </>
         )}
 
