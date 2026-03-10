@@ -1,8 +1,9 @@
 'use client'
-// app/page.tsx — JARVIS Chat v22
-// Audit fixes + Mic voice-to-text + Regenerate + Code copy
+// app/page.tsx — JARVIS Chat v23
+// Theme system (4 themes) + Smart suggestions + UX polish
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { getTheme, setTheme, initTheme, THEME_META, type Theme } from '../lib/theme'
 import NavDrawer from '../components/shared/NavDrawer'
 import Toast from '../components/shared/Toast'
 import { cleanResponse, parseLearnTags, detectMood } from '../lib/personality'
@@ -389,19 +390,19 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
       {isU ? (
         /* USER — bubble style */
         <div style={{maxWidth:'85%',padding:'10px 13px',borderRadius:'16px 16px 4px 16px',
-          background:'rgba(0,229,255,.1)',
-          border:'1px solid rgba(0,229,255,.18)',
-          color:'#ddeeff',fontSize:13.5,lineHeight:1.6}}>
+          background:'var(--user-bg)',
+          border:'1px solid var(--user-border)',
+          color:'var(--text)',fontSize:13.5,lineHeight:1.6}}>
           <span dangerouslySetInnerHTML={{__html:html(clean)}}/>
         </div>
       ) : (
         /* JARVIS — no bubble, plain on background */
         <div style={{maxWidth:'92%',paddingLeft:4}}>
-          {m.streaming&&!clean ? <span style={{color:'#2a5070'}}>...</span> :
+          {m.streaming&&!clean ? <span style={{color:'var(--text-muted)'}}>...</span> :
             clean.includes('|||MAP|||') ? (() => {
               const [title, url] = clean.split('|||MAP|||')
               return (<>
-                {title && <div style={{fontWeight:600,marginBottom:8,fontSize:12,color:'#ddeeff'}}>{title}</div>}
+                {title && <div style={{fontWeight:600,marginBottom:8,fontSize:12,color:'var(--text)'}}>{title}</div>}
                 <iframe src={url} width="100%" height={200} style={{borderRadius:8,border:'none'}} loading="lazy" title="Map"/>
               </>)
             })() :
@@ -409,32 +410,32 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
               const imgMatch = clean.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
               const textPart = clean.replace(/!\[.*?\]\(https?:\/\/[^\)]+\)/g,'').trim()
               return (<>
-                {textPart && <div style={{marginBottom:8,color:'#c8e8ff',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(textPart)}}/>}
+                {textPart && <div className="jarvis-msg" style={{marginBottom:8,color:'var(--jarvis-text)',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(textPart)}}/>}
                 {imgMatch && <img src={imgMatch[1]} alt="Generated" style={{maxWidth:'100%',borderRadius:8,display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
               </>)
             })() :
             isErr ? (
               <div style={{color:'#ff6060',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
             ) : (
-              <div style={{color:'#c8e8ff',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
+              <div className="jarvis-msg" style={{color:'var(--jarvis-text)',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
             )
           }
-          {m.streaming&&<span style={{display:'inline-block',width:2,height:14,background:'#00e5ff',marginLeft:2,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/>}
+          {m.streaming&&<span style={{display:'inline-block',width:2,height:14,background:'var(--accent)',marginLeft:2,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/>}
         </div>
       )}
       <div style={{display:'flex',alignItems:'center',gap:8,marginTop:3}}>
-        <span style={{fontSize:9,color:'#1a3050',fontFamily:'monospace'}}>{time}</span>
-        {isU&&!m.streaming&&<button onClick={()=>onEdit?.(m.id,m.content)} style={{background:'none',border:'none',color:'#1a3050',fontSize:10,cursor:'pointer'}} title="Edit">✏️</button>}
+        <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'monospace'}}>{time}</span>
+        {isU&&!m.streaming&&<button onClick={()=>onEdit?.(m.id,m.content)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:10,cursor:'pointer'}} title="Edit">✏️</button>}
         {!isU&&!m.streaming&&(<>
           <button onClick={()=>onFeed(m.id,'up')} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,opacity:m.feedback==='up'?1:.25}} title="Badiya tha">👍</button>
           <button onClick={()=>onFeed(m.id,'down')} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,opacity:m.feedback==='down'?1:.25}} title="Theek nahi tha">👎</button>
-          <button onClick={()=>navigator.clipboard?.writeText(clean).catch(()=>{})} style={{background:'none',border:'none',color:'#1a3050',fontSize:11,cursor:'pointer'}} title="Copy">⎘</button>
-          <button onClick={()=>onPin?.(m.id)} style={{background:'none',border:'none',color:m.pinned?'#ffab00':'#1a3050',fontSize:11,cursor:'pointer'}} title="Pin">📌</button>
-          <button onClick={()=>navigator.share?navigator.share({text:clean}).catch(()=>{}):navigator.clipboard?.writeText(clean).catch(()=>{})} style={{background:'none',border:'none',color:'#1a3050',fontSize:11,cursor:'pointer'}} title="Share">↗</button>
+          <button onClick={()=>navigator.clipboard?.writeText(clean).catch(()=>{})} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:11,cursor:'pointer'}} title="Copy">⎘</button>
+          <button onClick={()=>onPin?.(m.id)} style={{background:'none',border:'none',color:m.pinned?'#ffab00':'var(--text-faint)',fontSize:11,cursor:'pointer'}} title="Pin">📌</button>
+          <button onClick={()=>navigator.share?navigator.share({text:clean}).catch(()=>{}):navigator.clipboard?.writeText(clean).catch(()=>{})} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:11,cursor:'pointer'}} title="Share">↗</button>
           {isErr&&<button onClick={onRetry} style={{padding:'2px 8px',borderRadius:10,border:'1px solid rgba(255,80,80,.3)',color:'#ff6060',background:'none',fontSize:10,cursor:'pointer'}}>↺ Retry</button>}
         </>)}
       </div>
-      {m.toolsUsed?.length?<div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:2}}>{m.toolsUsed.map(t=><span key={t} style={{fontSize:9,padding:'1px 6px',borderRadius:8,background:'rgba(0,229,255,.06)',color:'#1e4060'}}>{t.replace(/_/g,' ')}</span>)}</div>:null}
+      {m.toolsUsed?.length?<div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:2}}>{m.toolsUsed.map(t=><span key={t} style={{fontSize:9,padding:'1px 6px',borderRadius:8,background:'var(--accent-dim)',color:'var(--text-muted)'}}>{t.replace(/_/g,' ')}</span>)}</div>:null}
       {m.card && <div style={{maxWidth:'85%'}}><RichCardView card={m.card}/></div>}
     </div>
   )
@@ -474,6 +475,8 @@ export default function Page() {
   const [currentSessionId,setCurrentSessionId]=useState('')
   const [micActive,setMicActive]=useState(false)
   const micRef = useRef<any>(null)
+  const [currentTheme,setCurrentTheme]=useState<Theme>('dark')
+  const [themeOpen,setThemeOpen]=useState(false)
   const router = useRouter()
 
   // ── JARVIS App Control — executes commands from AI response ──────────
@@ -549,6 +552,9 @@ export default function Page() {
   useEffect(()=>{
     // Pre-load Puter in background so first message is instant
     loadPuter().catch(()=>{})
+    // Init theme from localStorage
+    initTheme()
+    setCurrentTheme(getTheme())
     // DB maintenance on start
     runMaintenance().catch(()=>{})
     // Create new session for this chat
@@ -643,6 +649,7 @@ export default function Page() {
 
   const handleInput=(v:string)=>{
     setInput(v)
+    if(themeOpen) setThemeOpen(false)
     const m=v.match(/https?:\/\/[^\s]{10,}/)
     setUrlChip(m?m[0]:'')
     if(taRef.current){ taRef.current.style.height='auto'; taRef.current.style.height=Math.min(taRef.current.scrollHeight,120)+'px' }
@@ -1037,7 +1044,7 @@ export default function Page() {
   const lastAI=[...msgs].reverse().find(m=>m.role==='assistant'&&!m.streaming&&m.content&&!m.isSystem)
 
   return (
-    <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',background:'#090d18'}}>
+    <div className="theme-switch" style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',background:'var(--bg)',transition:'background .3s'}}>
       <div className="bg-grid"/>
 
       {searchOpen&&(
@@ -1168,13 +1175,13 @@ export default function Page() {
         </div>
       )}
 
-      <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 14px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,background:'rgba(9,13,24,.96)',backdropFilter:'blur(10px)',zIndex:10}}>
+      <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 14px',borderBottom:'1px solid var(--border)',flexShrink:0,background:'var(--header-bg)',backdropFilter:'blur(10px)',zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <div onClick={()=>setNavOpen(true)} style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,rgba(0,229,255,.15),rgba(109,40,217,.15))',border:'1px solid rgba(0,229,255,.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:'#00e5ff',fontFamily:"'Space Mono',monospace",cursor:'pointer',userSelect:'none'}}>J</div>
-          <button onClick={()=>setHistoryOpen(true)} title="Chat History" style={{width:28,height:28,borderRadius:8,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.07)',color:'#2a5070',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🕐</button>
+          <div onClick={()=>setNavOpen(true)} style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,var(--accent-bg),rgba(109,40,217,.15))',border:'1px solid var(--border-acc)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:'var(--accent)',fontFamily:"'Space Mono',monospace",cursor:'pointer',userSelect:'none'}}>J</div>
+          <button onClick={()=>setHistoryOpen(true)} title="Chat History" style={{width:28,height:28,borderRadius:8,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🕐</button>
           <div>
-            <div style={{fontSize:11,fontWeight:700,color:'#e8f4ff',letterSpacing:3,fontFamily:"'Space Mono',monospace"}}>JARVIS</div>
-            <div style={{fontSize:8,color:'#0e1e30',letterSpacing:1}}>{name?name.toUpperCase():'AI'} · v20</div>
+            <div style={{fontSize:11,fontWeight:700,color:'var(--text)',letterSpacing:3,fontFamily:"'Space Mono',monospace"}}>JARVIS</div>
+            <div style={{fontSize:8,color:'var(--text-faint)',letterSpacing:1}}>{name?name.toUpperCase():'AI'} · v23</div>
           </div>
           <WeatherBadge/>
         </div>
@@ -1182,19 +1189,39 @@ export default function Page() {
           <BatteryBadge/>
           {(['auto','flash','think','deep'] as const).map(m=>(
             <button key={m} onClick={()=>setMode(m)}
-              style={{padding:'3px 9px',borderRadius:10,fontSize:10,cursor:'pointer',border:`1px solid ${mode===m?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:mode===m?'rgba(0,229,255,.1)':'transparent',color:mode===m?'#00e5ff':'#1e3858'}}>
+              style={{padding:'3px 9px',borderRadius:10,fontSize:10,cursor:'pointer',border:`1px solid ${mode===m?'var(--border-acc)':'var(--border)'}`,background:mode===m?'var(--accent-bg)':'transparent',color:mode===m?'var(--accent)':'var(--text-faint)'}}>
               {m==='auto'?'🤖':m==='flash'?'⚡':m==='think'?'🧠':'🔬'}
             </button>
           ))}
-          {sessionTitle&&<span style={{fontSize:9,color:'#1e4060',maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sessionTitle}</span>}
+          {/* 🎨 Theme picker */}
+          <div style={{position:'relative'}}>
+            <button onClick={()=>setThemeOpen(p=>!p)} title="Change theme"
+              style={{width:26,height:26,borderRadius:7,background:'var(--bg-surface)',border:'1px solid var(--border)',fontSize:13,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {THEME_META[currentTheme].icon}
+            </button>
+            {themeOpen&&(
+              <div style={{position:'absolute',right:0,top:32,zIndex:200,background:'var(--bg-card)',border:'1px solid var(--border-acc)',borderRadius:12,padding:6,display:'flex',flexDirection:'column',gap:4,minWidth:130,boxShadow:'var(--shadow)'}}>
+                {(Object.keys(THEME_META) as Theme[]).map(t=>(
+                  <button key={t} onClick={()=>{setTheme(t);setCurrentTheme(t);setThemeOpen(false)}}
+                    style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:8,border:`1px solid ${currentTheme===t?'var(--border-acc)':'transparent'}`,background:currentTheme===t?'var(--accent-bg)':'transparent',color:currentTheme===t?'var(--accent)':'var(--text-dim)',fontSize:12,cursor:'pointer',textAlign:'left',width:'100%'}}>
+                    <span style={{fontSize:14}}>{THEME_META[t].icon}</span>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:11}}>{THEME_META[t].label}</div>
+                      <div style={{fontSize:9,opacity:.6}}>{THEME_META[t].desc}</div>
+                    </div>
+                    {currentTheme===t&&<span style={{marginLeft:'auto',fontSize:10,color:'var(--accent)'}}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <span style={{width:5,height:5,borderRadius:'50%',background:online?'#00e676':'#ff4444'}} title={online?'Online':'Offline'}/>
           {syncStatus==='syncing'&&<span style={{fontSize:8,color:'#ffab00',animation:'pulse 1s infinite'}}>⚡sync</span>}
           {syncStatus==='done'&&<span style={{fontSize:8,color:'#00e676'}}>☁️✓</span>}
           {!online&&<span style={{fontSize:9,color:'#ff4444',fontWeight:700}}>OFFLINE</span>}
-          {isSupabaseConfigured()&&syncStatus==='idle'&&<span style={{fontSize:8,color:'#1e3858'}}>☁️</span>}
-          {msgs.length>0&&<button onClick={()=>setSearchOpen(true)} style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'#1e3040',fontSize:13,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🔍</button>}
-          {msgs.length>2&&<button onClick={exportChat} title="Export chat" style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'#1e3040',fontSize:12,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⬇</button>}
-          {msgs.length>0&&<button onClick={()=>{setMsgs([]);setSessionTitle('');startNewSession()}} style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'#1e3040',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⊘</button>}
+          {msgs.length>0&&<button onClick={()=>setSearchOpen(true)} style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:13,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🔍</button>}
+          {msgs.length>2&&<button onClick={exportChat} title="Export chat" style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:12,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⬇</button>}
+          {msgs.length>0&&<button onClick={()=>{setMsgs([]);setSessionTitle('');startNewSession()}} style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⊘</button>}
         </div>
       </header>
 
@@ -1202,10 +1229,13 @@ export default function Page() {
         {msgs.length===0?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 16px'}}>
             <Clock name={name}/>
+            {/* Suggestion chips */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:'100%',maxWidth:440,marginTop:28}}>
               {STARTERS.map(s=>(
                 <button key={s.t} onClick={()=>send(s.t)}
-                  style={{padding:'12px',borderRadius:12,background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',color:'#2a5070',fontSize:12,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:8}}>
+                  style={{padding:'12px',borderRadius:12,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:12,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:8,transition:'all .15s'}}
+                  onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--border-acc)',e.currentTarget.style.color='var(--accent)')}
+                  onMouseLeave={e=>(e.currentTarget.style.borderColor='var(--border)',e.currentTarget.style.color='var(--text-muted)')}>
                   <span>{s.icon}</span><span>{s.t}</span>
                 </button>
               ))}
@@ -1219,7 +1249,7 @@ export default function Page() {
                 {icon:'🎨',label:'Studio',href:'/studio'},
               ].map(({icon,label,href})=>(
                 <a key={href} href={href}
-                  style={{flex:1,padding:'8px 4px',borderRadius:10,background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.04)',color:'#1e3858',fontSize:10,textDecoration:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+                  style={{flex:1,padding:'8px 4px',borderRadius:10,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:10,textDecoration:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
                   <span style={{fontSize:16}}>{icon}</span>
                   <span>{label}</span>
                 </a>
@@ -1310,7 +1340,7 @@ export default function Page() {
         </div>
       )}
 
-      <div style={{padding:'8px 12px',borderTop:'1px solid rgba(255,255,255,.05)',background:'rgba(9,13,24,.97)',flexShrink:0,position:'relative'}}>
+      <div style={{padding:'8px 12px',borderTop:'1px solid var(--border)',background:'var(--header-bg)',flexShrink:0,position:'relative'}}>
 
         {/* ── Plus Popup (compact) ─────────────────── */}
         {plusOpen&&(
@@ -1406,9 +1436,9 @@ export default function Page() {
         <div style={{display:'flex',gap:6,alignItems:'flex-end'}}>
           <button onClick={()=>{setPlusOpen(p=>!p);setCompressOpen(false)}}
             style={{width:40,height:40,borderRadius:11,flexShrink:0,
-              background:plusOpen?'rgba(0,229,255,.12)':'rgba(255,255,255,.04)',
-              border:`1px solid ${plusOpen?'rgba(0,229,255,.3)':'rgba(255,255,255,.08)'}`,
-              color:plusOpen?'#00e5ff':'#2a6080',fontSize:22,cursor:'pointer',
+              background:plusOpen?'var(--accent-bg)':'var(--bg-surface)',
+              border:`1px solid ${plusOpen?'var(--border-acc)':'var(--border)'}`,
+              color:plusOpen?'var(--accent)':'var(--text-muted)',fontSize:22,cursor:'pointer',
               display:'flex',alignItems:'center',justifyContent:'center',fontWeight:300}}>
             {plusOpen?'×':'+'}
           </button>
@@ -1417,23 +1447,23 @@ export default function Page() {
             onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(input)}}}
             placeholder={loading?'Soch raha hun...':'Kuch poocho ya batao...'}
             rows={1} disabled={loading}
-            style={{flex:1,padding:'10px 12px',borderRadius:12,background:'rgba(255,255,255,.04)',
-              border:'1px solid rgba(255,255,255,.08)',color:'#e8f4ff',fontSize:14,resize:'none',
+            style={{flex:1,padding:'10px 12px',borderRadius:12,background:'var(--bg-input)',
+              border:'1px solid var(--border)',color:'var(--text)',fontSize:14,resize:'none',
               outline:'none',lineHeight:1.5,maxHeight:120,overflow:'hidden',fontFamily:'inherit'}}/>
           <button onClick={()=>send(input)} disabled={!input.trim()||loading}
             style={{width:40,height:40,borderRadius:11,
-              background:input.trim()&&!loading?'rgba(0,229,255,.15)':'rgba(255,255,255,.03)',
-              border:`1px solid ${input.trim()&&!loading?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,
-              color:input.trim()&&!loading?'#00e5ff':'#1e3858',fontSize:18,cursor:'pointer',
+              background:input.trim()&&!loading?'var(--accent-bg)':'var(--bg-surface)',
+              border:`1px solid ${input.trim()&&!loading?'var(--border-acc)':'var(--border)'}`,
+              color:input.trim()&&!loading?'var(--accent)':'var(--text-faint)',fontSize:18,cursor:'pointer',
               flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-            {loading?<span style={{width:14,height:14,border:'2px solid rgba(0,229,255,.3)',borderTopColor:'#00e5ff',borderRadius:'50%',animation:'spin .8s linear infinite',display:'block'}}/>:'↑'}
+            {loading?<span style={{width:14,height:14,border:'2px solid var(--accent-bg)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin .8s linear infinite',display:'block'}}/>:'↑'}
           </button>
           {/* 🎙️ Mic button */}
           <button onClick={toggleMic} title={micActive?'Mic band karo':'Bolkar message karo'}
             style={{width:40,height:40,borderRadius:11,flexShrink:0,
-              background:micActive?'rgba(255,50,50,.18)':'rgba(255,255,255,.04)',
-              border:`1px solid ${micActive?'rgba(255,80,80,.5)':'rgba(255,255,255,.08)'}`,
-              color:micActive?'#ff5555':'#2a6080',fontSize:16,cursor:'pointer',
+              background:micActive?'rgba(255,50,50,.18)':'var(--bg-surface)',
+              border:`1px solid ${micActive?'rgba(255,80,80,.5)':'var(--border)'}`,
+              color:micActive?'#ff5555':'var(--text-muted)',fontSize:16,cursor:'pointer',
               display:'flex',alignItems:'center',justifyContent:'center',
               transition:'all .2s',animation:micActive?'pulse 1.2s ease-in-out infinite':undefined}}>
             {micActive ? '⏹' : '🎙️'}
@@ -1442,7 +1472,7 @@ export default function Page() {
 
         {/* ── Bottom strip ──────────────────────────── */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:4}}>
-          <div style={{fontSize:8,color:'#0d2030'}}>
+          <div style={{fontSize:8,color:'var(--text-faint)'}}>
             {mode==='auto'?`🤖 Auto → ${(()=>{const q2=input.toLowerCase();return /solve|neet|jee|math|reason|explain.*step/i.test(q2)?'Think':/news|weather|image|search|movie|song|map|live/i.test(q2)?'Deep':'Flash'})()}`:mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'} · Enter to send
           </div>
           <button onClick={()=>{
