@@ -45,24 +45,24 @@ interface Msg {
   timestamp: number; streaming?: boolean; thinking?: string
   toolsUsed?: string[]; toolProgress?: string
   feedback?: 'up'|'down'; mode?: string; isSystem?: boolean; pinned?: boolean
-  card?: RichCard
+  card?: RichCard; responseTime?: number
 }
 
 // ── Rich Inline Card Renderer ──────────────────────────────
 function RichCardView({ card }: { card: RichCard }) {
   const S = {
-    wrap: { marginTop:8, borderRadius:12, overflow:'hidden', border:'1px solid rgba(0,229,255,.12)', background:'rgba(0,0,0,.3)' } as const,
+    wrap: { marginTop:8, borderRadius:12, overflow:'hidden', border:'1px solid var(--border-acc)', background:'var(--bg-card)' } as const,
     row: { display:'flex', gap:10, padding:'10px 12px', alignItems:'center' } as const,
-    title: { fontSize:12, fontWeight:700, color:'#e8f4ff', lineHeight:1.3 } as const,
-    sub: { fontSize:10, color:'#4a7090', marginTop:2 } as const,
-    btn: { display:'block', textAlign:'center' as const, padding:'8px', background:'rgba(0,229,255,.1)', border:'1px solid rgba(0,229,255,.2)', borderRadius:8, color:'#00e5ff', fontSize:11, textDecoration:'none', cursor:'pointer', marginTop:8 } as const,
+    title: { fontSize:12, fontWeight:700, color:'var(--text)', lineHeight:1.3 } as const,
+    sub: { fontSize:10, color:'var(--text-muted)', marginTop:2 } as const,
+    btn: { display:'block', textAlign:'center' as const, padding:'8px', background:'var(--accent-bg)', border:'1px solid var(--border-acc)', borderRadius:8, color:'var(--accent)', fontSize:11, textDecoration:'none', cursor:'pointer', marginTop:8 } as const,
   }
 
   if (card.type === 'image') return (
     <div style={S.wrap}>
       <img src={card.url} alt={card.prompt||'AI Image'} style={{width:'100%',display:'block',maxHeight:300,objectFit:'cover'}} loading="lazy"
         onError={e=>(e.currentTarget.style.display='none')}/>
-      {card.prompt && <div style={{padding:'6px 10px',fontSize:10,color:'#2a6080'}}>{card.prompt}</div>}
+      {card.prompt && <div style={{padding:'6px 10px',fontSize:10,color:'var(--text-muted)'}}>{card.prompt}</div>}
     </div>
   )
 
@@ -97,7 +97,7 @@ function RichCardView({ card }: { card: RichCard }) {
         <div style={{flex:1,minWidth:0}}>
           <div style={S.title}>{card.title} ({card.year})</div>
           <div style={S.sub}>⭐ {card.rating} · {card.genre}</div>
-          <div style={{fontSize:11,color:'#3a7090',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.plot}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.plot}</div>
         </div>
       </div>
     </div>
@@ -106,14 +106,14 @@ function RichCardView({ card }: { card: RichCard }) {
   if (card.type === 'gif') return (
     <div style={S.wrap}>
       <img src={card.url} alt={card.title} style={{width:'100%',maxHeight:200,objectFit:'cover',display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>
-      {card.title && <div style={{padding:'4px 10px',fontSize:9,color:'#2a5070'}}>{card.title}</div>}
+      {card.title && <div style={{padding:'4px 10px',fontSize:9,color:'var(--text-muted)'}}>{card.title}</div>}
     </div>
   )
 
   if (card.type === 'canva') return (
     <div style={S.wrap}>
       <div style={{padding:'12px 14px'}}>
-        <div style={{fontSize:11,color:'#4a7090',marginBottom:4}}>🎨 Canva Design Ready</div>
+        <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:4}}>🎨 Canva Design Ready</div>
         <div style={S.title}>{card.title}</div>
         <div style={S.sub}>{card.templateType}</div>
         <a href={card.designUrl} target="_blank" rel="noopener" style={{...S.btn,display:'inline-block',marginTop:10,padding:'8px 16px'}}>
@@ -128,18 +128,18 @@ function RichCardView({ card }: { card: RichCard }) {
       <div style={{padding:'12px 14px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
           <div>
-            <div style={{fontSize:11,color:'#2a7090'}}>{card.city}</div>
-            <div style={{fontSize:28,fontWeight:700,color:'#00e5ff',lineHeight:1}}>{card.temp}</div>
-            <div style={{fontSize:11,color:'#3a8090',marginTop:2}}>{card.desc}</div>
+            <div style={{fontSize:11,color:'var(--text-muted)'}}>{card.city}</div>
+            <div style={{fontSize:28,fontWeight:700,color:'var(--accent)',lineHeight:1}}>{card.temp}</div>
+            <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{card.desc}</div>
           </div>
           <div style={{fontSize:48}}>{card.icon}</div>
         </div>
-        <div style={{display:'flex',gap:12,borderTop:'1px solid rgba(0,229,255,.08)',paddingTop:8}}>
+        <div style={{display:'flex',gap:12,borderTop:'1px solid var(--border)',paddingTop:8}}>
           {[['Feels','🌡️',card.feels],['Humidity','💧',card.humidity],['Wind','💨',card.wind]].map(([l,i,v])=>(
             <div key={l} style={{textAlign:'center' as const,flex:1}}>
               <div style={{fontSize:14}}>{i}</div>
-              <div style={{fontSize:11,color:'#00e5ff',fontWeight:700}}>{v}</div>
-              <div style={{fontSize:9,color:'#1e3858'}}>{l}</div>
+              <div style={{fontSize:11,color:'var(--accent)',fontWeight:700}}>{v}</div>
+              <div style={{fontSize:9,color:'var(--text-faint)'}}>{l}</div>
             </div>
           ))}
         </div>
@@ -151,10 +151,10 @@ function RichCardView({ card }: { card: RichCard }) {
     <div style={S.wrap}>
       <div style={{padding:'12px 14px'}}>
         <div style={S.title}>🐙 {card.name}</div>
-        <div style={{fontSize:11,color:'#3a7090',marginTop:4,lineHeight:1.4}}>{card.desc}</div>
+        <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,lineHeight:1.4}}>{card.desc}</div>
         <div style={{display:'flex',gap:12,marginTop:8}}>
           {[['⭐',card.stars],['🍴',card.forks],['💻',card.lang]].map(([i,v])=>(
-            <span key={i} style={{fontSize:10,color:'#2a6080'}}>{i} {v}</span>
+            <span key={i} style={{fontSize:10,color:'var(--text-muted)'}}>{i} {v}</span>
           ))}
         </div>
         <a href={card.url} target="_blank" rel="noopener" style={{...S.btn,display:'inline-block',marginTop:8,padding:'6px 14px'}}>
@@ -169,11 +169,11 @@ function RichCardView({ card }: { card: RichCard }) {
       <div style={{padding:'8px 0'}}>
         {card.articles.slice(0,4).map((a,i)=>(
           <a key={i} href={a.url} target="_blank" rel="noopener"
-            style={{display:'block',padding:'8px 12px',borderBottom:'1px solid rgba(255,255,255,.04)',textDecoration:'none',transition:'background .1s'}}>
-            <div style={{fontSize:11,color:'#ddeeff',lineHeight:1.4,marginBottom:3}}>{a.title}</div>
+            style={{display:'block',padding:'8px 12px',borderBottom:'1px solid var(--border)',textDecoration:'none',transition:'background .1s'}}>
+            <div style={{fontSize:11,color:'var(--text)',lineHeight:1.4,marginBottom:3}}>{a.title}</div>
             <div style={{display:'flex',gap:8}}>
-              <span style={{fontSize:9,color:'#2a5070'}}>{a.source}</span>
-              <span style={{fontSize:9,color:'#1e3858'}}>{a.time}</span>
+              <span style={{fontSize:9,color:'var(--text-muted)'}}>{a.source}</span>
+              <span style={{fontSize:9,color:'var(--text-faint)'}}>{a.time}</span>
             </div>
           </a>
         ))}
@@ -188,8 +188,8 @@ function RichCardView({ card }: { card: RichCard }) {
         <div style={{flex:1,minWidth:0}}>
           <div style={S.title}>{card.title}</div>
           <div style={S.sub}>✍️ {card.author} · {card.year}</div>
-          <div style={{fontSize:10,color:'#2a6080',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.desc}</div>
-          {card.url && <a href={card.url} target="_blank" rel="noopener" style={{fontSize:10,color:'#00e5ff',textDecoration:'none',display:'inline-block',marginTop:4}}>Read Online →</a>}
+          <div style={{fontSize:10,color:'var(--text-muted)',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{card.desc}</div>
+          {card.url && <a href={card.url} target="_blank" rel="noopener" style={{fontSize:10,color:'var(--accent)',textDecoration:'none',display:'inline-block',marginTop:4}}>Read Online →</a>}
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ function RichCardView({ card }: { card: RichCard }) {
           allowFullScreen loading="lazy" title={card.title}
         />
       </div>
-      {card.title && <div style={{padding:'6px 10px',fontSize:10,color:'#2a6080'}}>▶️ {card.title}</div>}
+      {card.title && <div style={{padding:'6px 10px',fontSize:10,color:'var(--text-muted)'}}>▶️ {card.title}</div>}
     </div>
   )
 
@@ -213,7 +213,7 @@ function RichCardView({ card }: { card: RichCard }) {
     <div style={S.wrap}>
       <div style={{padding:'10px 12px'}}>
         <div style={{fontSize:10,color:'#a78bfa',marginBottom:6}}>🧮 Wolfram Alpha</div>
-        <div style={{fontSize:11,color:'#ddeeff',marginBottom:8,fontStyle:'italic'}}>"{card.query}"</div>
+        <div style={{fontSize:11,color:'var(--text)',marginBottom:8,fontStyle:'italic'}}>"{card.query}"</div>
         <iframe
           src={card.embedUrl}
           style={{width:'100%',height:200,border:'none',borderRadius:8,background:'white'}}
@@ -231,7 +231,7 @@ function RichCardView({ card }: { card: RichCard }) {
     <div style={S.wrap}>
       <div style={{padding:'8px 12px 0'}}>
         <div style={{fontSize:10,color:'#34d399',marginBottom:4}}>📈 Desmos Graph</div>
-        <div style={{fontSize:10,color:'#2a6080',fontFamily:'monospace',marginBottom:6}}>{card.expression}</div>
+        <div style={{fontSize:10,color:'var(--text-muted)',fontFamily:'monospace',marginBottom:6}}>{card.expression}</div>
       </div>
       <iframe
         src={`https://www.desmos.com/calculator?lang=en&embed&expressions=true`}
@@ -249,7 +249,7 @@ function RichCardView({ card }: { card: RichCard }) {
     <div style={S.wrap}>
       <div style={{padding:'12px 14px'}}>
         <div style={{fontSize:10,color:'#f59e0b',marginBottom:4}}>💻 Replit — Run karo browser mein</div>
-        <div style={{fontSize:11,color:'#ddeeff',marginBottom:8}}>Language: <span style={{color:'#fbbf24',fontWeight:700}}>{card.lang}</span></div>
+        <div style={{fontSize:11,color:'var(--text)',marginBottom:8}}>Language: <span style={{color:'#fbbf24',fontWeight:700}}>{card.lang}</span></div>
         <div style={{display:'flex',gap:8}}>
           <a href={card.replUrl} target="_blank" rel="noopener"
             style={{...S.btn,display:'inline-block',padding:'8px 16px',flex:1,textAlign:'center'}}>
@@ -274,16 +274,16 @@ function RichCardView({ card }: { card: RichCard }) {
   if (card.type === 'links') return (
     <div style={S.wrap}>
       <div style={{padding:'10px 12px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:'#e8f4ff',marginBottom:8}}>🔗 {card.title}</div>
+        <div style={{fontSize:11,fontWeight:700,color:'var(--text)',marginBottom:8}}>🔗 {card.title}</div>
         <div style={{display:'flex',flexDirection:'column',gap:6}}>
           {card.items.map((item,i)=>(
             <a key={i} href={item.url} target="_blank" rel="noopener"
               style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,
-                background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',textDecoration:'none',
-                color:'#ddeeff',fontSize:11}}>
+                background:'rgba(255,255,255,.03)',border:'1px solid var(--border)',textDecoration:'none',
+                color:'var(--text)',fontSize:11}}>
               <span style={{fontSize:16}}>{item.icon}</span>
               <span>{item.label}</span>
-              <span style={{marginLeft:'auto',color:'#1e4060',fontSize:10}}>→</span>
+              <span style={{marginLeft:'auto',color:'var(--text-faint)',fontSize:10}}>→</span>
             </a>
           ))}
         </div>
@@ -292,6 +292,23 @@ function RichCardView({ card }: { card: RichCard }) {
   )
 
   return null
+}
+
+// ── Smart Typing Status ────────────────────────────────────
+function getSmartStatus(text: string, mode: string): string {
+  const q = text.toLowerCase()
+  if (/image|photo|pic|wallpaper|draw|paint|art|portrait|logo|poster/i.test(text)) return '🎨 Image bana raha hoon...'
+  if (/weather|mausam|temperature|barish|garmi|thandi/i.test(text)) return '🌤️ Mausam check kar raha hoon...'
+  if (/news|khabar|headline|aaj ka/i.test(text)) return '📰 News dhoondh raha hoon...'
+  if (/song|music|gana|sunn|play|spotify/i.test(text)) return '🎵 Song dhundh raha hoon...'
+  if (/map|location|kahan|where.*is|jagah|address/i.test(text)) return '📍 Map dekh raha hoon...'
+  if (/github|code|repository|repo/i.test(text)) return '🐙 GitHub search kar raha hoon...'
+  if (/math|calculate|solve|equation|integral|derivative|theorem/i.test(text)) return '🧮 Calculate kar raha hoon...'
+  if (/neet|jee|physics|chemistry|biology|exam/i.test(text)) return '📚 Soch ke jawab de raha hoon...'
+  if (/story|essay|poem|shayari|write|likhna/i.test(text)) return '✍️ Likh raha hoon...'
+  if (mode === 'think') return '🧠 Deeply soch raha hoon...'
+  if (mode === 'deep') return '🔬 Research kar raha hoon...'
+  return '💭 Ek second...'
 }
 
 const STARTERS = [
@@ -332,7 +349,7 @@ function WeatherBadge() {
     }, () => {})
   }, [])
   if (!w) return null
-  return <span style={{fontSize:10,color:'#2a5070',display:'flex',alignItems:'center',gap:3}}>{w.icon} {w.temp}</span>
+  return <span style={{fontSize:10,color:'var(--text-muted)',display:'flex',alignItems:'center',gap:3}}>{w.icon} {w.temp}</span>
 }
 
 // ── Battery badge ──────────────────────────────────────────
@@ -363,9 +380,9 @@ function Clock({ name }:{name:string}) {
   },[])
   return (
     <div style={{textAlign:'center',padding:'20px 0 0'}}>
-      <div style={{fontSize:44,fontWeight:800,color:'#e8f4ff',letterSpacing:2,fontFamily:"'Space Mono',monospace"}}>{t}</div>
-      <div style={{fontSize:12,color:'#1e3858',marginTop:2}}>{d}</div>
-      {name&&<div style={{fontSize:13,color:'#2a5070',marginTop:8}}>Kya scene hai, {name}? 👋</div>}
+      <div style={{fontSize:44,fontWeight:800,color:'var(--text)',letterSpacing:2,fontFamily:"'Space Mono',monospace"}}>{t}</div>
+      <div style={{fontSize:12,color:'var(--text-faint)',marginTop:2}}>{d}</div>
+      {name&&<div style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>Kya scene hai, {name}? 👋</div>}
     </div>
   )
 }
@@ -380,11 +397,11 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
   const html = renderMarkdown
   return (
     <div style={{padding:'4px 14px',display:'flex',flexDirection:'column',alignItems:isU?'flex-end':'flex-start'}}>
-      {m.toolProgress&&<div style={{fontSize:10,color:'#2a6080',marginBottom:3,display:'flex',gap:4}}>⚙️ {m.toolProgress}</div>}
+      {m.toolProgress&&<div style={{fontSize:10,color:'var(--text-muted)',marginBottom:3,display:'flex',gap:4}}>⚙️ {m.toolProgress}</div>}
       {m.thinking&&(
         <details style={{marginBottom:4,maxWidth:'85%'}}>
           <summary style={{fontSize:10,color:'#4a5090',cursor:'pointer'}}>🧠 Reasoning</summary>
-          <div style={{fontSize:11,color:'#2a3060',padding:'6px 8px',background:'rgba(100,80,200,.06)',borderRadius:8,marginTop:4,maxHeight:100,overflow:'auto',whiteSpace:'pre-wrap'}}>{m.thinking}</div>
+          <div style={{fontSize:11,color:'var(--text-faint)',padding:'6px 8px',background:'rgba(100,80,200,.06)',borderRadius:8,marginTop:4,maxHeight:100,overflow:'auto',whiteSpace:'pre-wrap'}}>{m.thinking}</div>
         </details>
       )}
       {isU ? (
@@ -398,7 +415,14 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
       ) : (
         /* JARVIS — no bubble, plain on background */
         <div style={{maxWidth:'92%',paddingLeft:4}}>
-          {m.streaming&&!clean ? <span style={{color:'var(--text-muted)'}}>...</span> :
+          {m.streaming&&!clean ? (
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              <span style={{color:'var(--text-muted)',fontSize:13}}>{m.toolProgress||'💭 Ek second...'}</span>
+              <div style={{display:'flex',gap:3,alignItems:'center'}}>
+                <span className="typing-dot"/><span className="typing-dot"/><span className="typing-dot"/>
+              </div>
+            </div>
+          ) :
             clean.includes('|||MAP|||') ? (() => {
               const [title, url] = clean.split('|||MAP|||')
               return (<>
@@ -425,6 +449,9 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
       )}
       <div style={{display:'flex',alignItems:'center',gap:8,marginTop:3}}>
         <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'monospace'}}>{time}</span>
+        {!isU&&m.responseTime&&<span style={{fontSize:9,color:'var(--text-faint)',background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:6,padding:'1px 5px',fontFamily:'monospace'}}>
+          {(m.responseTime/1000).toFixed(1)}s · {m.mode==='think'?'🧠':m.mode==='deep'?'🔬':m.mode==='flash'?'⚡':'🤖'}
+        </span>}
         {isU&&!m.streaming&&<button onClick={()=>onEdit?.(m.id,m.content)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:10,cursor:'pointer'}} title="Edit">✏️</button>}
         {!isU&&!m.streaming&&(<>
           <button onClick={()=>onFeed(m.id,'up')} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,opacity:m.feedback==='up'?1:.25}} title="Badiya tha">👍</button>
@@ -523,6 +550,8 @@ export default function Page() {
   }, [router])
   const taRef=useRef<HTMLTextAreaElement>(null)
   const botRef=useRef<HTMLDivElement>(null)
+  const mainRef=useRef<HTMLDivElement>(null)
+  const [scrolledUp,setScrolledUp]=useState(false)
   // Smart contextual chips based on last AI message topic
   const lastAIContent = msgs.filter(m=>m.role==='assistant'&&!m.streaming).slice(-1)[0]?.content||''
   const chips = (() => {
@@ -635,7 +664,9 @@ export default function Page() {
     })()
   },[])
 
-  useEffect(()=>{ botRef.current?.scrollIntoView({behavior:msgs.length>3?'smooth':'instant'}) },[msgs,loading])
+  useEffect(()=>{ 
+    if(!scrolledUp) botRef.current?.scrollIntoView({behavior:msgs.length>3?'smooth':'instant'}) 
+  },[msgs,loading,scrolledUp])
 
   // Save current messages to history session
   useEffect(()=>{
@@ -863,9 +894,11 @@ export default function Page() {
     const mood=detectMood(text)
     const uId='u_'+Date.now(), aId='a_'+Date.now()
     const uMsg:Msg={id:uId,role:'user',content:text,timestamp:Date.now(),mode}
-    const ph:Msg={id:aId,role:'assistant',content:'',timestamp:Date.now(),streaming:true,mode}
+    const smartStatus = getSmartStatus(text, mode)
+    const ph:Msg={id:aId,role:'assistant',content:'',timestamp:Date.now(),streaming:true,mode,toolProgress:smartStatus}
     setMsgs(p=>[...p,uMsg,ph])
     const userTs = Date.now()
+    const sendStartTime = Date.now()
     saveChat({role:'user',content:text,timestamp:userTs,mood}).catch(()=>{})
     syncSaveChat({role:'user',content:text,timestamp:userTs,mood}).catch(()=>{})
     trackWeeklyChat()
@@ -903,7 +936,7 @@ export default function Page() {
               else if(d.type==='tool_perf'){/* silently track perf */}
               else if(d.type==='done'){
                 const c=cleanResponse(full)
-                const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode:effectiveMode,card:d.card||undefined}
+                const fin:Msg={id:aId,role:'assistant',content:c,timestamp:Date.now(),streaming:false,toolsUsed:d.toolsUsed||[],toolProgress:'',mode:effectiveMode,card:d.card||undefined,responseTime:Date.now()-sendStartTime}
                 setMsgs(p=>p.map(m=>m.id===aId?fin:m))
                 if(d.appCommand) execAppCommand(d.appCommand)
                 const assistantTs = Date.now()
@@ -931,7 +964,7 @@ export default function Page() {
               else if(d.type==='thinking'){thk=d.thinking;setMsgs(p=>p.map(m=>m.id===aId?{...m,thinking:thk}:m))}
               else if(d.type==='done'){
                 const c=cleanResponse(full)
-                const fin:Msg={id:aId,role:'assistant',content:c,thinking:thk,timestamp:Date.now(),streaming:false,mode}
+                const fin:Msg={id:aId,role:'assistant',content:c,thinking:thk,timestamp:Date.now(),streaming:false,mode,responseTime:Date.now()-sendStartTime}
                 setMsgs(p=>p.map(m=>m.id===aId?fin:m))
                 const assistantTs2 = Date.now()
                 saveChat({role:'assistant',content:c,timestamp:assistantTs2}).catch(()=>{})
@@ -1048,7 +1081,7 @@ export default function Page() {
       <div className="bg-grid"/>
 
       {searchOpen&&(
-        <div style={{position:'absolute',inset:0,zIndex:200,background:'rgba(9,13,24,.98)',display:'flex',flexDirection:'column'}}>
+        <div style={{position:'absolute',inset:0,zIndex:200,background:'var(--overlay)',display:'flex',flexDirection:'column'}}>
           {/* Search Header */}
           <div style={{padding:'12px 14px',borderBottom:'1px solid rgba(255,255,255,.07)',display:'flex',gap:8,alignItems:'center'}}>
             <span style={{fontSize:16}}>🔍</span>
@@ -1063,9 +1096,9 @@ export default function Page() {
                 } else { setSearchResults(null) }
               }}
               placeholder="Poori history mein search karo..."
-              style={{flex:1,padding:'9px 12px',borderRadius:10,background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',color:'#e8f4ff',fontSize:14,outline:'none'}}/>
+              style={{flex:1,padding:'9px 12px',borderRadius:10,background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',color:'var(--text)',fontSize:14,outline:'none'}}/>
             <button onClick={()=>{setSearchOpen(false);setSearchQ('');setSearchResults(null)}}
-              style={{padding:'9px 13px',borderRadius:10,background:'rgba(255,255,255,.06)',border:'none',color:'#e8f4ff',fontSize:14,cursor:'pointer'}}>✕</button>
+              style={{padding:'9px 13px',borderRadius:10,background:'rgba(255,255,255,.06)',border:'none',color:'var(--text)',fontSize:14,cursor:'pointer'}}>✕</button>
           </div>
 
           {/* Tabs: Current Session + All History */}
@@ -1080,7 +1113,7 @@ export default function Page() {
 
           {/* Results */}
           <div style={{flex:1,overflowY:'auto',padding:'10px 14px'}}>
-            {searchLoading&&<div style={{textAlign:'center',padding:20,color:'#1e3858'}}>🔍 Search ho raha hai...</div>}
+            {searchLoading&&<div style={{textAlign:'center',padding:20,color:'var(--text-faint)'}}>🔍 Search ho raha hai...</div>}
 
             {/* Current session results */}
             {!searchLoading&&searchQ.length>1&&(()=>{
@@ -1091,18 +1124,18 @@ export default function Page() {
                 ...db.filter(d=>!cur.some(c=>c.timestamp===d.timestamp)).map(d=>({...d,id:String(d.id),source:'history'}))
               ].sort((a,b)=>b.timestamp-a.timestamp)
 
-              if(!allResults.length) return <div style={{textAlign:'center',padding:'40px 0',color:'#1e3858',fontSize:13}}>"{searchQ}" — koi result nahi mila</div>
+              if(!allResults.length) return <div style={{textAlign:'center',padding:'40px 0',color:'var(--text-faint)',fontSize:13}}>"{searchQ}" — koi result nahi mila</div>
 
               return allResults.map(m=>(
                 <div key={m.id} onClick={()=>{setSearchOpen(false);setSearchQ('');setSearchResults(null)}}
-                  style={{padding:'10px 12px',background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:10,marginBottom:8,cursor:'pointer',borderLeft:`2px solid ${m.source==='current'?'#00e5ff':'#a78bfa'}`}}>
+                  style={{padding:'10px 12px',background:'rgba(255,255,255,.03)',border:'1px solid var(--border)',borderRadius:10,marginBottom:8,cursor:'pointer',borderLeft:`2px solid ${m.source==='current'?'#00e5ff':'#a78bfa'}`}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
                     <span style={{fontSize:10,color:m.role==='user'?'#00e5ff':'#a78bfa',fontWeight:600}}>{m.role==='user'?'Tu':'JARVIS'}</span>
-                    <span style={{fontSize:9,color:'#1e3858'}}>{new Date(m.timestamp).toLocaleDateString('hi-IN',{day:'numeric',month:'short'})} · {m.source==='history'?'📚':'🔴'}</span>
+                    <span style={{fontSize:9,color:'var(--text-faint)'}}>{new Date(m.timestamp).toLocaleDateString('hi-IN',{day:'numeric',month:'short'})} · {m.source==='history'?'📚':'🔴'}</span>
                   </div>
                   <div style={{fontSize:12,color:'#c8dff0',lineHeight:1.5}}>
                     {m.content.replace(new RegExp(`(${searchQ})`, 'gi'), '**$1**').slice(0,180).split('**').map((part:string,i:number)=>
-                      i%2===1 ? <mark key={i} style={{background:'rgba(0,229,255,.25)',color:'#00e5ff',borderRadius:2,padding:'0 1px'}}>{part}</mark>
+                      i%2===1 ? <mark key={i} style={{background:'rgba(0,229,255,.25)',color:'var(--accent)',borderRadius:2,padding:'0 1px'}}>{part}</mark>
                                : <span key={i}>{part}</span>
                     )}
                   </div>
@@ -1112,7 +1145,7 @@ export default function Page() {
 
             {/* Empty state */}
             {!searchQ&&(
-              <div style={{textAlign:'center',padding:'30px 0',color:'#1e3858'}}>
+              <div style={{textAlign:'center',padding:'30px 0',color:'var(--text-faint)'}}>
                 <div style={{fontSize:32,marginBottom:10}}>🔍</div>
                 <div style={{fontSize:13}}>Koi bhi word type karo</div>
                 <div style={{fontSize:11,marginTop:4}}>Current chat + poori history mein dhundega</div>
@@ -1123,14 +1156,14 @@ export default function Page() {
       )}
 
       {showInstall&&installPrompt&&(
-        <div style={{position:'fixed',bottom:80,left:12,right:12,zIndex:100,background:'rgba(9,13,24,.97)',border:'1px solid rgba(0,229,255,.2)',borderRadius:16,padding:'14px 16px',display:'flex',alignItems:'center',gap:12}}>
+        <div style={{position:'fixed',bottom:80,left:12,right:12,zIndex:100,background:'var(--overlay)',border:'1px solid rgba(0,229,255,.2)',borderRadius:16,padding:'14px 16px',display:'flex',alignItems:'center',gap:12}}>
           <div style={{fontSize:20}}>🤖</div>
           <div style={{flex:1}}>
-            <div style={{fontSize:12,fontWeight:600,color:'#e8f4ff'}}>JARVIS ko install karo</div>
-            <div style={{fontSize:10,color:'#2a5070'}}>Home screen pe add karo — offline bhi kaam karega</div>
+            <div style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>JARVIS ko install karo</div>
+            <div style={{fontSize:10,color:'var(--text-muted)'}}>Home screen pe add karo — offline bhi kaam karega</div>
           </div>
-          <button onClick={()=>{installPrompt.prompt();setShowInstall(false)}} style={{padding:'7px 14px',borderRadius:10,background:'rgba(0,229,255,.15)',border:'1px solid rgba(0,229,255,.3)',color:'#00e5ff',fontSize:12,cursor:'pointer',whiteSpace:'nowrap'}}>Install</button>
-          <button onClick={()=>setShowInstall(false)} style={{background:'none',border:'none',color:'#1e3858',fontSize:16,cursor:'pointer'}}>✕</button>
+          <button onClick={()=>{installPrompt.prompt();setShowInstall(false)}} style={{padding:'7px 14px',borderRadius:10,background:'rgba(0,229,255,.15)',border:'1px solid rgba(0,229,255,.3)',color:'var(--accent)',fontSize:12,cursor:'pointer',whiteSpace:'nowrap'}}>Install</button>
+          <button onClick={()=>setShowInstall(false)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:16,cursor:'pointer'}}>✕</button>
         </div>
       )}
 
@@ -1138,19 +1171,19 @@ export default function Page() {
         <div style={{margin:'8px 14px',padding:'12px 14px',background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.15)',borderRadius:12,display:'flex',alignItems:'center',gap:8}}>
           <span style={{fontSize:12,color:'#8a70d0',flex:1}}>📊 Hafte ka summary sunoge?</span>
           <button onClick={async()=>{setWeeklyPrompt(false);const s=await generateWeeklySummary();send(`Weekly summary: ${s}`)}} style={{padding:'4px 10px',borderRadius:10,background:'rgba(167,139,250,.1)',border:'1px solid rgba(167,139,250,.2)',color:'#a78bfa',fontSize:11,cursor:'pointer'}}>Haan</button>
-          <button onClick={()=>setWeeklyPrompt(false)} style={{background:'none',border:'none',color:'#1e3858',fontSize:14,cursor:'pointer'}}>✕</button>
+          <button onClick={()=>setWeeklyPrompt(false)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:14,cursor:'pointer'}}>✕</button>
         </div>
       )}
 
       {editingId&&(
         <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,.92)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div style={{width:'100%',maxWidth:400,background:'#0c1422',border:'1px solid rgba(0,229,255,.2)',borderRadius:16,padding:20}}>
-            <div style={{fontSize:13,fontWeight:600,color:'#e8f4ff',marginBottom:12}}>✏️ Message Edit karo</div>
+          <div style={{width:'100%',maxWidth:400,background:'var(--bg-card)',border:'1px solid rgba(0,229,255,.2)',borderRadius:16,padding:20}}>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:12}}>✏️ Message Edit karo</div>
             <textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={4}
-              style={{width:'100%',padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid rgba(0,229,255,.2)',color:'#e8f4ff',fontSize:13,resize:'none',outline:'none',boxSizing:'border-box',fontFamily:'inherit',lineHeight:1.5}}/>
+              style={{width:'100%',padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid rgba(0,229,255,.2)',color:'var(--text)',fontSize:13,resize:'none',outline:'none',boxSizing:'border-box',fontFamily:'inherit',lineHeight:1.5}}/>
             <div style={{display:'flex',gap:8,marginTop:12}}>
-              <button onClick={submitEdit} style={{flex:1,padding:'11px',borderRadius:10,background:'rgba(0,229,255,.12)',border:'1px solid rgba(0,229,255,.3)',color:'#00e5ff',fontSize:13,fontWeight:600,cursor:'pointer'}}>↑ Re-send</button>
-              <button onClick={()=>{setEditingId(null);setEditText('')}} style={{flex:1,padding:'11px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',color:'#2a5070',fontSize:13,cursor:'pointer'}}>Cancel</button>
+              <button onClick={submitEdit} style={{flex:1,padding:'11px',borderRadius:10,background:'rgba(0,229,255,.12)',border:'1px solid rgba(0,229,255,.3)',color:'var(--accent)',fontSize:13,fontWeight:600,cursor:'pointer'}}>↑ Re-send</button>
+              <button onClick={()=>{setEditingId(null);setEditText('')}} style={{flex:1,padding:'11px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}>Cancel</button>
             </div>
           </div>
         </div>
@@ -1158,15 +1191,15 @@ export default function Page() {
 
       {onboard&&(
         <div style={{position:'absolute',inset:0,zIndex:100,background:'rgba(0,0,0,.92)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-          <div style={{background:'#0c1422',border:'1px solid rgba(0,229,255,.2)',borderRadius:20,padding:28,width:'100%',maxWidth:360}}>
+          <div style={{background:'var(--bg-card)',border:'1px solid rgba(0,229,255,.2)',borderRadius:20,padding:28,width:'100%',maxWidth:360}}>
             <div style={{fontSize:36,textAlign:'center',marginBottom:10}}>🤖</div>
-            <div style={{fontSize:20,fontWeight:700,color:'#e8f4ff',textAlign:'center',marginBottom:6}}>Pehle milte hain!</div>
+            <div style={{fontSize:20,fontWeight:700,color:'var(--text)',textAlign:'center',marginBottom:6}}>Pehle milte hain!</div>
             <div style={{fontSize:12,color:'#3a6080',textAlign:'center',marginBottom:20,lineHeight:1.6}}>
               Apna naam batao — JARVIS hamesha yaad rakhega aur teri baaton mein context aayega.
             </div>
             <input value={oIn} onChange={e=>setOIn(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submitOnboard()}
               placeholder="Apna naam..." autoFocus
-              style={{width:'100%',padding:'13px 14px',borderRadius:12,background:'rgba(255,255,255,.04)',border:'1px solid rgba(0,229,255,.2)',color:'#e8f4ff',fontSize:15,outline:'none',boxSizing:'border-box',marginBottom:12}}/>
+              style={{width:'100%',padding:'13px 14px',borderRadius:12,background:'rgba(255,255,255,.04)',border:'1px solid rgba(0,229,255,.2)',color:'var(--text)',fontSize:15,outline:'none',boxSizing:'border-box',marginBottom:12}}/>
             <button onClick={submitOnboard} disabled={!oIn.trim()}
               style={{width:'100%',padding:13,borderRadius:12,background:oIn.trim()?'rgba(0,229,255,.15)':'rgba(255,255,255,.03)',border:`1px solid ${oIn.trim()?'rgba(0,229,255,.3)':'rgba(255,255,255,.05)'}`,color:oIn.trim()?'#00e5ff':'#1e3858',fontSize:14,fontWeight:600,cursor:'pointer'}}>
               Shuru karo →
@@ -1225,7 +1258,21 @@ export default function Page() {
         </div>
       </header>
 
-      <main style={{flex:1,overflowY:'auto',paddingBottom:0}}>
+      <main ref={mainRef} onScroll={()=>{
+        const el=mainRef.current; if(!el) return
+        const dist=el.scrollHeight-el.scrollTop-el.clientHeight
+        setScrolledUp(dist>120)
+      }} style={{flex:1,overflowY:'auto',paddingBottom:0,position:'relative'}}>
+      {/* ↓ Scroll to bottom FAB */}
+      {scrolledUp&&(
+        <button onClick={()=>{setScrolledUp(false);botRef.current?.scrollIntoView({behavior:'smooth'})}}
+          style={{position:'sticky',bottom:12,left:'50%',transform:'translateX(-50%)',zIndex:50,
+            background:'var(--bg-card)',border:'1px solid var(--border-acc)',borderRadius:20,
+            padding:'6px 14px',color:'var(--accent)',fontSize:11,cursor:'pointer',
+            boxShadow:'var(--shadow)',display:'flex',alignItems:'center',gap:5,whiteSpace:'nowrap'}}>
+          ↓ Neeche jao
+        </button>
+      )}
         {msgs.length===0?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 16px'}}>
             <Clock name={name}/>
@@ -1271,7 +1318,7 @@ export default function Page() {
               <div style={{padding:'2px 14px 6px',display:'flex',gap:6,flexWrap:'wrap'}}>
                 {chips.map(c=>(
                   <button key={c} onClick={()=>send(c)}
-                    style={{padding:'5px 12px',borderRadius:20,background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',color:'#2a5070',fontSize:11,cursor:'pointer',whiteSpace:'nowrap'}}>
+                    style={{padding:'5px 12px',borderRadius:20,background:'rgba(255,255,255,.02)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:11,cursor:'pointer',whiteSpace:'nowrap'}}>
                     {c}
                   </button>
                 ))}
@@ -1282,9 +1329,9 @@ export default function Page() {
 
         {proactive&&(
           <div style={{margin:'8px 14px',padding:'10px 14px',background:'rgba(0,229,255,.04)',border:'1px solid rgba(0,229,255,.1)',borderRadius:12,display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:12,color:'#2a6080',flex:1}}>💡 {proactive}</span>
-            <button onClick={()=>send(proactive!)} style={{padding:'4px 10px',borderRadius:10,background:'rgba(0,229,255,.1)',border:'1px solid rgba(0,229,255,.2)',color:'#00e5ff',fontSize:11,cursor:'pointer'}}>Haan</button>
-            <button onClick={()=>setProactive(null)} style={{background:'none',border:'none',color:'#1e3858',fontSize:14,cursor:'pointer'}}>✕</button>
+            <span style={{fontSize:12,color:'var(--text-muted)',flex:1}}>💡 {proactive}</span>
+            <button onClick={()=>send(proactive!)} style={{padding:'4px 10px',borderRadius:10,background:'rgba(0,229,255,.1)',border:'1px solid rgba(0,229,255,.2)',color:'var(--accent)',fontSize:11,cursor:'pointer'}}>Haan</button>
+            <button onClick={()=>setProactive(null)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:14,cursor:'pointer'}}>✕</button>
           </div>
         )}
 
@@ -1296,7 +1343,7 @@ export default function Page() {
               const sum=await generateDailySummary()
               send(`Daily summary: ${sum}`)
             }} style={{padding:'4px 10px',borderRadius:10,background:'rgba(167,139,250,.1)',border:'1px solid rgba(167,139,250,.2)',color:'#a78bfa',fontSize:11,cursor:'pointer'}}>Haan</button>
-            <button onClick={()=>setShowSummary(false)} style={{background:'none',border:'none',color:'#1e3858',fontSize:14,cursor:'pointer'}}>✕</button>
+            <button onClick={()=>setShowSummary(false)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:14,cursor:'pointer'}}>✕</button>
           </div>
         )}
         <div ref={botRef} style={{height:4}}/>
@@ -1316,24 +1363,24 @@ export default function Page() {
       )}
 
       {urlChip&&(
-        <div style={{padding:'4px 12px',display:'flex',alignItems:'center',gap:8,borderTop:'1px solid rgba(255,255,255,.04)',background:'rgba(9,13,24,.95)'}}>
-          <span style={{fontSize:10,color:'#2a5070'}}>🔗 URL detect hua —</span>
+        <div style={{padding:'4px 12px',display:'flex',alignItems:'center',gap:8,borderTop:'1px solid rgba(255,255,255,.04)',background:'var(--header-bg)'}}>
+          <span style={{fontSize:10,color:'var(--text-muted)'}}>🔗 URL detect hua —</span>
           <button onClick={()=>{send(`Yeh URL summarize karo: ${urlChip}`);setInput('');setUrlChip('')}}
-            style={{padding:'3px 10px',borderRadius:10,background:'rgba(0,229,255,.08)',border:'1px solid rgba(0,229,255,.2)',color:'#00e5ff',fontSize:11,cursor:'pointer'}}>✨ Summarize?</button>
-          <button onClick={()=>setUrlChip('')} style={{background:'none',border:'none',color:'#1e3858',fontSize:13,cursor:'pointer'}}>✕</button>
+            style={{padding:'3px 10px',borderRadius:10,background:'rgba(0,229,255,.08)',border:'1px solid rgba(0,229,255,.2)',color:'var(--accent)',fontSize:11,cursor:'pointer'}}>✨ Summarize?</button>
+          <button onClick={()=>setUrlChip('')} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:13,cursor:'pointer'}}>✕</button>
         </div>
       )}
 
       {/* Slash command autocomplete */}
       {slashHints.length > 0 && (
-        <div style={{position:'absolute',bottom:80,left:8,right:8,background:'rgba(9,13,24,.97)',border:'1px solid rgba(0,229,255,.15)',borderRadius:12,overflow:'hidden',zIndex:10}}>
+        <div style={{position:'absolute',bottom:80,left:8,right:8,background:'var(--overlay)',border:'1px solid rgba(0,229,255,.15)',borderRadius:12,overflow:'hidden',zIndex:10}}>
           {slashHints.map(h=>(
             <button key={h.cmd} onClick={()=>{setInput(h.cmd+' ');setSlashHints([]);if(taRef.current) taRef.current.focus()}}
-              style={{width:'100%',padding:'10px 14px',display:'flex',alignItems:'center',gap:10,background:'transparent',border:'none',cursor:'pointer',textAlign:'left',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
+              style={{width:'100%',padding:'10px 14px',display:'flex',alignItems:'center',gap:10,background:'transparent',border:'none',cursor:'pointer',textAlign:'left',borderBottom:'1px solid var(--border)'}}>
               <span style={{fontSize:16}}>{h.icon}</span>
               <div>
-                <div style={{fontSize:13,color:'#00e5ff',fontWeight:600}}>{h.cmd}</div>
-                <div style={{fontSize:11,color:'#1e3858'}}>{h.desc}</div>
+                <div style={{fontSize:13,color:'var(--accent)',fontWeight:600}}>{h.cmd}</div>
+                <div style={{fontSize:11,color:'var(--text-faint)'}}>{h.desc}</div>
               </div>
             </button>
           ))}

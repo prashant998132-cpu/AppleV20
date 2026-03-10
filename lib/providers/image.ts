@@ -35,15 +35,32 @@ function enhancePrompt(prompt: string, style?: string): string {
 }
 
 // ── 1. Pollinations.ai (NO KEY, UNLIMITED) ───────────────
+// Available models: flux (best quality), turbo (fast), kontext (detailed), seedream (artistic)
+export type PollinationsModel = 'flux' | 'turbo' | 'kontext' | 'seedream'
+
+function selectPollinationsModel(prompt: string, style?: string): PollinationsModel {
+  // Auto-select best model based on prompt/style
+  if (style === 'anime' || style === 'artistic' || style === 'watercolor') return 'seedream'
+  if (/portrait|face|person|people|human|selfie/i.test(prompt)) return 'kontext'
+  if (/fast|quick|draft|preview/i.test(prompt)) return 'turbo'
+  return 'flux' // default: best quality
+}
+
 export async function pollinationsImage({ prompt, style, width = 1024, height = 1024 }: ImageOptions): Promise<ImageResult> {
   const enhanced = enhancePrompt(prompt, style)
   const encoded = encodeURIComponent(enhanced)
+  const model = selectPollinationsModel(prompt, style)
   // Pollinations generates on-the-fly — just fetch the URL to verify
-  const url = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true`
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=${model}&nologo=true&enhance=true`
   // Quick HEAD check
   const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) })
   if (!res.ok) throw new Error('pollinations_' + res.status)
-  return { url, provider: 'Pollinations.ai (No Key, Unlimited)', model: 'FLUX' }
+  return { url, provider: 'Pollinations.ai (No Key, Unlimited)', model: `FLUX-${model}` }
+}
+
+// Direct URL (no fetch verify) — for instant fallback
+export function pollinationsDirectUrl(prompt: string, model: PollinationsModel = 'flux'): string {
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&nologo=true&enhance=true`
 }
 
 // ── 2. Gemini Imagen ─────────────────────────────────────
@@ -135,6 +152,6 @@ export async function generateImage(options: ImageOptions): Promise<ImageResult>
   }
 
   // Final fallback — Pollinations URL (always works, no fetch needed)
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(options.prompt)}?model=flux&nologo=true`
+  const url = pollinationsDirectUrl(options.prompt, selectPollinationsModel(options.prompt, options.style))
   return { url, provider: 'Pollinations.ai Fallback', model: 'FLUX' }
 }
