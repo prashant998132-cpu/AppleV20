@@ -1,28 +1,23 @@
 'use client'
-// app/page.tsx — JARVIS Chat v20 Upgraded
-// Dexie DB | Proactive | Memory | Feedback loop | Weather header
+// app/page.tsx — JARVIS Chat v22
+// Audit fixes + Mic voice-to-text + Regenerate + Code copy
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import BottomNav from '../components/shared/BottomNav'
 import NavDrawer from '../components/shared/NavDrawer'
 import Toast from '../components/shared/Toast'
 import { cleanResponse, parseLearnTags, detectMood } from '../lib/personality'
 import { renderMarkdown } from '../lib/render/markdown'
-import { addMemory, buildMemoryContext, getProfile, setProfile, saveChat, getTodayChats } from '../lib/db'
-import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime } from '../lib/reminders'
+import { addMemory, buildMemoryContext, getProfile, setProfile, saveChat, getTodayChats, runMaintenance, searchChats, createHistorySession, updateHistorySession, getHistorySession, getSessionsToCompress, markSessionCompressed, type HistorySession } from '../lib/db'
+import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime, parseRepeatPattern } from '../lib/reminders'
 import { checkProactive, trackHabit, generateDailySummary } from '../lib/proactive/engine'
 import { processAndSave } from '../lib/memory/extractor'
-import { routeWithBattery } from '../lib/core/orchestrator'
 import { parseSlashCommand, cmdNasa, cmdWiki, cmdJoke, cmdShayari, cmdMap, cmdQuote, cmdQR, cmdMeaning, cmdSearch, cmdCanva, cmdApp, SLASH_COMMANDS } from '../lib/chat/slashCommands'
 import { pollinationsUrl } from '../lib/media/image'
 import { puterImage, loadPuter } from '../lib/providers/puter'
-import { flushSyncQueue } from '../lib/providers/syncManager'
 import { generateAndSaveTitle, startNewSession, trackSessionMessage } from '../lib/chat/autoTitle'
 import { shouldShowWeeklySummary, generateWeeklySummary, trackWeeklyChat } from '../lib/proactive/weekly'
-import { parseRepeatPattern } from '../lib/reminders'
-import { runMaintenance, searchChats, createHistorySession, updateHistorySession, getHistorySession, getSessionsToCompress, markSessionCompressed, type HistorySession } from '../lib/db'
 import ChatHistorySidebar from '../components/shared/ChatHistorySidebar'
-import { saveChat as syncSaveChat, syncAll, flushSyncQueue as syncFlush, isSupabaseConfigured, setLastSyncTime } from '../lib/providers/syncManager'
+import { saveChat as syncSaveChat, syncAll, flushSyncQueue, isSupabaseConfigured, setLastSyncTime } from '../lib/providers/syncManager'
 import { buildSemanticContext, invalidateMemoryCache } from '../lib/memory/vectorSearch'
 import { useOnlineStatus, cacheAIResponse, getOfflineFallback, getStaticOfflineReply } from '../lib/offline/status'
 
@@ -477,6 +472,8 @@ export default function Page() {
   const [compressOpen,setCompressOpen]=useState(false)
   const [historyOpen,setHistoryOpen]=useState(false)
   const [currentSessionId,setCurrentSessionId]=useState('')
+  const [micActive,setMicActive]=useState(false)
+  const micRef = useRef<any>(null)
   const router = useRouter()
 
   // ── JARVIS App Control — executes commands from AI response ──────────
@@ -818,6 +815,32 @@ export default function Page() {
     showToast('💾 Chat exported!','success')
   },[msgs, sessionTitle])
 
+  // ── 🎙️ Mic voice-to-text ──────────────────────────────────────────────
+  const toggleMic = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) { showToast('Voice supported nahi hai is browser mein', 'error'); return }
+
+    if (micActive && micRef.current) {
+      micRef.current.stop(); return
+    }
+
+    const rec = new SR()
+    rec.lang = 'hi-IN'
+    rec.interimResults = true
+    rec.continuous = false
+    micRef.current = rec
+
+    rec.onstart = () => { setMicActive(true); haptic('light') }
+    rec.onresult = (e: any) => {
+      const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join('')
+      setInput(transcript)
+    }
+    rec.onend = () => { setMicActive(false); micRef.current = null; if (taRef.current) taRef.current.focus() }
+    rec.onerror = () => { setMicActive(false); micRef.current = null }
+    rec.start()
+  }, [micActive])
+
   const send=useCallback(async(text:string)=>{
     if(!text.trim()||loading) return
     haptic('light')
@@ -960,6 +983,18 @@ export default function Page() {
     flushSyncQueue().then(r=>setSyncOk(r.failed===0)).catch(()=>setSyncOk(false))
   }
 
+  // ── 🔄 Regenerate last AI response ───────────────────────────────────
+  const regenerate = useCallback(() => {
+    if (loading) return
+    const lastUserMsg = [...msgs].reverse().find(m => m.role === 'user')
+    if (!lastUserMsg) return
+    // Remove last assistant message, then resend
+    setMsgs(p => {
+      const lastAiIdx = [...p].map((m,i)=>m.role==='assistant'?i:-1).filter(i=>i>=0).pop()
+      return lastAiIdx !== undefined ? p.slice(0, lastAiIdx) : p
+    })
+    setTimeout(() => send(lastUserMsg.content), 50)
+  }, [loading, msgs, send])
 
   const startEdit=(id:string,content:string)=>{ setEditingId(id); setEditText(content) }
   const submitEdit=()=>{
@@ -1237,6 +1272,19 @@ export default function Page() {
         <div ref={botRef} style={{height:4}}/>
       </main>
 
+      {/* 🔄 Regenerate button — shows after last AI response */}
+      {lastAI && !loading && msgs.length >= 2 && (
+        <div style={{display:'flex',justifyContent:'center',padding:'0 16px 6px',background:'transparent'}}>
+          <button onClick={regenerate}
+            style={{display:'flex',alignItems:'center',gap:5,padding:'5px 14px',borderRadius:20,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',color:'#3a5570',fontSize:11,cursor:'pointer',transition:'all .2s'}}
+            onMouseEnter={e=>(e.currentTarget.style.borderColor='rgba(0,229,255,.3)',e.currentTarget.style.color='#00e5ff')}
+            onMouseLeave={e=>(e.currentTarget.style.borderColor='rgba(255,255,255,.08)',e.currentTarget.style.color='#3a5570')}
+          >
+            <span style={{fontSize:13}}>↺</span> Regenerate
+          </button>
+        </div>
+      )}
+
       {urlChip&&(
         <div style={{padding:'4px 12px',display:'flex',alignItems:'center',gap:8,borderTop:'1px solid rgba(255,255,255,.04)',background:'rgba(9,13,24,.95)'}}>
           <span style={{fontSize:10,color:'#2a5070'}}>🔗 URL detect hua —</span>
@@ -1380,6 +1428,16 @@ export default function Page() {
               flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
             {loading?<span style={{width:14,height:14,border:'2px solid rgba(0,229,255,.3)',borderTopColor:'#00e5ff',borderRadius:'50%',animation:'spin .8s linear infinite',display:'block'}}/>:'↑'}
           </button>
+          {/* 🎙️ Mic button */}
+          <button onClick={toggleMic} title={micActive?'Mic band karo':'Bolkar message karo'}
+            style={{width:40,height:40,borderRadius:11,flexShrink:0,
+              background:micActive?'rgba(255,50,50,.18)':'rgba(255,255,255,.04)',
+              border:`1px solid ${micActive?'rgba(255,80,80,.5)':'rgba(255,255,255,.08)'}`,
+              color:micActive?'#ff5555':'#2a6080',fontSize:16,cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              transition:'all .2s',animation:micActive?'pulse 1.2s ease-in-out infinite':undefined}}>
+            {micActive ? '⏹' : '🎙️'}
+          </button>
         </div>
 
         {/* ── Bottom strip ──────────────────────────── */}
@@ -1428,6 +1486,7 @@ export default function Page() {
       <style>{`
         @keyframes blink{50%{opacity:0}}
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,80,80,.4)}50%{box-shadow:0 0 0 6px rgba(255,80,80,0)}}
         .bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.015) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
         ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(0,229,255,.1);border-radius:2px}
         main>*{position:relative;z-index:1}

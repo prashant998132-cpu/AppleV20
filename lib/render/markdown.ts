@@ -34,44 +34,6 @@ function renderKaTeX(formula: string, display: boolean): string {
     : `<code style="color:#00e5ff;background:rgba(0,229,255,.08);padding:1px 4px;border-radius:3px">$${esc(formula)}$</code>`
 }
 
-// ── Extract and protect math blocks before processing ─────
-interface Chunk { type: 'text' | 'math_display' | 'math_inline'; content: string }
-
-function splitMath(text: string): Chunk[] {
-  const chunks: Chunk[] = []
-  let rest = text
-
-  // Process $$...$$ display math first (greedy)
-  const DISPLAY_RE = /\$\$([\s\S]+?)\$\$/g
-  const INLINE_RE  = /\$([^$\n]+?)\$/g
-
-  // Replace display math
-  let lastIndex = 0
-  let m: RegExpExecArray | null
-  DISPLAY_RE.lastIndex = 0
-  const textWithDisplayPlaceholders: string[] = []
-  const displayMaths: string[] = []
-
-  let withoutDisplay = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
-    displayMaths.push(formula)
-    return `\x00DMATH${displayMaths.length - 1}\x00`
-  })
-
-  // Replace inline math
-  const inlineMaths: string[] = []
-  let withoutInline = withoutDisplay.replace(/\$([^$\n\x00]+?)\$/g, (_, formula) => {
-    // Only if looks like math (has operators, letters, digits)
-    if (/[+\-=^_{}\\]|\\[a-zA-Z]|\d/.test(formula)) {
-      inlineMaths.push(formula)
-      return `\x00IMATH${inlineMaths.length - 1}\x00`
-    }
-    return `$${formula}$` // not math, restore
-  })
-
-  return [{ type: 'text', content: withoutInline }, ...displayMaths.map(f => ({ type: 'math_display' as const, content: f })), ...inlineMaths.map(f => ({ type: 'math_inline' as const, content: f }))]
-  // (we return structured but use renderMath which replaces placeholders inline)
-}
-
 // ── Single-pass math replacer (used in renderMarkdown) ────
 function processMath(text: string): string {
   // Display math first (greedy match $$...$$)
@@ -89,8 +51,10 @@ function processCode(text: string): string {
   // Fenced code blocks ```lang\n...\n```
   text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const escaped = esc(code.trim())
-    const langLabel = lang ? `<span style="font-size:10px;color:#666;float:right;padding-right:6px">${lang}</span>` : ''
-    return `<pre style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;overflow-x:auto;margin:8px 0;font-size:12px;line-height:1.5">${langLabel}<code style="color:#e8f4ff;font-family:'Space Mono',monospace">${escaped}</code></pre>`
+    const langLabel = lang ? `<span style="font-size:10px;color:#666;padding-right:6px">${lang}</span>` : ''
+    const copyId = `cp_${Math.random().toString(36).slice(2,8)}`
+    const copyBtn = `<button onclick="(()=>{navigator.clipboard.writeText(${JSON.stringify(code.trim())}).then(()=>{const b=document.getElementById('${copyId}');if(b){b.textContent='✓';b.style.color='#00e5ff';setTimeout(()=>{b.textContent='⎘';b.style.color='#3a5570'},1500)}})})()" id="${copyId}" style="background:none;border:none;color:#3a5570;font-size:13px;cursor:pointer;padding:0 4px;float:right;line-height:1;transition:color .15s" title="Copy code">⎘</button>`
+    return `<pre style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;overflow-x:auto;margin:8px 0;font-size:12px;line-height:1.5"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${langLabel}${copyBtn}</div><code style="color:#e8f4ff;font-family:'Space Mono',monospace">${escaped}</code></pre>`
   })
   // Inline code `...`
   text = text.replace(/`([^`]+)`/g, (_, code) =>
