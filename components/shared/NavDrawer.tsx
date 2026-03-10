@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 const NAV_ITEMS = [
   { path: '/',         icon: '💬', label: 'Chat',      color: '#00e5ff' },
   { path: '/study',    icon: '📚', label: 'Study',     color: '#a78bfa' },
+  { path: '/anime',    icon: '🌸', label: 'Anime',     color: '#f472b6' },
   { path: '/studio',   icon: '🎨', label: 'Studio',    color: '#f59e0b' },
   { path: '/apps',     icon: '🔗', label: 'Apps',      color: '#34d399' },
   { path: '/india',    icon: '🇮🇳', label: 'India Hub', color: '#fb923c' },

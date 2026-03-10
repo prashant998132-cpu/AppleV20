@@ -1,360 +1,272 @@
 'use client'
-// app/study/page.tsx — JARVIS Study Hub v20
-// NEET MCQ Quiz · Formula Sheet · Spaced Repetition · KaTeX Math
+// app/study/page.tsx — JARVIS Study Hub v24
+// Generic study goal + session tracker — koi bhi subject
+// NEET/JEE hardcoding removed completely
 
-import { useState, useEffect } from 'react'
-import BottomNav from '../../components/shared/BottomNav'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Tab = 'quiz'|'formulas'|'progress'
-type Subject = 'physics'|'chemistry'|'biology'
+interface StudyGoal {
+  id: string; subject: string; icon: string; target: string
+  deadline: string; totalHours: number; doneHours: number
+  sessions: StudySession[]; createdAt: number; color: string
+}
+interface StudySession {
+  id: string; date: string; duration: number; topic: string; notes: string
+}
 
-const SUBJECTS: {id:Subject;icon:string;label:string;color:string}[] = [
-  {id:'physics',  icon:'⚡', label:'Physics',   color:'#00e5ff'},
-  {id:'chemistry',icon:'🧪', label:'Chemistry',  color:'#80ff80'},
-  {id:'biology',  icon:'🧬', label:'Biology',    color:'#ff80c0'},
+const ICON_MAP: [string, string][] = [
+  ['math','📐'],['physics','⚡'],['chemistry','🧪'],['biology','🧬'],
+  ['history','📜'],['geography','🌍'],['english','📖'],['hindi','🇮🇳'],
+  ['economics','💹'],['computer','💻'],['coding','💻'],['programming','💻'],
+  ['science','🔬'],['art','🎨'],['music','🎵'],['language','🗣️'],
 ]
-
-// Built-in MCQ questions (no API needed, always works)
-type MCQ = { q:string; opts:string[]; ans:number; exp:string; formula?:string }
-
-const QUESTIONS: Record<Subject, MCQ[]> = {
-  physics: [
-    { q:"A body falls freely from height h. Time to reach ground is:", opts:["√(2h/g)","√(h/g)","√(h/2g)","2√(h/g)"], ans:0, exp:"Using h = ½gt², so t = √(2h/g)", formula:"$t = \\sqrt{\\frac{2h}{g}}$" },
-    { q:"SI unit of electric charge:", opts:["Ampere","Coulomb","Volt","Watt"], ans:1, exp:"Coulomb (C) is the SI unit of charge. 1C = 6.24×10¹⁸ electrons", formula:"$Q = It$" },
-    { q:"Dimensional formula of velocity:", opts:["[MLT⁻¹]","[LT⁻¹]","[ML⁻¹T]","[L²T⁻¹]"], ans:1, exp:"Velocity = displacement/time = L/T = [LT⁻¹]", formula:"$v = \\frac{d}{t}$" },
-    { q:"Newton's second law: Force is proportional to:", opts:["Velocity","Displacement","Rate of change of momentum","Mass only"], ans:2, exp:"F = dp/dt = d(mv)/dt = ma for constant mass", formula:"$F = \\frac{dp}{dt} = ma$" },
-    { q:"Escape velocity from Earth's surface:", opts:["7.9 km/s","11.2 km/s","16 km/s","3 km/s"], ans:1, exp:"ve = √(2GM/R) ≈ 11.2 km/s for Earth", formula:"$v_e = \\sqrt{\\frac{2GM}{R}}$" },
-    { q:"Work done by force F in displacement d:", opts:["F/d","F×d×cosθ","F×d×sinθ","F²×d"], ans:1, exp:"W = F·d·cosθ where θ is angle between force and displacement", formula:"$W = Fd\\cos\\theta$" },
-    { q:"Ohm's law states V = IR. Unit of resistance:", opts:["Ampere","Volt","Ohm (Ω)","Watt"], ans:2, exp:"Resistance is measured in Ohms (Ω). 1Ω = 1V/1A", formula:"$R = \\frac{V}{I}$" },
-    { q:"Wavelength of visible light range:", opts:["100-400 nm","400-700 nm","700-1000 nm","1-100 nm"], ans:1, exp:"Visible light: 400nm (violet) to 700nm (red)", formula:"$c = \\nu\\lambda$" },
-  ],
-  chemistry: [
-    { q:"Atomic number of Carbon:", opts:["5","6","7","8"], ans:1, exp:"Carbon (C) has atomic number 6, means 6 protons", formula:"" },
-    { q:"pH of pure water at 25°C:", opts:["0","7","14","6"], ans:1, exp:"Pure water pH = 7 (neutral). [H⁺] = [OH⁻] = 10⁻⁷ mol/L", formula:"$pH = -\\log[H^+]$" },
-    { q:"Avogadro's number:", opts:["6.022×10²³","6.022×10²²","6.022×10²⁴","3.011×10²³"], ans:0, exp:"NA = 6.022×10²³ mol⁻¹. One mole of any substance contains this many particles", formula:"$N_A = 6.022 \\times 10^{23}$" },
-    { q:"Electronic configuration of Na (Z=11):", opts:["2,8,1","2,9","3,8","2,7,2"], ans:0, exp:"Na: 1s²2s²2p⁶3s¹ = 2,8,1. Has 1 valence electron", formula:"" },
-    { q:"In photosynthesis, CO₂ is:", opts:["Oxidised","Reduced","Unchanged","Acts as catalyst"], ans:1, exp:"CO₂ is reduced to glucose (C₆H₁₂O₆) during photosynthesis", formula:"$6CO_2 + 6H_2O \\rightarrow C_6H_{12}O_6 + 6O_2$" },
-    { q:"Bond angle in water (H₂O):", opts:["180°","120°","109.5°","104.5°"], ans:3, exp:"H₂O has 2 lone pairs, causing distortion. Bond angle = 104.5°", formula:"" },
-    { q:"Molar mass of H₂SO₄:", opts:["49 g/mol","98 g/mol","128 g/mol","80 g/mol"], ans:1, exp:"H₂SO₄: 2(1)+32+4(16) = 2+32+64 = 98 g/mol", formula:"$M = 2(1) + 32 + 4(16) = 98$" },
-    { q:"Hybridisation of carbon in methane (CH₄):", opts:["sp","sp²","sp³","dsp²"], ans:2, exp:"In CH₄, C forms 4 sigma bonds → sp³ hybridisation, tetrahedral shape", formula:"" },
-  ],
-  biology: [
-    { q:"DNA double helix was proposed by:", opts:["Mendel & Darwin","Watson & Crick","Lamarck & Weismann","Huxley & Morgan"], ans:1, exp:"Watson and Crick (1953) proposed the double helix model. Nobel Prize 1962", formula:"" },
-    { q:"Powerhouse of the cell:", opts:["Nucleus","Ribosome","Mitochondria","Golgi body"], ans:2, exp:"Mitochondria produce ATP via cellular respiration — hence 'powerhouse'", formula:"$C_6H_{12}O_6 + 6O_2 \\rightarrow 6CO_2 + 6H_2O + ATP$" },
-    { q:"Number of chromosomes in human somatic cells:", opts:["23","46","48","44"], ans:1, exp:"Humans have 46 chromosomes (23 pairs) in somatic cells. Gametes have 23.", formula:"" },
-    { q:"Photosynthesis takes place in:", opts:["Mitochondria","Ribosome","Chloroplast","Nucleus"], ans:2, exp:"Chloroplasts contain chlorophyll — site of photosynthesis in plant cells", formula:"" },
-    { q:"Full form of DNA:", opts:["Deoxyribose Nucleic Acid","Deoxyribonucleic Acid","Dinitrogen Acid","Diribose Nucleic Acid"], ans:1, exp:"DNA = Deoxyribonucleic Acid. Contains deoxyribose sugar, phosphate, bases (ATGC)", formula:"" },
-    { q:"Blood group system discovered by:", opts:["Louis Pasteur","Karl Landsteiner","Alexander Fleming","Robert Koch"], ans:1, exp:"Karl Landsteiner discovered ABO blood group system in 1901. Nobel Prize 1930", formula:"" },
-    { q:"Vaccine for tuberculosis:", opts:["MMR","DPT","BCG","OPV"], ans:2, exp:"BCG (Bacillus Calmette-Guérin) vaccine prevents tuberculosis. Given at birth in India", formula:"" },
-    { q:"First organ of human body to develop:", opts:["Brain","Heart","Liver","Kidney"], ans:1, exp:"Heart is the first organ to develop, starts beating ~22 days after fertilization", formula:"" },
-  ],
+function getIcon(s:string){
+  const k=s.toLowerCase()
+  for(const [kw,ic] of ICON_MAP){ if(k.includes(kw)) return ic }
+  return '📚'
 }
 
-const FORMULA_SHEETS: Record<Subject, {topic:string;formulas:{name:string;f:string;note:string}[]}[]> = {
-  physics: [
-    { topic:'Kinematics', formulas:[
-      {name:'1st eq of motion',f:'$v = u + at$',note:'v=final, u=initial, a=accel, t=time'},
-      {name:'2nd eq of motion',f:'$s = ut + \\frac{1}{2}at^2$',note:'s=displacement'},
-      {name:'3rd eq of motion',f:'$v^2 = u^2 + 2as$',note:'time-independent'},
-      {name:'Free fall',f:'$h = \\frac{1}{2}gt^2$',note:'g=9.8 m/s²'},
-    ]},
-    { topic:'Laws of Motion', formulas:[
-      {name:"Newton's 2nd Law",f:'$F = ma$',note:'F in Newtons'},
-      {name:'Momentum',f:'$p = mv$',note:'p=momentum'},
-      {name:'Impulse',f:'$J = F \\cdot \\Delta t = \\Delta p$',note:''},
-    ]},
-    { topic:'Work, Energy, Power', formulas:[
-      {name:'Work',f:'$W = Fd\\cos\\theta$',note:'θ=angle'},
-      {name:'KE',f:'$KE = \\frac{1}{2}mv^2$',note:''},
-      {name:'PE (gravity)',f:'$PE = mgh$',note:''},
-      {name:'Power',f:'$P = \\frac{W}{t} = Fv$',note:''},
-    ]},
-    { topic:'Electricity', formulas:[
-      {name:"Ohm's Law",f:'$V = IR$',note:''},
-      {name:'Power',f:'$P = VI = I^2R = \\frac{V^2}{R}$',note:''},
-      {name:'Series R',f:'$R_s = R_1+R_2+R_3$',note:''},
-      {name:'Parallel R',f:'$\\frac{1}{R_p} = \\frac{1}{R_1}+\\frac{1}{R_2}$',note:''},
-    ]},
-    { topic:'Waves & Optics', formulas:[
-      {name:'Wave speed',f:'$v = f\\lambda$',note:'f=frequency'},
-      {name:'Snell\'s Law',f:'$n_1\\sin\\theta_1 = n_2\\sin\\theta_2$',note:''},
-      {name:'Mirror formula',f:'$\\frac{1}{v}+\\frac{1}{u}=\\frac{1}{f}$',note:''},
-      {name:'Lens formula',f:'$\\frac{1}{v}-\\frac{1}{u}=\\frac{1}{f}$',note:''},
-    ]},
-  ],
-  chemistry: [
-    { topic:'Mole Concept', formulas:[
-      {name:'Moles',f:'$n = \\frac{m}{M}$',note:'m=mass, M=molar mass'},
-      {name:'Avogadro',f:'$N = n \\times N_A$',note:'NA=6.022×10²³'},
-      {name:'Molarity',f:'$M = \\frac{n}{V(L)}$',note:'V in litres'},
-      {name:'% Composition',f:'$\\%E = \\frac{mass_E}{M_r} \\times 100$',note:''},
-    ]},
-    { topic:'Thermodynamics', formulas:[
-      {name:'1st Law',f:'$\\Delta U = q + w$',note:'q=heat, w=work'},
-      {name:'Enthalpy',f:'$\\Delta H = \\Delta U + \\Delta(pV)$',note:''},
-      {name:'Gibbs Energy',f:'$\\Delta G = \\Delta H - T\\Delta S$',note:''},
-      {name:'Spontaneous',f:'$\\Delta G < 0$',note:'reaction is spontaneous'},
-    ]},
-    { topic:'Equilibrium', formulas:[
-      {name:'Keq',f:'$K_{eq} = \\frac{[C]^c[D]^d}{[A]^a[B]^b}$',note:'for aA+bB⇌cC+dD'},
-      {name:'pH',f:'$pH = -\\log[H^+]$',note:''},
-      {name:'pOH',f:'$pOH = -\\log[OH^-]$',note:''},
-      {name:'pH+pOH',f:'$pH + pOH = 14$',note:'at 25°C'},
-    ]},
-  ],
-  biology: [
-    { topic:'Cell Biology', formulas:[
-      {name:'Cell Theory',f:'All living things made of cells',note:'Schleiden, Schwann, Virchow'},
-      {name:'Mitosis stages',f:'PMAT: Prophase→Metaphase→Anaphase→Telophase',note:''},
-      {name:'Meiosis',f:'2n → n (haploid)',note:'For gamete formation'},
-      {name:'Cell cycle',f:'G₁ → S (DNA synthesis) → G₂ → M',note:'Interphase + Mitosis'},
-    ]},
-    { topic:'Genetics', formulas:[
-      {name:"Mendel's ratio",f:'Monohybrid: 3:1',note:'Dominant:Recessive'},
-      {name:'Dihybrid',f:'9:3:3:1',note:'Two traits'},
-      {name:'Hardy-Weinberg',f:'$p^2 + 2pq + q^2 = 1$',note:'p+q=1'},
-      {name:'DNA bases',f:'A=T, G≡C',note:'Chargaff\'s rule'},
-    ]},
-    { topic:'Photosynthesis', formulas:[
-      {name:'Overall reaction',f:'$6CO_2 + 6H_2O \\xrightarrow{light} C_6H_{12}O_6 + 6O_2$',note:''},
-      {name:'Light reaction',f:'$H_2O \\rightarrow O_2 + H^+ + e^-$',note:'in thylakoid'},
-      {name:'Dark reaction',f:'Calvin Cycle: CO₂ + RuBP → 3-PGA',note:'in stroma'},
-      {name:'Compensation point',f:'Photosynthesis = Respiration',note:'net gas exchange = 0'},
-    ]},
-  ],
+const COLORS=['#00e5ff','#a78bfa','#34d399','#fb923c','#f472b6','#facc15','#60a5fa','#f87171']
+const KEY='jarvis_study_goals_v1'
+const load=():StudyGoal[]=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
+const save=(g:StudyGoal[])=>{try{localStorage.setItem(KEY,JSON.stringify(g))}catch{}}
+
+function Timer({onLog}:{onLog:(m:number)=>void}){
+  const [on,setOn]=useState(false)
+  const [s,setS]=useState(0)
+  const ref=useRef<any>(null)
+  useEffect(()=>{
+    if(on)ref.current=setInterval(()=>setS(x=>x+1),1000)
+    else clearInterval(ref.current)
+    return()=>clearInterval(ref.current)
+  },[on])
+  const f=(n:number)=>String(n).padStart(2,'0')
+  const hh=Math.floor(s/3600),mm=Math.floor((s%3600)/60),ss=s%60
+  function stop(){setOn(false);if(s>=60)onLog(Math.round(s/60));setS(0)}
+  return(
+    <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,padding:'16px',textAlign:'center'}}>
+      <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:2,marginBottom:8}}>FOCUS TIMER</div>
+      <div style={{fontSize:36,fontWeight:700,color:'var(--accent)',fontFamily:"'Space Mono',monospace",letterSpacing:3}}>
+        {f(hh)}:{f(mm)}:{f(ss)}
+      </div>
+      <div style={{display:'flex',gap:8,justifyContent:'center',marginTop:14}}>
+        <button onClick={()=>setOn(r=>!r)} style={{padding:'8px 22px',borderRadius:10,background:on?'rgba(255,80,80,.15)':'var(--accent-bg)',border:`1px solid ${on?'rgba(255,80,80,.4)':'var(--border-acc)'}`,color:on?'#ff6060':'var(--accent)',fontSize:13,cursor:'pointer',fontWeight:600}}>
+          {on?'⏸ Pause':s>0?'▶ Resume':'▶ Start'}
+        </button>
+        {s>0&&<button onClick={stop} style={{padding:'8px 16px',borderRadius:10,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}>✓ Log</button>}
+        {s>0&&<button onClick={()=>{setOn(false);setS(0)}} style={{padding:'8px 12px',borderRadius:10,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:13,cursor:'pointer'}}>✕</button>}
+      </div>
+      {s>0&&s<60&&<div style={{fontSize:9,color:'var(--text-faint)',marginTop:6}}>60s ke baad log hoga</div>}
+    </div>
+  )
 }
 
-function renderFormula(text: string) {
-  if (!text || typeof window === 'undefined') return text
-  try {
-    const katex = (window as any).katex
-    if (!katex) return text
-    return text.replace(/\$\$(.+?)\$\$/g, (_: string, f: string) => {
-      try { return katex.renderToString(f, { displayMode: true, throwOnError: false }) }
-      catch { return f }
-    }).replace(/\$(.+?)\$/g, (_: string, f: string) => {
-      try { return katex.renderToString(f, { displayMode: false, throwOnError: false }) }
-      catch { return f }
-    })
-  } catch { return text }
-}
-
-function Formula({ text }: { text: string }) {
-  const [html, setHtml] = useState(text)
-  useEffect(() => {
-    const timer = setTimeout(() => setHtml(renderFormula(text)), 100)
-    return () => clearTimeout(timer)
-  }, [text])
-  return <span dangerouslySetInnerHTML={{ __html: html }}/>
-}
-
-const SCORE_KEY = 'jarvis_quiz_scores'
-function loadScores(): Record<string, {right:number;total:number}> {
-  try { return JSON.parse(localStorage.getItem(SCORE_KEY)||'{}') } catch { return {} }
-}
-function saveScore(subject: string, right: boolean) {
-  const s = loadScores()
-  if (!s[subject]) s[subject] = {right:0,total:0}
-  s[subject].total++
-  if (right) s[subject].right++
-  try { localStorage.setItem(SCORE_KEY, JSON.stringify(s)) } catch {}
-}
-
-export default function StudyHub() {
-  const router = useRouter()
-  const [tab, setTab] = useState<Tab>('quiz')
-  const [subject, setSubject] = useState<Subject>('physics')
-  const [qIdx, setQIdx] = useState(0)
-  const [selected, setSelected] = useState<number|null>(null)
-  const [showExp, setShowExp] = useState(false)
-  const [scores, setScores] = useState(loadScores())
-  const [streak, setStreak] = useState(0)
-
-  const qs = QUESTIONS[subject]
-  const q = qs[qIdx % qs.length]
-  const sub = SUBJECTS.find(s => s.id === subject)!
-
-  function selectOpt(i: number) {
-    if (selected !== null) return
-    setSelected(i)
-    setShowExp(true)
-    const right = i === q.ans
-    saveScore(subject, right)
-    setScores(loadScores())
-    if (right) setStreak(p => p + 1)
-    else setStreak(0)
-  }
-
-  function nextQ() {
-    setSelected(null)
-    setShowExp(false)
-    setQIdx(p => (p + 1) % qs.length)
-  }
-
-  const sc = scores[subject]
-  const pct = sc ? Math.round((sc.right/sc.total)*100) : 0
-
-  return (
-    <div style={{background:'#090d18',minHeight:'100dvh',display:'flex',flexDirection:'column',fontFamily:'Space Mono, monospace'}}>
-      {/* Header */}
-      <div style={{padding:'14px 16px 10px',borderBottom:'1px solid rgba(0,229,255,.08)',display:'flex',alignItems:'center',gap:12}}>
-        <button onClick={()=>router.push('/')} style={{background:'none',border:'none',color:'#1e3858',cursor:'pointer',fontSize:18}}>←</button>
-        <div style={{flex:1}}>
-          <div style={{fontSize:16,color:'#00e5ff',letterSpacing:1}}>📚 STUDY HUB</div>
-          <div style={{fontSize:9,color:'#1e3858'}}>NEET/JEE Prep · MCQ · Formulas</div>
+function GoalCard({goal,onAdd,onDelete}:{goal:StudyGoal;onAdd:(id:string,m:number,t:string,n:string)=>void;onDelete:(id:string)=>void}){
+  const [open,setOpen]=useState(false)
+  const [lm,setLm]=useState('');const [lt,setLt]=useState('');const [ln,setLn]=useState('')
+  const pct=Math.min(100,Math.round(goal.doneHours/Math.max(goal.totalHours,1)*100))
+  const days=Math.ceil((new Date(goal.deadline).getTime()-Date.now())/86400000)
+  const today=new Date().toISOString().slice(0,10)
+  const todayMin=goal.sessions.filter(s=>s.date===today).reduce((a,s)=>a+s.duration,0)
+  function sub(){const m=parseInt(lm);if(!m||m<1)return;onAdd(goal.id,m,lt||'General',ln);setLm('');setLt('');setLn('');setOpen(false)}
+  return(
+    <div style={{background:'var(--bg-card)',border:`1px solid ${goal.color}40`,borderRadius:16,overflow:'hidden',marginBottom:12}}>
+      <div style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10}}>
+        <span style={{fontSize:22}}>{goal.icon}</span>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:700,fontSize:14,color:'var(--text)'}}>{goal.subject}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:1}}>🎯 {goal.target}</div>
         </div>
-        {streak > 0 && <div style={{fontSize:11,color:'#ffa500'}}>🔥 {streak} streak</div>}
+        <button onClick={()=>onDelete(goal.id)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:14,cursor:'pointer',padding:4}}>✕</button>
       </div>
-
-      {/* Subject selector */}
-      <div style={{display:'flex',gap:8,padding:'12px 16px 8px'}}>
-        {SUBJECTS.map(s => (
-          <button key={s.id} onClick={()=>{setSubject(s.id);setQIdx(0);setSelected(null);setShowExp(false)}}
-            style={{flex:1,padding:'8px 4px',borderRadius:10,border:`1px solid ${subject===s.id?s.color:'rgba(255,255,255,.06)'}`,background:subject===s.id?`rgba(${s.id==='physics'?'0,229,255':s.id==='chemistry'?'128,255,128':'255,128,192'},.08)`:'transparent',color:subject===s.id?s.color:'#1e3858',cursor:'pointer',fontSize:10}}>
-            {s.icon} {s.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab bar */}
-      <div style={{display:'flex',gap:2,padding:'0 16px 12px'}}>
-        {(['quiz','formulas','progress'] as Tab[]).map(t => (
-          <button key={t} onClick={()=>setTab(t)}
-            style={{flex:1,padding:'7px',borderRadius:8,border:`1px solid ${tab===t?'rgba(0,229,255,.25)':'rgba(255,255,255,.05)'}`,background:tab===t?'rgba(0,229,255,.08)':'transparent',color:tab===t?'#00e5ff':'#1e3858',cursor:'pointer',fontSize:10,textTransform:'capitalize'}}>
-            {t==='quiz'?'🎯 Quiz':t==='formulas'?'📐 Formulas':'📊 Progress'}
-          </button>
-        ))}
-      </div>
-
-      {/* QUIZ TAB */}
-      {tab === 'quiz' && (
-        <div style={{padding:'0 16px',paddingBottom:90,flex:1}}>
-          {/* Score bar */}
-          {sc && (
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:12,padding:'8px 12px',background:'rgba(0,229,255,.03)',borderRadius:10,border:'1px solid rgba(0,229,255,.08)'}}>
-              <span style={{fontSize:11,color:'#1e3858'}}>{subject}: {sc.right}/{sc.total} correct</span>
-              <span style={{fontSize:11,color:pct>=60?'#80ff80':'#ff8080'}}>{pct}%</span>
+      <div style={{padding:'10px 14px'}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+          <span style={{fontSize:11,color:'var(--text-muted)'}}>{goal.doneHours.toFixed(1)}h / {goal.totalHours}h</span>
+          <span style={{fontSize:11,color:'var(--text-muted)'}}>{pct}%</span>
+        </div>
+        <div style={{height:6,borderRadius:3,background:'var(--bg-surface)'}}>
+          <div style={{height:'100%',width:`${pct}%`,background:goal.color,borderRadius:3,transition:'width .4s'}}/>
+        </div>
+        <div style={{display:'flex',gap:14,marginTop:10,alignItems:'center'}}>
+          <div style={{textAlign:'center' as const}}><div style={{fontSize:15,fontWeight:700,color:goal.color}}>{todayMin}m</div><div style={{fontSize:9,color:'var(--text-faint)'}}>today</div></div>
+          <div style={{textAlign:'center' as const}}><div style={{fontSize:15,fontWeight:700,color:days<3?'#ff6060':'var(--text)'}}>{days<0?'Over':days+'d'}</div><div style={{fontSize:9,color:'var(--text-faint)'}}>left</div></div>
+          <div style={{textAlign:'center' as const}}><div style={{fontSize:15,fontWeight:700,color:'var(--text)'}}>{goal.sessions.length}</div><div style={{fontSize:9,color:'var(--text-faint)'}}>sessions</div></div>
+          <div style={{flex:1}}/>
+          <button onClick={()=>setOpen(p=>!p)} style={{padding:'5px 14px',borderRadius:8,background:'var(--accent-bg)',border:'1px solid var(--border-acc)',color:'var(--accent)',fontSize:11,cursor:'pointer',fontWeight:600}}>+ Log</button>
+        </div>
+        {open&&(
+          <div style={{marginTop:10,background:'var(--bg-surface)',borderRadius:10,padding:'10px 12px',display:'flex',flexDirection:'column' as const,gap:7}}>
+            <div style={{display:'flex',gap:7}}>
+              <input value={lm} onChange={e=>setLm(e.target.value)} placeholder="Minutes" type="number" style={{flex:1,background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:8,padding:'7px 10px',fontSize:12,width:'100%'}}/>
+              <input value={lt} onChange={e=>setLt(e.target.value)} placeholder="Topic (e.g. Ch 3)" style={{flex:2,background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:8,padding:'7px 10px',fontSize:12,width:'100%'}}/>
             </div>
-          )}
+            <input value={ln} onChange={e=>setLn(e.target.value)} placeholder="Notes (optional)" style={{background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:8,padding:'7px 10px',fontSize:12,width:'100%'}}/>
+            <button onClick={sub} style={{padding:'8px',borderRadius:8,background:'var(--accent-bg)',border:'1px solid var(--border-acc)',color:'var(--accent)',fontSize:12,cursor:'pointer',fontWeight:600}}>✓ Save Session</button>
+          </div>
+        )}
+        {goal.sessions.length>0&&(
+          <div style={{marginTop:8}}>
+            {goal.sessions.slice(-3).reverse().map(s=>(
+              <div key={s.id} style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'var(--text-faint)',padding:'3px 0',borderTop:'1px solid var(--border)'}}>
+                <span>{s.topic}</span><span>{s.duration}min · {s.date.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
-          {/* Question card */}
-          <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(0,229,255,.1)',borderRadius:14,padding:'16px',marginBottom:12}}>
-            <div style={{fontSize:9,color:'#1e3858',marginBottom:8}}>Q{(qIdx%qs.length)+1}/{qs.length} · {sub.label}</div>
-            <div style={{fontSize:13,color:'#ddeeff',lineHeight:1.6,marginBottom:q.formula?8:0}}>{q.q}</div>
-            {q.formula && (
-              <div style={{padding:'6px 10px',background:'rgba(0,229,255,.04)',borderRadius:8,marginTop:6}}>
-                <Formula text={q.formula}/>
+function AddModal({onAdd,onClose}:{onAdd:(g:StudyGoal)=>void;onClose:()=>void}){
+  const [sub,setSub]=useState('');const [tgt,setTgt]=useState('');const [hrs,setHrs]=useState('');const [ci,setCi]=useState(0)
+  const [dl,setDl]=useState(()=>{const d=new Date();d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)})
+  function submit(){
+    if(!sub.trim()||!tgt.trim())return
+    onAdd({id:'g_'+Date.now(),subject:sub.trim(),icon:getIcon(sub),target:tgt.trim(),deadline:dl,totalHours:parseFloat(hrs)||10,doneHours:0,sessions:[],createdAt:Date.now(),color:COLORS[ci]})
+  }
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,.75)',display:'flex',alignItems:'flex-end'}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'var(--bg-card)',borderRadius:'18px 18px 0 0',padding:20,display:'flex',flexDirection:'column' as const,gap:12,maxHeight:'90vh',overflowY:'auto'}}>
+        <div style={{fontWeight:700,fontSize:15,color:'var(--text)'}}>📚 New Study Goal</div>
+        <input value={sub} onChange={e=>setSub(e.target.value)} placeholder="Subject (Maths, History, Coding...)" style={{background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:10,padding:'10px 12px',fontSize:14,width:'100%'}}/>
+        <input value={tgt} onChange={e=>setTgt(e.target.value)} placeholder="Target (e.g. Chapter 5 complete karo, 80 marks laao)" style={{background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:10,padding:'10px 12px',fontSize:14,width:'100%'}}/>
+        <div style={{display:'flex',gap:10}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:'var(--text-muted)',marginBottom:4}}>Hours Needed</div>
+            <input value={hrs} onChange={e=>setHrs(e.target.value)} placeholder="e.g. 20" type="number" style={{background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:10,padding:'10px 12px',fontSize:14,width:'100%'}}/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:'var(--text-muted)',marginBottom:4}}>Deadline</div>
+            <input value={dl} onChange={e=>setDl(e.target.value)} type="date" style={{background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',borderRadius:10,padding:'10px 12px',fontSize:14,width:'100%'}}/>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:'var(--text-muted)',marginBottom:6}}>Color</div>
+          <div style={{display:'flex',gap:8}}>{COLORS.map((c,i)=><div key={c} onClick={()=>setCi(i)} style={{width:24,height:24,borderRadius:'50%',background:c,cursor:'pointer',border:ci===i?`3px solid var(--text)`:'2px solid transparent'}}/>)}</div>
+        </div>
+        <button onClick={submit} style={{padding:'12px',borderRadius:12,background:'var(--accent-bg)',border:'1px solid var(--border-acc)',color:'var(--accent)',fontSize:14,cursor:'pointer',fontWeight:700}}>✓ Goal Add Karo</button>
+      </div>
+    </div>
+  )
+}
+
+export default function StudyPage(){
+  const router=useRouter()
+  const [goals,setGoals]=useState<StudyGoal[]>([])
+  const [showAdd,setShowAdd]=useState(false)
+  const [timerGid,setTimerGid]=useState('')
+  const [tab,setTab]=useState<'goals'|'timer'|'stats'>('goals')
+  useEffect(()=>{setGoals(load())},[])
+
+  function addGoal(g:StudyGoal){const u=[...goals,g];setGoals(u);save(u);setShowAdd(false);if(!timerGid)setTimerGid(g.id)}
+  function delGoal(id:string){const u=goals.filter(g=>g.id!==id);setGoals(u);save(u)}
+  function addSess(gid:string,min:number,topic:string,notes:string){
+    const today=new Date().toISOString().slice(0,10)
+    const u=goals.map(g=>g.id===gid?{...g,doneHours:g.doneHours+min/60,sessions:[...g.sessions,{id:'s_'+Date.now(),date:today,duration:min,topic,notes}]}:g)
+    setGoals(u);save(u)
+  }
+
+  const todayMin=goals.flatMap(g=>g.sessions).filter(s=>s.date===new Date().toISOString().slice(0,10)).reduce((a,s)=>a+s.duration,0)
+  const totalH=goals.reduce((a,g)=>a+g.doneHours,0)
+  const active=goals.filter(g=>Math.ceil((new Date(g.deadline).getTime()-Date.now())/86400000)>=0&&g.doneHours/Math.max(g.totalHours,1)<1)
+
+  const weekDays=Array.from({length:7},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-6+i)
+    const ds=d.toISOString().slice(0,10)
+    const m=goals.flatMap(g=>g.sessions).filter(s=>s.date===ds).reduce((a,s)=>a+s.duration,0)
+    return{day:['S','M','T','W','T','F','S'][d.getDay()],min:m}
+  })
+  const maxM=Math.max(...weekDays.map(d=>d.min),1)
+
+  return(
+    <div style={{position:'fixed',inset:0,background:'var(--bg)',display:'flex',flexDirection:'column',color:'var(--text)'}}>
+      <div style={{padding:'10px 14px',borderBottom:'1px solid var(--border)',background:'var(--header-bg)',display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+        <button onClick={()=>router.push('/')} style={{background:'none',border:'none',color:'var(--accent)',fontSize:18,cursor:'pointer'}}>←</button>
+        <div style={{fontSize:13,fontWeight:700,letterSpacing:2,color:'var(--text)',fontFamily:"'Space Mono',monospace"}}>STUDY HUB</div>
+        <div style={{flex:1}}/>
+        <button onClick={()=>setShowAdd(true)} style={{padding:'6px 12px',borderRadius:10,background:'var(--accent-bg)',border:'1px solid var(--border-acc)',color:'var(--accent)',fontSize:12,cursor:'pointer',fontWeight:600}}>+ Goal</button>
+      </div>
+
+      <div style={{display:'flex',borderBottom:'1px solid var(--border)',flexShrink:0}}>
+        {[{l:'Today',v:`${todayMin}m`,c:'var(--accent)'},{l:'Total',v:`${totalH.toFixed(1)}h`,c:'#a78bfa'},{l:'Active',v:active.length,c:'#34d399'}].map(s=>(
+          <div key={s.l} style={{flex:1,padding:'10px 8px',textAlign:'center' as const,borderRight:'1px solid var(--border)'}}>
+            <div style={{fontSize:16,fontWeight:700,color:s.c as string}}>{s.v}</div>
+            <div style={{fontSize:9,color:'var(--text-faint)'}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:'flex',borderBottom:'1px solid var(--border)',flexShrink:0}}>
+        {(['goals','timer','stats'] as const).map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:'9px',background:tab===t?'var(--accent-bg)':'transparent',border:'none',borderBottom:tab===t?'2px solid var(--accent)':'2px solid transparent',color:tab===t?'var(--accent)':'var(--text-muted)',fontSize:11,cursor:'pointer',fontWeight:tab===t?700:400,textTransform:'uppercase' as const,letterSpacing:1}}>
+            {t==='goals'?'🎯 Goals':t==='timer'?'⏱️ Timer':'📊 Stats'}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',padding:'12px 14px'}}>
+        {tab==='goals'&&(
+          goals.length===0?(
+            <div style={{textAlign:'center' as const,padding:'60px 20px',color:'var(--text-muted)'}}>
+              <div style={{fontSize:44,marginBottom:12}}>📚</div>
+              <div style={{fontSize:14,marginBottom:6,color:'var(--text)'}}>Koi goal nahi hai abhi</div>
+              <div style={{fontSize:12,color:'var(--text-faint)',marginBottom:20}}>Koi bhi subject add karo — Maths, History, Coding, kuch bhi!</div>
+              <button onClick={()=>setShowAdd(true)} style={{padding:'10px 24px',borderRadius:12,background:'var(--accent-bg)',border:'1px solid var(--border-acc)',color:'var(--accent)',fontSize:14,cursor:'pointer',fontWeight:600}}>+ Pehla Goal Add Karo</button>
+            </div>
+          ):goals.map(g=><GoalCard key={g.id} goal={g} onAdd={addSess} onDelete={delGoal}/>)
+        )}
+
+        {tab==='timer'&&(
+          <div style={{display:'flex',flexDirection:'column' as const,gap:12}}>
+            <Timer onLog={min=>{if(timerGid)addSess(timerGid,min,'Timer session','')}}/>
+            {goals.length>0&&(
+              <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px'}}>
+                <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:8}}>Kis subject ke liye?</div>
+                {goals.map(g=>(
+                  <button key={g.id} onClick={()=>setTimerGid(g.id)} style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'8px 10px',borderRadius:8,border:`1px solid ${timerGid===g.id?g.color+'60':'var(--border)'}`,background:timerGid===g.id?g.color+'18':'transparent',color:'var(--text)',fontSize:12,cursor:'pointer',marginBottom:4,textAlign:'left' as const}}>
+                    <span>{g.icon}</span><span>{g.subject}</span>
+                    {timerGid===g.id&&<span style={{marginLeft:'auto',color:g.color,fontSize:10}}>✓</span>}
+                  </button>
+                ))}
               </div>
             )}
           </div>
+        )}
 
-          {/* Options */}
-          <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
-            {q.opts.map((opt,i) => {
-              let bg = 'rgba(255,255,255,.02)', border = 'rgba(255,255,255,.06)', color = '#ddeeff'
-              if (selected !== null) {
-                if (i === q.ans) { bg='rgba(0,255,128,.06)'; border='rgba(0,255,128,.25)'; color='#80ffb0' }
-                else if (i === selected && selected !== q.ans) { bg='rgba(255,80,80,.06)'; border='rgba(255,80,80,.2)'; color='#ff9090' }
-              }
-              return (
-                <button key={i} onClick={()=>selectOpt(i)}
-                  style={{padding:'12px 14px',borderRadius:11,border:`1px solid ${border}`,background:bg,color,textAlign:'left',cursor:selected===null?'pointer':'default',fontSize:12,lineHeight:1.5}}>
-                  <span style={{color:'#1e4060',marginRight:8}}>{String.fromCharCode(65+i)}.</span>{opt}
-                </button>
+        {tab==='stats'&&(
+          <div style={{display:'flex',flexDirection:'column' as const,gap:12}}>
+            <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,padding:'14px'}}>
+              <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:12}}>📅 Last 7 Days</div>
+              <div style={{display:'flex',gap:4,alignItems:'flex-end',height:80}}>
+                {weekDays.map((d,i)=>(
+                  <div key={i} style={{flex:1,display:'flex',flexDirection:'column' as const,alignItems:'center',gap:3}}>
+                    <div style={{width:'100%',background:d.min>0?'var(--accent)':'var(--bg-surface)',borderRadius:'3px 3px 0 0',height:`${Math.round(d.min/maxM*64)+4}px`,minHeight:4}}/>
+                    <div style={{fontSize:8,color:'var(--text-faint)'}}>{d.day}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {goals.map(g=>{
+              const p=Math.min(100,Math.round(g.doneHours/Math.max(g.totalHours,1)*100))
+              return(
+                <div key={g.id} style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                    <span style={{fontSize:12,fontWeight:600}}>{g.icon} {g.subject}</span>
+                    <span style={{fontSize:11,color:'var(--text-muted)'}}>{g.doneHours.toFixed(1)}h / {g.totalHours}h</span>
+                  </div>
+                  <div style={{height:5,borderRadius:3,background:'var(--bg-surface)'}}><div style={{height:'100%',width:`${p}%`,background:g.color,borderRadius:3}}/></div>
+                  <div style={{fontSize:9,color:'var(--text-faint)',marginTop:4}}>{g.sessions.length} sessions · {p}% complete</div>
+                </div>
               )
             })}
+            {goals.length===0&&<div style={{textAlign:'center' as const,padding:'40px 20px',color:'var(--text-muted)',fontSize:13}}>Pehle koi goal add karo 👆</div>}
           </div>
+        )}
+      </div>
 
-          {/* Explanation */}
-          {showExp && (
-            <div style={{padding:'12px',background:selected===q.ans?'rgba(0,255,128,.04)':'rgba(255,80,80,.04)',border:`1px solid ${selected===q.ans?'rgba(0,255,128,.15)':'rgba(255,80,80,.15)'}`,borderRadius:12,marginBottom:12}}>
-              <div style={{fontSize:12,color:selected===q.ans?'#80ffb0':'#ff9090',marginBottom:4,fontWeight:'bold'}}>
-                {selected===q.ans?'✅ Bilkul sahi!':'❌ Galat — sahi answer: '+String.fromCharCode(65+q.ans)}
-              </div>
-              <div style={{fontSize:11,color:'#2a8090',lineHeight:1.6}}>{q.exp}</div>
-            </div>
-          )}
-
-          {/* Next button */}
-          {selected !== null && (
-            <button onClick={nextQ}
-              style={{width:'100%',padding:'12px',borderRadius:11,background:'rgba(0,229,255,.1)',border:'1px solid rgba(0,229,255,.25)',color:'#00e5ff',cursor:'pointer',fontSize:13}}>
-              Next Question →
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* FORMULAS TAB */}
-      {tab === 'formulas' && (
-        <div style={{padding:'0 16px',paddingBottom:90,overflow:'auto',flex:1}}>
-          {FORMULA_SHEETS[subject].map((section,si) => (
-            <div key={si} style={{marginBottom:16}}>
-              <div style={{fontSize:11,color:sub.color,fontWeight:'bold',marginBottom:8,padding:'6px 10px',background:`rgba(${sub.id==='physics'?'0,229,255':sub.id==='chemistry'?'128,255,128':'255,128,192'},.06)`,borderRadius:8}}>
-                {section.topic}
-              </div>
-              {section.formulas.map((f,fi) => (
-                <div key={fi} style={{padding:'10px 12px',marginBottom:6,background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:10}}>
-                  <div style={{fontSize:10,color:'#1e3858',marginBottom:4}}>{f.name}</div>
-                  <div style={{fontSize:14,color:'#ddeeff',marginBottom: f.note?4:0}}>
-                    <Formula text={f.f}/>
-                  </div>
-                  {f.note && <div style={{fontSize:9,color:'#1e4060'}}>{f.note}</div>}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* PROGRESS TAB */}
-      {tab === 'progress' && (
-        <div style={{padding:'0 16px',paddingBottom:90}}>
-          <div style={{marginBottom:12,fontSize:12,color:'#2a6080'}}>Tumhara performance 📊</div>
-          {SUBJECTS.map(s => {
-            const sc2 = scores[s.id]
-            const p = sc2 ? Math.round((sc2.right/sc2.total)*100) : 0
-            return (
-              <div key={s.id} style={{marginBottom:12,padding:'14px',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12}}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-                  <span style={{fontSize:12,color:'#ddeeff'}}>{s.icon} {s.label}</span>
-                  <span style={{fontSize:11,color:p>=60?'#80ff80':'#ff8080'}}>{sc2?`${sc2.right}/${sc2.total}`:'0/0'} ({p}%)</span>
-                </div>
-                <div style={{height:6,background:'rgba(255,255,255,.05)',borderRadius:3,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${p}%`,background:p>=60?'#80ff80':p>=40?'#ffa500':'#ff6060',borderRadius:3,transition:'width .5s'}}/>
-                </div>
-                <div style={{marginTop:6,fontSize:9,color:'#1e3858'}}>
-                  {p>=80?'🌟 Excellent!':p>=60?'👍 Accha hai, aur practice karo':p>=40?'📖 Thoda aur padhna padega':'🔴 Start karo abhi se'}
-                </div>
-              </div>
-            )
-          })}
-
-          <button onClick={()=>{localStorage.removeItem(SCORE_KEY);setScores({})}}
-            style={{width:'100%',padding:'10px',borderRadius:10,background:'rgba(255,80,80,.06)',border:'1px solid rgba(255,80,80,.2)',color:'#ff9090',cursor:'pointer',fontSize:11,marginTop:8}}>
-            Reset Progress
-          </button>
-
-          <div style={{marginTop:16,padding:'12px',background:'rgba(255,255,255,.02)',borderRadius:12,border:'1px solid rgba(255,255,255,.05)'}}>
-            <div style={{fontSize:11,color:'#2a5070',marginBottom:8}}>🔗 NEET Resources</div>
-            {[
-              ['NTA NEET Official','https://nta.ac.in/neet'],
-              ['Physics Wallah','https://www.pw.live/'],
-              ['Unacademy NEET','https://unacademy.com/goal/neet-ug'],
-              ['PYQ Papers','https://allen.ac.in/question-paper/neet-papers.aspx'],
-              ['NCERT PDFs','https://ncert.nic.in/textbook.php'],
-            ].map(([l,u])=>(
-              <a key={l} href={u} target="_blank" rel="noopener"
-                style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,.03)',color:'#2a7090',textDecoration:'none',fontSize:11}}>
-                <span>{l}</span><span>→</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <BottomNav/>
+      {showAdd&&<AddModal onAdd={addGoal} onClose={()=>setShowAdd(false)}/>}
     </div>
   )
 }

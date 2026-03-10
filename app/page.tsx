@@ -301,6 +301,7 @@ function getSmartStatus(text: string, mode: string): string {
   if (/weather|mausam|temperature|barish|garmi|thandi/i.test(text)) return '🌤️ Mausam check kar raha hoon...'
   if (/news|khabar|headline|aaj ka/i.test(text)) return '📰 News dhoondh raha hoon...'
   if (/song|music|gana|sunn|play|spotify/i.test(text)) return '🎵 Song dhundh raha hoon...'
+  if (/anime|manga|naruto|onepiece|aot|demon slayer|jujutsu/i.test(text)) return '🌸 Anime dhundh raha hoon...'
   if (/map|location|kahan|where.*is|jagah|address/i.test(text)) return '📍 Map dekh raha hoon...'
   if (/github|code|repository|repo/i.test(text)) return '🐙 GitHub search kar raha hoon...'
   if (/math|calculate|solve|equation|integral|derivative|theorem/i.test(text)) return '🧮 Calculate kar raha hoon...'
@@ -557,7 +558,7 @@ export default function Page() {
   const chips = (() => {
     const c = lastAIContent.toLowerCase()
     if (/formula|equation|law|theorem|physics|chemistry|neet|jee|\$/.test(c))
-      return ['Aur formulas do','Example solve karo','Hindi mein explain karo','NEET question do']
+      return ['Aur formulas do','Example solve karo','Hindi mein explain karo','Practice question do']
     if (/weather|rain|temperature|aaj ka|barish|mausam/.test(c))
       return ['Agle 3 din?','Humidity kitna?','Wind speed?','AQI batao']
     if (/code|function|error|python|javascript|typescript|bug/.test(c))
@@ -1017,7 +1018,7 @@ export default function Page() {
     // Also check name/goal fast-path for immediate UI update
     const nm=userMsg.match(/(?:mera naam|main hun|my name is|i am)\s+([A-Za-z\u0900-\u097F]+)/i)
     if(nm){await setProfile('name',nm[1]).catch(()=>{});setName(nm[1])}
-    const gl=userMsg.match(/\b(UPSC|JEE|NEET|SSC|GATE|MBA|IAS|B\.?Tech)\b/i)
+    const gl=userMsg.match(/\b(UPSC|JEE|NEET|SSC|GATE|MBA|IAS|B\.?Tech|study|padhai|exam|coaching)\b/i)
     if(gl) await setProfile('goal',gl[0]).catch(()=>{})
     // Flush sync queue silently
     flushSyncQueue().then(r=>setSyncOk(r.failed===0)).catch(()=>setSyncOk(false))
@@ -1292,7 +1293,7 @@ export default function Page() {
               {[
                 {icon:'🇮🇳',label:'India Hub',href:'/india'},
                 {icon:'📚',label:'Study',href:'/study'},
-                {icon:'🔗',label:'Apps',href:'/apps'},
+                {icon:'🌸',label:'Anime',href:'/anime'},
                 {icon:'🎨',label:'Studio',href:'/studio'},
               ].map(({icon,label,href})=>(
                 <a key={href} href={href}
