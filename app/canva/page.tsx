@@ -13,12 +13,12 @@ import {
 } from '../../lib/integrations/canva'
 
 // ── Theme ──────────────────────────────────────────────────
-const BG       = '#090d18'
+const BG       = 'var(--bg)'
 const CARD     = 'var(--bg-card)'
-const BORDER   = 'rgba(255,255,255,.07)'
-const ACCENT   = '#00e5ff'
+const BORDER   = 'var(--border)'
+const ACCENT   = 'var(--accent)'
 const CANVA_C  = '#8B5CF6'   // Canva purple
-const DIM      = '#4a6080'
+const DIM      = 'var(--text-faint)'
 
 // ── Category filter ────────────────────────────────────────
 const CATEGORIES = ['All', 'Social', 'Docs', 'India', 'Edu']
@@ -382,7 +382,7 @@ function CanvaPageInner() {
 
 export default function CanvaPage() {
   return (
-    <Suspense fallback={<div style={{background:'#090d18',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',color:'#00e5ff'}}>Loading...</div>}>
+    <Suspense fallback={<div style={{background:'var(--bg)',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--accent)'}}>Loading...</div>}>
       <CanvaPageInner />
     </Suspense>
   )

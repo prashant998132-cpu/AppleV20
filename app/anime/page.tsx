@@ -25,7 +25,7 @@ const saveWatch = (w: WatchItem[]) => { try { localStorage.setItem(WATCH_KEY, JS
 const STATUS_COLOR = { watching: '#00e5ff', completed: '#34d399', plan: '#a78bfa' }
 const STATUS_LABEL = { watching: '▶ Watching', completed: '✓ Completed', plan: '🕐 Plan to Watch' }
 
-function AnimeCard({ a, onAdd }: { a: Anime; onAdd: (a: Anime) => void }) {
+function AnimeCard({ a, onAdd }: { a: Anime; onAdd: (anime: Anime, status?: WatchItem['status']) => void }) {
   const [exp, setExp] = useState(false)
   return (
     <div style={{ display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
@@ -163,7 +163,7 @@ export default function AnimePage() {
               ))}
             </div>
             {loading && <div style={{ textAlign: 'center' as const, padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>🌸 Load ho raha hai...</div>}
-            {filteredTop.map((a:Anime, i:number) => <AnimeCard key={i} a={a} onAdd={(ani:Anime) => addToWatchlist(ani)} />)}
+            {filteredTop.map((a:Anime, i:number) => <AnimeCard key={i} a={a} onAdd={addToWatchlist} />)}
           </>
         )}
 
@@ -180,7 +180,7 @@ export default function AnimePage() {
               </button>
             </div>
             {results.length === 0 && !loading && query && <div style={{ textAlign: 'center' as const, padding: '40px 0', color: 'var(--text-muted)' }}>Koi result nahi mila</div>}
-            {results.map((a:Anime, i:number) => <AnimeCard key={i} a={a} onAdd={(ani:Anime) => addToWatchlist(ani)} />)}
+            {results.map((a:Anime, i:number) => <AnimeCard key={i} a={a} onAdd={addToWatchlist} />)}
           </div>
         )}
 

@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from 'react'
 import BottomNav from '../../components/shared/BottomNav'
 import { MEGA_APPS, ALL_CATEGORIES, CATEGORY_EMOJI, searchMegaApps, MEGA_STATS, type MegaApp, type MegaCategory } from '../../lib/integrations/mega'
 
-const BG='var(--bg)', CARD='var(--bg-card)', BORDER='var(--border)', ACCENT='#00e5ff', DIM='var(--text-faint)'
+const BG='var(--bg)', CARD='var(--bg-card)', BORDER='var(--border)', ACCENT='var(--accent)', DIM='var(--text-faint)'
 
 const CAT_COLORS: Record<string,string> = {
   'AI Tools':'#a78bfa','Design & Art':'#f472b6','Code & Dev':'#34d399','Media & Music':'#f87171',

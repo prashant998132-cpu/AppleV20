@@ -78,14 +78,27 @@ Rules:
 - Make it interesting, not boring textbook style`
 
   try {
-    const res = await fetch('https://api.puter.com/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 3000 }),
-      signal: AbortSignal.timeout(30000),
-    })
-    const d = await res.json()
-    const text = d.message?.content || d.choices?.[0]?.message?.content || ''
+    // Try Gemini first (if key set)
+    const gemKey = typeof window !== 'undefined' ? localStorage.getItem('jarvis_key_GEMINI_API_KEY') : null
+    let text = ''
+
+    if (gemKey) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 3000 } }),
+        signal: AbortSignal.timeout(30000),
+      })
+      const d = await res.json()
+      text = d.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    }
+
+    // Fallback: Puter (window.puter.ai SDK)
+    if (!text && typeof window !== 'undefined' && (window as any).puter?.ai) {
+      const resp = await (window as any).puter.ai.chat(prompt, { model: 'gpt-4o-mini' })
+      text = resp?.message?.content || resp?.text || ''
+    }
+
+    if (!text) throw new Error('No AI response')
     const clean = text.replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
     return parsed.map((l: any, i: number) => ({

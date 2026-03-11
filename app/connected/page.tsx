@@ -33,21 +33,24 @@ const APPS: AppDef[] = [
   { id:'OMDB_API_KEY',   name:'OMDB (IMDb)',      icon:'🍿', desc:'Movie ratings, plot, awards',        category:'Entertainment', type:'apikey', color:'#fbbf24', keyPlaceholder:'abc123...', keyLink:'https://www.omdbapi.com/apikey.aspx' },
   { id:'PEXELS_API_KEY', name:'Pexels Photos',    icon:'📷', desc:'HD stock photos',                    category:'Media',         type:'apikey', color:'#6ee7b7', keyPlaceholder:'563492...', keyLink:'https://www.pexels.com/api' },
   { id:'GIPHY_API_KEY',  name:'GIPHY GIFs',       icon:'🎭', desc:'GIF search & trending',              category:'Media',         type:'apikey', color:'#e879f9', keyPlaceholder:'abc123...', keyLink:'https://developers.giphy.com' },
+  { id:'NASA_API_KEY',   name:'NASA APOD',         icon:'🔭', desc:'Space photo of the day (briefing)',   category:'Science',       type:'apikey', color:'#818cf8', keyPlaceholder:'DEMO_KEY',  keyLink:'https://api.nasa.gov' },
+  { id:'GROQ_API_KEY',   name:'Groq AI',           icon:'⚡', desc:'Ultra-fast Llama AI fallback',        category:'AI',            type:'apikey', color:'#f59e0b', keyPlaceholder:'gsk_...',   keyLink:'https://console.groq.com/keys' },
 ]
 
-const CATS = ['All','AI','Dev','Music','Entertainment','Media','Finance','Education','News','Weather','Knowledge']
+const CATS = ['All','AI','Dev','Music','Entertainment','Media','Finance','Education','News','Weather','Knowledge','Science']
 
-function Card({ app }: { app: AppDef }) {
+function Card({ app }: { app: AppDef; key?: string }) {
   const [savedKey, setSavedKey] = useState(() => app.type === 'free' ? '1' : getKey(app.id))
   const [editing, setEditing] = useState(false)
   const [input, setInput] = useState('')
   const isOn = app.type === 'free' || !!savedKey
 
   function save() {
+    const val = input.trim()
     try {
-      if (input.trim()) localStorage.setItem(KEY_PREFIX + app.id, input.trim())
+      if (val) localStorage.setItem(KEY_PREFIX + app.id, val)
       else localStorage.removeItem(KEY_PREFIX + app.id)
-      setSavedKey(input.trim())
+      setSavedKey(val)
     } catch {}
     setEditing(false)
     setInput('')
@@ -145,7 +148,7 @@ export default function ConnectedPage() {
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:'0 14px' }}>
-        {filtered.map(a => <Card key={a.id} app={a}/>)}
+        {filtered.map(a => { return <Card key={a.id} app={a}/> })}
         <div style={{ margin:'12px 0 20px', padding:'12px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, fontSize:10, color:'var(--text-faint)', lineHeight:1.7 }}>
           🔒 API keys sirf tumhare device pe store hote hain (localStorage). Kahi server pe nahi jaate. Free APIs seedhe kaam karti hain — koi key nahi chahiye.
         </div>

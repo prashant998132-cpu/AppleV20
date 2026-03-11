@@ -13,10 +13,13 @@
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ],
   "shortcuts": [
-    { "name": "Chat", "url": "/", "description": "JARVIS se baat karo" },
-    { "name": "Voice", "url": "/voice", "description": "Aawaz se baat karo" },
-    { "name": "Settings", "url": "/settings", "description": "Keys aur profile" }
+    { "name": "Chat",       "url": "/",          "description": "JARVIS se baat karo" },
+    { "name": "Briefing",   "url": "/briefing",  "description": "Subah ka update lo" },
+    { "name": "Learn",      "url": "/learn",     "description": "AI course banao" },
+    { "name": "Anime",      "url": "/anime",     "description": "Watchlist dekhna" },
+    { "name": "Voice",      "url": "/voice",     "description": "Aawaz se baat karo" },
+    { "name": "Settings",   "url": "/settings",  "description": "Keys aur profile" }
   ],
   "categories": ["utilities", "productivity", "lifestyle"],
-  "lang": "hi"
+  "prefer_related_applications": false
 }

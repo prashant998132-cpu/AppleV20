@@ -20,10 +20,10 @@ import { smartCompress } from '../../lib/media/compress'
 import { autoTag, matchesTags } from '../../lib/media/aiTagger'
 
 // ── Styles ────────────────────────────────────────────────
-const BG      = '#090d18'
-const CARD    = 'rgba(255,255,255,.04)'
-const BORDER  = 'rgba(255,255,255,.07)'
-const ACCENT  = '#00e5ff'
+const BG      = 'var(--bg)'
+const CARD    = 'var(--bg-card)'
+const BORDER  = 'var(--border)'
+const ACCENT  = 'var(--accent)'
 const DIM     = 'var(--text-faint)'
 
 type TabType = 'photos' | 'videos' | 'audio' | 'music' | 'all'
@@ -92,7 +92,7 @@ function Viewer({
         {item.tags && item.tags.length > 0 && (
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
             {item.tags.map(t => (
-              <span key={t} style={{ fontSize: 10, background: 'rgba(0,229,255,.1)', color: '#00e5ff', padding: '2px 7px', borderRadius: 10, border: '1px solid rgba(0,229,255,.2)' }}>#{t}</span>
+              <span key={t} style={{ fontSize: 10, background: 'rgba(0,229,255,.1)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 10, border: '1px solid rgba(0,229,255,.2)' }}>#{t}</span>
             ))}
           </div>
         )}
@@ -165,7 +165,7 @@ function GridItem({ item, onTap, onLongPress, selected }: {
       {item.tags && item.tags.length > 0 && (
         <div style={{ padding: '2px 3px', display: 'flex', gap: 2, flexWrap: 'nowrap', overflow: 'hidden', background: 'rgba(0,0,0,.6)' }}>
           {item.tags.slice(0, 2).map(t => (
-            <span key={t} style={{ fontSize: 7, color: '#00e5ff', background: 'rgba(0,229,255,.08)', padding: '0 3px', borderRadius: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 50 }}>{t}</span>
+            <span key={t} style={{ fontSize: 7, color: 'var(--accent)', background: 'rgba(0,229,255,.08)', padding: '0 3px', borderRadius: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 50 }}>{t}</span>
           ))}
         </div>
       )}
@@ -455,7 +455,7 @@ export default function MediaVaultPage() {
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500,
-                background: tab === t.id ? 'rgba(0,229,255,.15)' : 'rgba(255,255,255,.04)',
+                background: tab === t.id ? 'rgba(0,229,255,.15)' : 'var(--bg-card)',
                 color: tab === t.id ? ACCENT : DIM,
                 borderBottom: tab === t.id ? `2px solid ${ACCENT}` : '2px solid transparent',
               }}>
@@ -475,7 +475,7 @@ export default function MediaVaultPage() {
             placeholder="Search photos, tags... (dog, beach, subah)"
             style={{
               width: '100%', padding: '7px 34px 7px 30px', borderRadius: 10,
-              background: 'rgba(255,255,255,.04)', border: `1px solid ${BORDER}`,
+              background: 'var(--bg-card)', border: `1px solid ${BORDER}`,
               color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box',
             }}
           />

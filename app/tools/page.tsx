@@ -6,11 +6,11 @@
 import { useState } from 'react'
 import BottomNav from '../../components/shared/BottomNav'
 
-const BG     = '#090d18'
-const CARD   = 'rgba(255,255,255,.04)'
-const BORDER = 'rgba(255,255,255,.07)'
-const ACCENT = '#00e5ff'
-const DIM    = '#4a6080'
+const BG     = 'var(--bg)'
+const CARD   = 'var(--bg-card)'
+const BORDER = 'var(--border)'
+const ACCENT = 'var(--accent)'
+const DIM    = 'var(--text-faint)'
 
 // ── Types ─────────────────────────────────────────────────
 type Tool = 'sip' | 'emi' | 'gst' | 'bmi' | 'unit' | 'age' | 'percent' | 'electricity'
@@ -41,7 +41,7 @@ function Field({ label, value, onChange, type='number', placeholder, suffix }:
             borderRight: suffix ? 'none' : `1px solid ${BORDER}`,
             color: 'var(--text)', fontSize: 14, outline: 'none' }} />
         {suffix && (
-          <div style={{ padding: '10px 12px', background: 'rgba(255,255,255,.04)',
+          <div style={{ padding: '10px 12px', background: 'var(--bg-card)',
             border: `1px solid ${BORDER}`, borderRadius: '0 8px 8px 0',
             color: DIM, fontSize: 12, display: 'flex', alignItems: 'center' }}>
             {suffix}
@@ -329,7 +329,7 @@ function PercentCalc() {
           <div style={{ fontSize: 10, color: DIM, marginBottom: 6 }}>Quick: % of {b}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {[10,20,25,30,50,75].map(pct=>(
-              <div key={pct} style={{ padding:'4px 10px', borderRadius:6, background:'rgba(255,255,255,.04)', border:`1px solid ${BORDER}`, fontSize:11 }}>
+              <div key={pct} style={{ padding:'4px 10px', borderRadius:6, background:'var(--bg-card)', border:`1px solid ${BORDER}`, fontSize:11 }}>
                 <span style={{ color: DIM }}>{pct}%: </span>
                 <span style={{ color:'var(--text)' }}>{((pct/100)*y).toFixed(1)}</span>
               </div>
