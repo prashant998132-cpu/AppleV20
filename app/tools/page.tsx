@@ -4,7 +4,6 @@
 // Calculators: SIP, EMI, GST, BMI, Unit converter, Age, Percentage
 
 import { useState } from 'react'
-import BottomNav from '../../components/shared/BottomNav'
 
 const BG     = 'var(--bg)'
 const CARD   = 'var(--bg-card)'
@@ -540,7 +539,6 @@ export default function ToolsPage() {
         {CALC[active]}
       </main>
 
-      <BottomNav />
     </div>
   )
 }

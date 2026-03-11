@@ -2,7 +2,6 @@
 // app/voice/page.tsx — JARVIS Voice v13
 // Custom wake word + sensitivity + noise gate + conversation mode (6 exchanges)
 import { useState, useRef, useEffect, useCallback } from 'react'
-import BottomNav from '../../components/shared/BottomNav'
 import { cleanResponse } from '../../lib/personality'
 import { addMemory, buildMemoryContext, saveChat } from '../../lib/db'
 
@@ -389,7 +388,6 @@ export default function VoicePage() {
         </div>}
       </main>
 
-      <BottomNav active="voice"/>
       <style>{`
         @keyframes ping{75%,100%{transform:scale(1.4);opacity:0}}
         .bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.015) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}

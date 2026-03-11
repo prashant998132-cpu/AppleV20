@@ -1,25 +1,19 @@
-// JARVIS Service Worker v6 — Zero Vercel Media
-// Strategy:
-//   Pollinations images  → Cache-first 24h (zero Vercel, instant repeat)
-//   Next.js static       → Cache-first (fonts, JS, CSS — never changes)
-//   Google Fonts         → Cache-first
-//   Puter.js CDN         → Cache-first 7d (Puter SDK is big, cache it)
-//   API routes           → Network-only (never cache)
-//   App pages            → Network-first, SW cache fallback
+// JARVIS Service Worker v7 — Background Automation
+// Background sync: pending messages sent when online
+// Push notifications: proactive JARVIS alerts
+// Cache strategy: aggressive for static, network-first for pages
+// Zero Vercel bandwidth: Pollinations/Deezer/YouTube never hit Vercel
 
-const CACHE_V    = 'jarvis-v6'
-const STATIC     = 'jarvis-static-v6'
-const IMG_CACHE  = 'jarvis-img-v6'
-const FONT_CACHE = 'jarvis-font-v6'
-const SDK_CACHE  = 'jarvis-sdk-v6'
+const CACHE_V    = 'jarvis-v7'
+const STATIC     = 'jarvis-static-v7'
+const IMG_CACHE  = 'jarvis-img-v7'
+const FONT_CACHE = 'jarvis-font-v7'
+const SDK_CACHE  = 'jarvis-sdk-v7'
+const API_CACHE  = 'jarvis-api-v7'
 
-const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/offline.html',
-]
+const STATIC_ASSETS = ['/', '/manifest.json', '/offline.html']
 
-// ── Install ──────────────────────────────────────────────
+// ── Install ───────────────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(STATIC).then(c => c.addAll(STATIC_ASSETS).catch(() => {}))
@@ -27,157 +21,200 @@ self.addEventListener('install', e => {
   self.skipWaiting()
 })
 
-// ── Activate ─────────────────────────────────────────────
+// ── Activate ──────────────────────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys
-        .filter(k => ![CACHE_V, STATIC, IMG_CACHE, FONT_CACHE, SDK_CACHE].includes(k))
-        .map(k => caches.delete(k))
+      Promise.all(
+        keys.filter(k => ![CACHE_V, STATIC, IMG_CACHE, FONT_CACHE, SDK_CACHE, API_CACHE].includes(k))
+            .map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
   )
 })
 
-// ── Fetch ─────────────────────────────────────────────────
+// ── Fetch strategy ────────────────────────────────────
 self.addEventListener('fetch', e => {
-  const { url } = e.request
-  const u = new URL(url)
+  const { request } = e
+  const url = new URL(request.url)
 
-  // Skip non-GET
-  if (e.request.method !== 'GET') return
-
-  // 1. API routes → Network only (never cache)
-  if (u.pathname.startsWith('/api/')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('{"error":"offline"}', {
-      headers: { 'Content-Type': 'application/json' }
-    })))
+  // Pollinations / external media — cache-first 24h (never hits Vercel)
+  if (/pollinations\.ai|deezer\.com\/track|cdnjs\.cloudflare|fonts\.googleapis/.test(url.hostname)) {
+    e.respondWith(cacheFirst(request, IMG_CACHE, 86400))
     return
   }
 
-  // 2. Puter.js SDK → Cache-first 7 days
-  if (url.includes('js.puter.com')) {
-    e.respondWith(cacheFirst(e.request, SDK_CACHE, 7 * 24 * 3600))
+  // Puter.js SDK — cache 7 days
+  if (url.hostname === 'js.puter.com') {
+    e.respondWith(cacheFirst(request, SDK_CACHE, 604800))
     return
   }
 
-  // 3. Pollinations images → Cache-first 24h
-  if (url.includes('image.pollinations.ai') || url.includes('pollinations.ai/p/')) {
-    e.respondWith(cacheFirst(e.request, IMG_CACHE, 24 * 3600))
+  // Google Fonts CSS — cache 7 days
+  if (url.hostname === 'fonts.gstatic.com') {
+    e.respondWith(cacheFirst(request, FONT_CACHE, 604800))
     return
   }
 
-  // 4. Google Fonts & static CDNs → Cache-first
-  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com') ||
-      url.includes('cdnjs.cloudflare.com')) {
-    e.respondWith(cacheFirst(e.request, FONT_CACHE, 30 * 24 * 3600))
+  // External APIs — SHORT cache (weather 10min, crypto 2min, news 5min)
+  if (url.hostname.includes('open-meteo.com')) {
+    e.respondWith(cacheFirst(request, API_CACHE, 600))
+    return
+  }
+  if (url.hostname.includes('coingecko.com')) {
+    e.respondWith(cacheFirst(request, API_CACHE, 120))
+    return
+  }
+  if (url.hostname.includes('hacker-news.firebaseio.com')) {
+    e.respondWith(cacheFirst(request, API_CACHE, 300))
     return
   }
 
-  // 5. Next.js static assets → Cache-first
-  if (u.pathname.startsWith('/_next/static/')) {
-    e.respondWith(cacheFirst(e.request, STATIC, 365 * 24 * 3600))
+  // JARVIS API routes — network only (never cache AI responses)
+  if (url.pathname.startsWith('/api/jarvis') || url.pathname.startsWith('/api/tts')) {
+    e.respondWith(networkOnly(request))
     return
   }
 
-  // 6. App pages → Network-first, cache fallback
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
+  // Scheduler API — background, network only
+  if (url.pathname.startsWith('/api/scheduler')) {
+    e.respondWith(networkOnly(request))
+    return
+  }
+
+  // Next.js static assets (_next/static) — cache forever
+  if (url.pathname.startsWith('/_next/static/')) {
+    e.respondWith(cacheFirst(request, STATIC, 31536000))
+    return
+  }
+
+  // App pages — network first, cache fallback
+  if (request.mode === 'navigate') {
+    e.respondWith(
+      fetch(request).then(res => {
         if (res.ok) {
-          const clone = res.clone()
-          caches.open(STATIC).then(c => c.put(e.request, clone))
+          caches.open(STATIC).then(c => c.put(request, res.clone()))
         }
         return res
-      })
-      .catch(async () => {
-        const cached = await caches.match(e.request)
-        if (cached) return cached
-        if (e.request.headers.get('Accept')?.includes('text/html')) {
-          return caches.match('/offline.html') || new Response('Offline', { status: 503 })
-        }
-        return new Response('', { status: 503 })
-      })
+      }).catch(() =>
+        caches.match(request).then(r => r || caches.match('/'))
+      )
+    )
+    return
+  }
+})
+
+// ── Background Sync ────────────────────────────────────
+// When connectivity restores, run pending tasks
+self.addEventListener('sync', e => {
+  if (e.tag === 'jarvis-background-sync') {
+    e.waitUntil(runBackgroundSync())
+  }
+  if (e.tag === 'jarvis-health-check') {
+    e.waitUntil(triggerHealthCheck())
+  }
+})
+
+async function runBackgroundSync() {
+  try {
+    // Trigger cache warmup on server
+    await fetch('/api/scheduler', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: 'cache_warmup' }),
+    }).catch(() => {})
+
+    // Notify client that sync happened
+    const clients = await self.clients.matchAll()
+    clients.forEach(c => c.postMessage({ type: 'SYNC_COMPLETE', ts: Date.now() }))
+  } catch {}
+}
+
+async function triggerHealthCheck() {
+  try {
+    const res = await fetch('/api/scheduler?task=health_check&secret=jarvis-cron-2025')
+    const data = await res.json()
+    const clients = await self.clients.matchAll()
+    clients.forEach(c => c.postMessage({ type: 'HEALTH_RESULT', data }))
+  } catch {}
+}
+
+// ── Push Notifications ─────────────────────────────────
+self.addEventListener('push', e => {
+  if (!e.data) return
+  const data = e.data.json().catch(() => ({ title: 'JARVIS', body: 'Kuch hua!' }))
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'JARVIS 🤖', {
+      body: data.body || '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: 'jarvis-proactive',
+      renotify: true,
+      data: { url: data.url || '/' },
+      actions: [
+        { action: 'open', title: 'JARVIS kholo' },
+        { action: 'dismiss', title: 'Baad mein' },
+      ]
+    })
   )
 })
 
-// ── Cache-first helper ────────────────────────────────────
-async function cacheFirst(req, cacheName, maxAgeSeconds) {
-  const cache  = await caches.open(cacheName)
-  const cached = await cache.match(req)
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  if (e.action === 'dismiss') return
+  const url = e.notification.data?.url || '/'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const existing = clients.find(c => c.url.includes(self.location.origin))
+      if (existing) { existing.focus(); existing.navigate(url) }
+      else self.clients.openWindow(url)
+    })
+  )
+})
 
-  if (cached) {
-    const date = cached.headers.get('sw-cached-at')
-    if (date) {
-      const age = (Date.now() - parseInt(date)) / 1000
-      if (age < maxAgeSeconds) return cached
-    } else {
-      return cached  // Old cached items without timestamp — use them
-    }
+// ── Message from client ───────────────────────────────
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting()
+  if (e.data?.type === 'TRIGGER_SYNC') {
+    self.registration.sync.register('jarvis-background-sync').catch(() => {})
   }
+  if (e.data?.type === 'CACHE_BUST') {
+    caches.delete(CACHE_V).then(() => caches.delete(STATIC))
+  }
+})
 
+// ── Helpers ───────────────────────────────────────────
+async function cacheFirst(request, cacheName, maxAge) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+  if (cached) {
+    const fetchedAt = cached.headers.get('sw-fetched-at')
+    if (fetchedAt && Date.now() - Number(fetchedAt) < maxAge * 1000) return cached
+  }
   try {
-    const res = await fetch(req)
-    if (res.ok) {
-      const headers = new Headers(res.headers)
-      headers.set('sw-cached-at', String(Date.now()))
-      const cached = new Response(await res.blob(), { status: res.status, headers })
-      cache.put(req, cached.clone())
-      return cached
+    const fresh = await fetch(request)
+    if (fresh.ok) {
+      const headers = new Headers(fresh.headers)
+      headers.set('sw-fetched-at', Date.now().toString())
+      const toCache = new Response(await fresh.clone().arrayBuffer(), {
+        status: fresh.status, headers
+      })
+      cache.put(request, toCache)
     }
-    return res
+    return fresh
   } catch {
-    return cached || new Response('', { status: 503 })
+    return cached || new Response('Offline', { status: 503 })
   }
 }
 
-// ── Messages from app ─────────────────────────────────────
-self.addEventListener('message', e => {
-  if (e.data === 'SKIP_WAITING')      { self.skipWaiting(); return }
-  if (e.data === 'CLEAN_IMG_CACHE') {
-    caches.open(IMG_CACHE).then(async c => {
-      const keys = await c.keys()
-      let deleted = 0
-      for (const req of keys) {
-        const res = await c.match(req)
-        const date = res?.headers.get('sw-cached-at')
-        if (date && (Date.now() - parseInt(date)) / 1000 > 24 * 3600) {
-          await c.delete(req); deleted++
-        }
-      }
-      e.source?.postMessage({ type: 'CACHE_CLEANED', deleted })
-    })
-  }
-})
+async function networkOnly(request) {
+  try { return await fetch(request) }
+  catch { return new Response(JSON.stringify({ error: 'offline' }), { status: 503, headers: { 'Content-Type': 'application/json' } }) }
+}
 
-// ── Background sync for offline chat queue ────────────────
-self.addEventListener('sync', e => {
-  if (e.tag === 'jarvis-sync-queue') {
-    e.waitUntil(
-      // Notify client to flush sync queue
-      self.clients.matchAll().then(clients => {
-        clients.forEach(c => c.postMessage({ type: 'FLUSH_SYNC_QUEUE' }))
-      })
-    )
-  }
-})
-
-// ── Periodic sync (if supported) ─────────────────────────
+// ── Periodic background ping every 6 hours ────────────
 self.addEventListener('periodicsync', e => {
-  if (e.tag === 'jarvis-media-clean') {
-    e.waitUntil(
-      caches.open(IMG_CACHE).then(async cache => {
-        const keys = await cache.keys()
-        let cleaned = 0
-        for (const req of keys) {
-          const res = await cache.match(req)
-          const date = res?.headers.get('sw-cached-at')
-          if (date && (Date.now() - parseInt(date)) > 24 * 3600 * 1000) {
-            await cache.delete(req); cleaned++
-          }
-        }
-        console.log(`[SW] Media cache cleaned: ${cleaned} entries`)
-      })
-    )
+  if (e.tag === 'jarvis-periodic') {
+    e.waitUntil(runBackgroundSync())
   }
 })

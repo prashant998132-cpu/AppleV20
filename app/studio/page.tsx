@@ -7,7 +7,6 @@
 // ╚══════════════════════════════════════════════════════════╝
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import BottomNav from '../../components/shared/BottomNav'
 import { ensurePuterAuth, saveImageToPuter, saveAudioToPuter, saveMusicToPuter, saveCanvasToPuter, loadFromPuter, deleteFromPuter, initPuterFolders, puterStorageStats } from '../../lib/media/puterStorage'
 import { mediaSave, mediaDelete, mediaGetAll, makeThumbnail, audioThumb, type MediaMeta } from '../../lib/media/mediaStore'
 import { smartCompress, generateThumbnail } from '../../lib/media/compress'
@@ -1212,7 +1211,6 @@ export default function StudioPage() {
         {tab==='canvas'  && <CanvasTab/>}
       </div>
 
-      <BottomNav active="studio"/>
       <style>{`
         @keyframes spin { to { transform:rotate(360deg) } }
         .bg-grid { position:absolute;inset:0;background-image:linear-gradient(rgba(167,139,250,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,.012) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0 }

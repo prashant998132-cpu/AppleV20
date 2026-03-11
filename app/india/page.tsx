@@ -4,7 +4,6 @@
 // ALL FREE — no API key needed
 
 import { useState } from 'react'
-import BottomNav from '../../components/shared/BottomNav'
 import { useRouter } from 'next/navigation'
 
 type Tool = 'pnr'|'ifsc'|'pincode'|'fuel'|'holidays'|'ip'|'rto'
@@ -325,7 +324,6 @@ export default function IndiaHub() {
         )}
       </div>
 
-      <BottomNav/>
     </div>
   )
 }

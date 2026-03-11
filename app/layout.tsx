@@ -38,8 +38,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-              navigator.serviceWorker.register('/sw.js')
-                .catch(e => console.log('[SW] Registration failed:', e))
+              navigator.serviceWorker.register('/sw.js').then(reg => {
+                // Background sync — runs when connectivity restores
+                if ('sync' in reg) reg.sync.register('jarvis-background-sync').catch(()=>{})
+                // Periodic background sync — every 6h (Chrome Android)
+                if ('periodicSync' in reg) {
+                  reg.periodicSync.register('jarvis-periodic', { minInterval: 21600000 }).catch(()=>{})
+                }
+                // Listen for SW → page messages
+                navigator.serviceWorker.addEventListener('message', e => {
+                  if (e.data?.type === 'SYNC_COMPLETE') {
+                    window.__jarvisSyncAt = e.data.ts
+                  }
+                })
+              }).catch(()=>{})
             })
           }
         ` }} />

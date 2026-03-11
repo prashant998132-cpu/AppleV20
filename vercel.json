@@ -1,8 +1,35 @@
 {
   "crons": [
     {
-      "path": "/api/scheduler?task=daily_summary&secret=jarvis-cron-2025",
+      "path": "/api/scheduler?task=multi&multi=1&secret=jarvis-cron-2025",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/scheduler?task=cache_warmup&secret=jarvis-cron-2025",
+      "schedule": "0 */6 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "X-JARVIS-Version", "value": "25" }
+      ]
+    },
+    {
+      "source": "/.well-known/(.*)",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
     }
   ]
 }

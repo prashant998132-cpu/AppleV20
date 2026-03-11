@@ -3,7 +3,6 @@
 // 150+ connected apps · 20 categories · Real API + Deep links
 
 import { useState, useMemo, useEffect } from 'react'
-import BottomNav from '../../components/shared/BottomNav'
 import { MEGA_APPS, ALL_CATEGORIES, CATEGORY_EMOJI, searchMegaApps, MEGA_STATS, type MegaApp, type MegaCategory } from '../../lib/integrations/mega'
 
 const BG='var(--bg)', CARD='var(--bg-card)', BORDER='var(--border)', ACCENT='var(--accent)', DIM='var(--text-faint)'
@@ -181,7 +180,6 @@ export default function AppsPage(){
         </div>
       </div>
 
-      <BottomNav/>
     </div>
   )
 }
