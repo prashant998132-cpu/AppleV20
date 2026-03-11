@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 6. Generate rich card from tool results ───────────────────────────
-    let card = null
+    let card: Record<string,unknown> | null = null
     try {
       const q = message.toLowerCase()
       const firstResult = results?.[0]

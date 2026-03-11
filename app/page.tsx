@@ -313,14 +313,14 @@ function getSmartStatus(text: string, mode: string): string {
 }
 
 const STARTERS = [
-  { icon:'🌤️', t:'Rewa ka mausam?' },
-  { icon:'📰', t:'Aaj ki top khabar kya hai?' },
-  { icon:'🌸', t:'Top 5 anime recommend karo' },
-  { icon:'🧠', t:'Python sikhana hai — shuru kahan se karun?' },
-  { icon:'😄', t:'Ek mast joke sunao' },
-  { icon:'🪙', t:'Bitcoin ka aaj ka rate?' },
-  { icon:'🎵', t:'Arijit Singh ke best songs?' },
-  { icon:'💡', t:'Ek interesting fact batao' },
+  { icon:'🌤️', t:'Rewa ka mausam?',          sub:'Aaj ka temperature & forecast' },
+  { icon:'📰', t:'Aaj ki top khabar?',         sub:'India & world news summary' },
+  { icon:'🧠', t:'Python sikhana hai',          sub:'Bilkul beginner se shuru karo' },
+  { icon:'🎵', t:'Mujhe ek song recommend karo',sub:'Mood batao, perfect track milega' },
+  { icon:'🌸', t:'Top anime suggest karo',      sub:'Genre batao — action, romance, etc.' },
+  { icon:'🪙', t:'Bitcoin aaj kitne ka hai?',   sub:'Live price + trend' },
+  { icon:'💡', t:'Ek amazing fact batao',       sub:'Random interesting science/history' },
+  { icon:'🚀', t:'Meri JARVIS journey shuru karo', sub:'Set up goals, reminders, profile' },
 ]
 
 
@@ -400,13 +400,13 @@ const IconEdit = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="non
 
 // ── IBtn — Claude-style labeled action button ───────────────
 function IBtn({ onClick, title, children, active, label }: { onClick:()=>void; title:string; children:React.ReactNode; active?:boolean; label?:string }) {
+  const [hover, setHover] = useState(false)
   return (
     <button onClick={onClick} title={title}
-      style={{ background:'none', border:'none', cursor:'pointer', padding:'4px 8px', borderRadius:7, color: active ? 'var(--accent)' : 'var(--text-faint)', display:'flex', alignItems:'center', gap:4, transition:'all .15s', fontSize:12, fontFamily:'inherit' }}
-      onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background='var(--bg-surface)';el.style.color='var(--text)'}}
-      onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.background='none';el.style.color=active?'var(--accent)':'var(--text-faint)'}}>
+      onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
+      style={{ background: hover?'var(--bg-surface)':'none', border:'none', cursor:'pointer', padding:'5px 6px', borderRadius:7, color: active ? 'var(--accent)' : hover?'var(--text)':'var(--text-faint)', display:'flex', alignItems:'center', gap:3, transition:'all .12s', fontSize:11, fontFamily:'inherit' }}>
       {children}
-      {label && <span style={{fontSize:11,fontWeight:500}}>{label}</span>}
+      {label && hover && <span style={{fontSize:10,fontWeight:500,whiteSpace:'nowrap'as const}}>{label}</span>}
     </button>
   )
 }
@@ -489,28 +489,28 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
         </div>
       )}
 
-      {/* ── Claude-style toolbar — appears below on hover ── */}
+      {/* ── Claude-style action toolbar — appears below on hover ── */}
       <div style={{
-        display:'flex', alignItems:'center', gap:0, marginTop:4,
+        display:'flex', alignItems:'center', gap:0, marginTop:3,
         opacity: (hovered || !!m.feedback) ? 1 : 0,
-        transition:'opacity .2s', height: (hovered || !!m.feedback) ? 'auto' : 0,
+        maxHeight: (hovered || !!m.feedback) ? 40 : 0,
         overflow: 'hidden',
-        background: hovered ? 'var(--bg-surface)' : 'transparent',
-        borderRadius: 10, padding: hovered ? '2px 4px' : '0 4px',
-        border: hovered ? '1px solid var(--border)' : '1px solid transparent',
         alignSelf: isU ? 'flex-end' : 'flex-start',
-        transition: 'all .15s',
+        transition: 'opacity .15s, max-height .15s',
       }}>
-        <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'monospace',padding:'0 6px',borderRight:'1px solid var(--border)'}}>{time}</span>
-        {!isU&&m.responseTime&&<span style={{fontSize:9,color:'var(--text-faint)',padding:'2px 6px',fontFamily:'monospace',borderRight:'1px solid var(--border)'}}>
-          {(m.responseTime/1000).toFixed(1)}s {m.mode==='think'?'🧠':m.mode==='deep'?'🔬':m.mode==='flash'?'⚡':'🤖'}
-        </span>}
-        {isU&&!m.streaming&&<IBtn onClick={()=>onEdit?.(m.id,m.content)} title="Edit message" label="Edit"><IconEdit/></IBtn>}
+        {/* Time always first */}
+        <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'monospace',padding:'2px 6px'}}>{time}</span>
+        {!isU&&m.responseTime&&(
+          <span style={{fontSize:9,color:'var(--text-faint)',padding:'2px 6px',fontFamily:'monospace',borderLeft:'1px solid var(--border)',borderRight:'1px solid var(--border)',marginRight:2}}>
+            {(m.responseTime/1000).toFixed(1)}s {m.mode==='think'?'🧠':m.mode==='deep'?'🔬':m.mode==='flash'?'⚡':'🤖'}
+          </span>
+        )}
+        {isU&&!m.streaming&&<IBtn onClick={()=>{if(onEdit) onEdit(m.id,m.content)}} title="Edit message" label="Edit"><IconEdit/></IBtn>}
         {!isU&&!m.streaming&&(<>
-          <IBtn onClick={copyMsg} title={copied?'Copied!':'Copy'} label={copied ? 'Copied!' : 'Copy'}>{copied?<IconCheck/>:<IconCopy/>}</IBtn>
+          <IBtn onClick={copyMsg} title={copied?'Copied!':'Copy'} label={copied?'Copied!':undefined}>{copied?<IconCheck/>:<IconCopy/>}</IBtn>
           <IBtn onClick={()=>onFeed(m.id,'up')} title="Good response" active={m.feedback==='up'} label={m.feedback==='up'?'Liked':undefined}><IconThumbUp on={m.feedback==='up'}/></IBtn>
           <IBtn onClick={()=>onFeed(m.id,'down')} title="Bad response" active={m.feedback==='down'}><IconThumbDown on={m.feedback==='down'}/></IBtn>
-          <IBtn onClick={()=>shareMsg(clean)} title="Share" label="Share">
+          <IBtn onClick={()=>shareMsg(clean)} title="Share">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </IBtn>
           <IBtn onClick={()=>onPin?.(m.id)} title="Pin message" active={!!m.pinned}><IconPin on={!!m.pinned}/></IBtn>
@@ -1292,7 +1292,7 @@ export default function Page() {
           <button onClick={()=>setHistoryOpen(true)} title="Chat History" style={{width:28,height:28,borderRadius:8,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🕐</button>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:'var(--text)',letterSpacing:3,fontFamily:"'Space Mono',monospace"}}>JARVIS</div>
-            <div style={{fontSize:8,color:'var(--text-faint)',letterSpacing:1}}>{name?name.toUpperCase():'AI'} · v23</div>
+            <div style={{fontSize:8,color:'var(--text-faint)',letterSpacing:1}}>{name?name.toUpperCase():'AI'} · {mode==='think'?'gemini-2.5-think':mode==='deep'?'gemini-2.5-deep':mode==='flash'?'gemini-flash':'auto'}</div>
           </div>
           <WeatherBadge/>
         </div>
@@ -1332,7 +1332,14 @@ export default function Page() {
           {!online&&<span style={{fontSize:9,color:'#ff4444',fontWeight:700}}>OFFLINE</span>}
           {msgs.length>0&&<button onClick={()=>setSearchOpen(true)} style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:13,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>🔍</button>}
           {msgs.length>2&&<button onClick={exportChat} title="Export chat" style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:12,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⬇</button>}
-          {msgs.length>0&&<button onClick={()=>{setMsgs([]);setSessionTitle('');startNewSession()}} style={{width:26,height:26,borderRadius:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⊘</button>}
+          <button onClick={()=>{setMsgs([]);setSessionTitle('');startNewSession()}}
+            title="New chat"
+            style={{display:'flex',alignItems:'center',gap:4,padding:'4px 9px',borderRadius:8,background:'transparent',border:'1px solid var(--border)',color:'var(--text-faint)',fontSize:10,cursor:'pointer',fontWeight:600}}
+            onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor='var(--border-acc)';(e.currentTarget as HTMLElement).style.color='var(--accent)'}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor='var(--border)';(e.currentTarget as HTMLElement).style.color='var(--text-faint)'}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New
+          </button>
         </div>
       </header>
 
@@ -1352,30 +1359,34 @@ export default function Page() {
         </button>
       )}
         {msgs.length===0?(
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 16px'}}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 16px',paddingTop:8}}>
             <Clock name={name}/>
-            {/* Suggestion chips */}
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:'100%',maxWidth:440,marginTop:28}}>
+            {/* Claude/Gemini style — 2x2 grid suggestion cards */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:'100%',maxWidth:440,marginTop:20}}>
               {STARTERS.map(s=>(
                 <button key={s.t} onClick={()=>send(s.t)}
-                  style={{padding:'12px',borderRadius:12,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:12,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:8,transition:'all .15s'}}
-                  onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--border-acc)',e.currentTarget.style.color='var(--accent)')}
-                  onMouseLeave={e=>(e.currentTarget.style.borderColor='var(--border)',e.currentTarget.style.color='var(--text-muted)')}>
-                  <span>{s.icon}</span><span>{s.t}</span>
+                  style={{padding:'13px 12px',borderRadius:14,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text)',textAlign:'left',cursor:'pointer',display:'flex',flexDirection:'column',gap:4,transition:'all .18s',outline:'none'}}
+                  onMouseEnter={e=>{const el=e.currentTarget;el.style.borderColor='var(--border-acc)';el.style.background='var(--accent-bg)';el.style.transform='translateY(-1px)'}}
+                  onMouseLeave={e=>{const el=e.currentTarget;el.style.borderColor='var(--border)';el.style.background='var(--bg-surface)';el.style.transform=''}}>
+                  <span style={{fontSize:18}}>{s.icon}</span>
+                  <span style={{fontSize:12,fontWeight:600,color:'var(--text)',lineHeight:1.3}}>{s.t}</span>
+                  <span style={{fontSize:10,color:'var(--text-faint)',lineHeight:1.3}}>{s.sub}</span>
                 </button>
               ))}
             </div>
-            {/* Quick shortcuts row */}
-            <div style={{display:'flex',gap:8,marginTop:16,width:'100%',maxWidth:440}}>
+            {/* Quick page shortcuts */}
+            <div style={{display:'flex',gap:8,marginTop:14,width:'100%',maxWidth:440}}>
               {[
-                {icon:'🌅',label:'Briefing',href:'/briefing'},
                 {icon:'🧠',label:'Learn',href:'/learn'},
                 {icon:'🌸',label:'Anime',href:'/anime'},
-                {icon:'⚡',label:'System',href:'/system'},
+                {icon:'📅',label:'Briefing',href:'/briefing'},
+                {icon:'🔌',label:'APIs',href:'/connected'},
               ].map(({icon,label,href})=>(
                 <a key={href} href={href}
-                  style={{flex:1,padding:'8px 4px',borderRadius:10,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:10,textDecoration:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
-                  <span style={{fontSize:16}}>{icon}</span>
+                  style={{flex:1,padding:'9px 4px',borderRadius:10,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:10,textDecoration:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:3,transition:'all .15s'}}
+                  onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor='var(--border-acc)';(e.currentTarget as HTMLElement).style.color='var(--accent)'}}
+                  onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor='var(--border)';(e.currentTarget as HTMLElement).style.color='var(--text-muted)'}}>
+                  <span style={{fontSize:17}}>{icon}</span>
                   <span>{label}</span>
                 </a>
               ))}
@@ -1392,14 +1403,19 @@ export default function Page() {
               </div>
             )}
             {msgs.map(m=><Msg key={m.id} m={m} onFeed={handleFeed} onRetry={retryLast} onPin={handlePin} onEdit={startEdit}/>)}
-            {lastAI&&!loading&&(
-              <div style={{padding:'2px 14px 6px',display:'flex',gap:6,flexWrap:'wrap'}}>
-                {chips.map(c=>(
-                  <button key={c} onClick={()=>send(c)}
-                    style={{padding:'5px 12px',borderRadius:20,background:'rgba(255,255,255,.02)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:11,cursor:'pointer',whiteSpace:'nowrap'}}>
-                    {c}
-                  </button>
-                ))}
+            {lastAI&&!loading&&chips.length>0&&(
+              <div style={{padding:'4px 14px 8px'}}>
+                <div style={{fontSize:9,color:'var(--text-faint)',letterSpacing:1,marginBottom:5,fontFamily:"'Space Mono',monospace"}}>RELATED</div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {chips.map(c=>(
+                    <button key={c} onClick={()=>send(c)}
+                      style={{padding:'5px 12px',borderRadius:20,background:'transparent',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:11,cursor:'pointer',whiteSpace:'nowrap',transition:'all .15s'}}
+                      onMouseEnter={e=>{const el=e.currentTarget;el.style.borderColor='var(--border-acc)';el.style.color='var(--accent)';el.style.background='var(--accent-bg)'}}
+                      onMouseLeave={e=>{const el=e.currentTarget;el.style.borderColor='var(--border)';el.style.color='var(--text-muted)';el.style.background='transparent'}}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </>

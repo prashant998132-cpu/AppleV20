@@ -112,12 +112,12 @@ export default function AnimePage() {
 
   function updateStatus(id: number, status: WatchItem['status']) {
     const updated = watchlist.map((w:WatchItem) => w.mal_id === id ? { ...w, status } : w)
-    setWatchlist(upd); saveWatch(upd)
+    setWatchlist(updated); saveWatch(updated)
   }
 
   function removeFromList(id: number) {
     const updated = watchlist.filter((w:WatchItem) => w.mal_id !== id)
-    setWatchlist(upd); saveWatch(upd)
+    setWatchlist(updated); saveWatch(updated)
   }
 
   const GENRES = ['all', 'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Sci-Fi', 'Thriller']
@@ -163,7 +163,7 @@ export default function AnimePage() {
               ))}
             </div>
             {loading && <div style={{ textAlign: 'center' as const, padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>🌸 Load ho raha hai...</div>}
-            {filteredTop.map((a:Anime) => <AnimeCard key={a.mal_id} a={a} onAdd={(ani:Anime) => addToWatchlist(ani)} />)}
+            {filteredTop.map((a:Anime, i:number) => <AnimeCard key={i} a={a} onAdd={(ani:Anime) => addToWatchlist(ani)} />)}
           </>
         )}
 
@@ -180,7 +180,7 @@ export default function AnimePage() {
               </button>
             </div>
             {results.length === 0 && !loading && query && <div style={{ textAlign: 'center' as const, padding: '40px 0', color: 'var(--text-muted)' }}>Koi result nahi mila</div>}
-            {results.map(a => <AnimeCard key={a.mal_id} a={a} onAdd={a => addToWatchlist(a)} />)}
+            {results.map((a:Anime, i:number) => <AnimeCard key={i} a={a} onAdd={(ani:Anime) => addToWatchlist(ani)} />)}
           </div>
         )}
 
