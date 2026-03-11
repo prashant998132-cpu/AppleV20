@@ -121,11 +121,11 @@ export default function BriefingPage() {
   }
 
   const S: Record<string, React.CSSProperties> = {
-    page:    { minHeight: '100vh', background: '#090d18', color: '#e8f4ff', paddingBottom: 80 },
-    card:    { margin: '0 12px 14px', padding: '14px 16px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14 },
-    label:   { fontSize: 9, fontWeight: 700, color: '#1e3858', letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 8 },
-    val:     { fontSize: 28, fontWeight: 700, color: '#e8f4ff' },
-    sub:     { fontSize: 11, color: '#1e3858', marginTop: 2 },
+    page:    { minHeight: '100vh', background: '#090d18', color: 'var(--text)', paddingBottom: 80 },
+    card:    { margin: '0 12px 14px', padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14 },
+    label:   { fontSize: 9, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 8 },
+    val:     { fontSize: 28, fontWeight: 700, color: 'var(--text)' },
+    sub:     { fontSize: 11, color: 'var(--text-faint)', marginTop: 2 },
     chip:    { display: 'inline-block', padding: '2px 8px', borderRadius: 20, background: 'rgba(0,229,255,.08)', border: '1px solid rgba(0,229,255,.12)', fontSize: 10, color: '#00e5ff', marginRight: 6 },
     divider: { height: 1, background: 'rgba(255,255,255,.05)', margin: '10px 0' },
   }
@@ -145,10 +145,10 @@ export default function BriefingPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: '#00e5ff' }}>{timeStr}</div>
-            <div style={{ fontSize: 11, color: '#1e3858', marginTop: 1 }}>{dateStr}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>{dateStr}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 14, color: '#e8f4ff' }}>🌅 {greeting}</div>
+            <div style={{ fontSize: 14, color: 'var(--text)' }}>🌅 {greeting}</div>
             <button onClick={fetchAll} disabled={refreshing} style={{ marginTop: 4, padding: '3px 10px', borderRadius: 8, background: 'rgba(0,229,255,.08)', border: '1px solid rgba(0,229,255,.15)', color: '#00e5ff', fontSize: 10, cursor: 'pointer' }}>
               {refreshing ? <Spinner/> : '↺'} Refresh
             </button>
@@ -168,11 +168,11 @@ export default function BriefingPage() {
               <div style={S.sub}>{weather.desc} · {weather.city}</div>
             </div>
             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-              <div style={{ fontSize: 11, color: '#1e3858' }}>💧 {weather.humidity}%</div>
-              <div style={{ fontSize: 11, color: '#1e3858', marginTop: 2 }}>💨 {weather.wind} km/h</div>
+              <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>💧 {weather.humidity}%</div>
+              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>💨 {weather.wind} km/h</div>
             </div>
           </div>
-        ) : <div style={{ color: '#1e3858', fontSize: 12 }}>📡 Location access chahiye — browser permission do</div>}
+        ) : <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>📡 Location access chahiye — browser permission do</div>}
       </div>
 
       {/* Crypto */}
@@ -187,7 +187,7 @@ export default function BriefingPage() {
             ].map(coin => (
               <div key={coin.name} style={{ padding: '8px 10px', background: 'rgba(0,0,0,.2)', borderRadius: 10, textAlign: 'center' }}>
                 <div style={{ fontSize: 16 }}>{coin.icon}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#e8f4ff', marginTop: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginTop: 4 }}>
                   ₹{coin.val >= 100000 ? `${(coin.val / 100000).toFixed(1)}L` : coin.val >= 1000 ? `${(coin.val / 1000).toFixed(0)}K` : coin.val}
                 </div>
                 {coin.chg !== 0 && (
@@ -195,11 +195,11 @@ export default function BriefingPage() {
                     {coin.chg >= 0 ? '▲' : '▼'} {Math.abs(coin.chg).toFixed(1)}%
                   </div>
                 )}
-                <div style={{ fontSize: 9, color: '#1e3858', marginTop: 1 }}>{coin.name}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 1 }}>{coin.name}</div>
               </div>
             ))}
           </div>
-        ) : <div style={{ color: '#1e3858', fontSize: 12 }}>CoinGecko unavailable — check internet</div>}
+        ) : <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>CoinGecko unavailable — check internet</div>}
       </div>
 
       {/* NASA APOD */}
@@ -210,14 +210,14 @@ export default function BriefingPage() {
             {nasa.mediaType !== 'video' && (
               <img src={nasa.url} alt={nasa.title} style={{ width: '100%', borderRadius: 10, maxHeight: 200, objectFit: 'cover', display: 'block', marginBottom: 10 }} loading="lazy"/>
             )}
-            <div style={{ fontWeight: 600, fontSize: 13, color: '#e8f4ff', marginBottom: 6 }}>{nasa.title}</div>
-            <div style={{ fontSize: 11, color: '#1e3858', lineHeight: 1.5 }}>{nasa.explanation}...</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', marginBottom: 6 }}>{nasa.title}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5 }}>{nasa.explanation}...</div>
             {nasa.mediaType === 'video' && (
               <a href={nasa.url} target="_blank" rel="noreferrer" style={{ display: 'block', marginTop: 8, padding: '6px 12px', background: 'rgba(0,229,255,.08)', border: '1px solid rgba(0,229,255,.15)', borderRadius: 8, color: '#00e5ff', fontSize: 11, textAlign: 'center', textDecoration: 'none' }}>▶ Watch Video</a>
             )}
           </>
         ) : (
-          <div style={{ color: '#1e3858', fontSize: 12 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
             NASA key optional — Settings mein add karo (100 req/hour with key, 30 without)
           </div>
         )}
@@ -229,13 +229,13 @@ export default function BriefingPage() {
         {loading.news ? <Spinner/> : news.length > 0 ? (
           news.map((n, i) => (
             <div key={i} style={{ paddingTop: i > 0 ? 10 : 0, marginTop: i > 0 ? 10 : 0, borderTop: i > 0 ? '1px solid rgba(255,255,255,.05)' : 'none' }}>
-              <a href={n.readMoreUrl} target="_blank" rel="noreferrer" style={{ color: '#ddeeff', textDecoration: 'none', fontSize: 12, lineHeight: 1.5, fontWeight: i === 0 ? 600 : 400 }}>
+              <a href={n.readMoreUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--text)', textDecoration: 'none', fontSize: 12, lineHeight: 1.5, fontWeight: i === 0 ? 600 : 400 }}>
                 {n.title}
               </a>
             </div>
           ))
         ) : (
-          <div style={{ color: '#1e3858', fontSize: 12 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
             Settings mein NewsData.io key add karo for backup news.<br/>
             <a href="https://newsdata.io" target="_blank" rel="noreferrer" style={{ color: '#00e5ff' }}>newsdata.io → Free 200/day</a>
           </div>

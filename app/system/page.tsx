@@ -10,8 +10,8 @@ import {
 } from '../../lib/core/smartRouter'
 
 // ── Theme ─────────────────────────────────────────────────
-const BG     = '#05080f'
-const CARD   = 'rgba(255,255,255,.04)'
+const BG     = 'var(--bg)'
+const CARD   = 'var(--bg-card)'
 const BORDER = 'rgba(255,255,255,.07)'
 const ACCENT = '#00e5ff'
 const GREEN  = '#22c55e'
@@ -141,7 +141,7 @@ export default function SystemPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: BG, color: '#e8f4ff',
+      minHeight: '100vh', background: BG, color: 'var(--text)',
       fontFamily: "'Noto Sans Devanagari', 'JetBrains Mono', system-ui, sans-serif",
       maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column',
     }}>
@@ -222,7 +222,7 @@ export default function SystemPage() {
                             {p.priority}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: ps.available ? '#e8f4ff' : '#4a6080' }}>{p.name}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: ps.available ? 'var(--text)' : '#4a6080' }}>{p.name}</div>
                             <div style={{ fontSize: 9, color: DIM }}>{p.model}</div>
                           </div>
                           <div style={{ fontSize: 10, color, fontWeight: 600 }}>{STATUS_LABEL[ps.status]}</div>
@@ -235,7 +235,7 @@ export default function SystemPage() {
                               <span style={{ fontSize: 9, color: DIM }}>{ps.todayCalls}/{p.limits.perDay} calls today</span>
                               <span style={{ fontSize: 9, color: ps.limitPct > 70 ? YELLOW : DIM }}>{ps.limitPct.toFixed(0)}%</span>
                             </div>
-                            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.06)' }}>
+                            <div style={{ height: 3, borderRadius: 2, background: 'var(--border)' }}>
                               <div style={{ height: '100%', borderRadius: 2, width: `${ps.limitPct}%`, background: ps.limitPct > 90 ? RED : ps.limitPct > 70 ? YELLOW : GREEN, transition: 'width .3s' }} />
                             </div>
                           </div>
@@ -245,7 +245,7 @@ export default function SystemPage() {
                           <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: p.costPer1KTokens === 0 ? 'rgba(34,197,94,.1)' : 'rgba(251,191,36,.1)', color: p.costPer1KTokens === 0 ? GREEN : YELLOW }}>
                             {p.costPer1KTokens === 0 ? '💚 Free' : `$${p.costPer1KTokens}/1K tokens`}
                           </span>
-                          {p.limits.perDay && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,.04)', color: DIM }}>{p.limits.perDay}/day</span>}
+                          {p.limits.perDay && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'var(--bg-card)', color: DIM }}>{p.limits.perDay}/day</span>}
                           {ps.todayCost > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(251,191,36,.08)', color: YELLOW }}>${ps.todayCost.toFixed(4)} today</span>}
                         </div>
                         <div style={{ fontSize: 9, color: DIM, marginTop: 5, lineHeight: 1.4 }}>{p.notes}</div>
@@ -292,17 +292,17 @@ export default function SystemPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 20 }}>{layer.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#e8f4ff' }}>{layer.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{layer.name}</div>
                     <div style={{ fontSize: 9, color: DIM }}>{layer.type}</div>
                   </div>
-                  <span style={{ fontSize: 9, padding: '3px 8px', borderRadius: 6, background: layer.status==='active'?`${layer.color}15`:'rgba(255,255,255,.04)', color: layer.status==='active'?layer.color:DIM, border: `1px solid ${layer.status==='active'?layer.color+'30':BORDER}` }}>
+                  <span style={{ fontSize: 9, padding: '3px 8px', borderRadius: 6, background: layer.status==='active'?`${layer.color}15`:'var(--bg-card)', color: layer.status==='active'?layer.color:DIM, border: `1px solid ${layer.status==='active'?layer.color+'30':BORDER}` }}>
                     {layer.status === 'active' ? '● Active' : '○ Optional'}
                   </span>
                 </div>
                 <div style={{ fontSize: 10, color: '#7a9ab8', marginBottom: 4 }}>{layer.what}</div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(34,197,94,.08)', color: GREEN }}>{layer.cost}</span>
-                  <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,.04)', color: DIM }}>{layer.limit}</span>
+                  <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'var(--bg-card)', color: DIM }}>{layer.limit}</span>
                 </div>
                 {layer.url && (
                   <a href={layer.url} target="_blank" rel="noopener" style={{ fontSize: 9, color: ACCENT, textDecoration: 'none', display: 'block', marginTop: 5 }}>→ Setup: {layer.url.replace('https://','')}</a>
@@ -400,7 +400,7 @@ export default function SystemPage() {
         {tab === 'github' && (
           <div>
             <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,.03)', border: `1px solid ${BORDER}`, marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#e8f4ff', marginBottom: 6 }}>🐙 GitHub → Vercel Auto-Deploy</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>🐙 GitHub → Vercel Auto-Deploy</div>
               <div style={{ fontSize: 10, color: DIM, lineHeight: 1.6 }}>
                 GitHub pe push karo → Vercel auto build + deploy. Sirf source code (HTML/JS/TS) — koi media/keys nahi. Environment variables Vercel dashboard mein set karo.
               </div>
@@ -410,7 +410,7 @@ export default function SystemPage() {
               <div key={s.step} style={{ marginBottom: 12, padding: '12px 14px', borderRadius: 12, background: CARD, border: `1px solid ${BORDER}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <div style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(0,229,255,.1)', border: '1px solid rgba(0,229,255,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: ACCENT, fontWeight: 700 }}>{s.step}</div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#e8f4ff' }}>{s.title}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{s.title}</span>
                   <button
                     onClick={() => copyCmd(s.cmd, idx)}
                     style={{ marginLeft: 'auto', padding: '3px 8px', borderRadius: 5, border: `1px solid ${BORDER}`, background: copiedCmd===idx?'rgba(34,197,94,.1)':CARD, color: copiedCmd===idx?GREEN:DIM, fontSize: 10, cursor: 'pointer' }}
@@ -443,7 +443,7 @@ export default function SystemPage() {
 
             {/* Version info */}
             <div style={{ padding: '12px 14px', borderRadius: 12, background: CARD, border: `1px solid ${BORDER}`, marginTop: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#e8f4ff', marginBottom: 8 }}>📦 Current Build</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>📦 Current Build</div>
               {[
                 ['Version', 'v18.0.0 Autonomous'],
                 ['Files', '145 source files'],

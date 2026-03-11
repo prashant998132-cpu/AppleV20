@@ -39,7 +39,7 @@ function Field({ label, value, onChange, type='number', placeholder, suffix }:
           style={{ flex: 1, padding: '10px 12px', borderRadius: suffix ? '8px 0 0 8px' : 8,
             background: 'rgba(255,255,255,.06)', border: `1px solid ${BORDER}`,
             borderRight: suffix ? 'none' : `1px solid ${BORDER}`,
-            color: '#e8f4ff', fontSize: 14, outline: 'none' }} />
+            color: 'var(--text)', fontSize: 14, outline: 'none' }} />
         {suffix && (
           <div style={{ padding: '10px 12px', background: 'rgba(255,255,255,.04)',
             border: `1px solid ${BORDER}`, borderRadius: '0 8px 8px 0',
@@ -60,7 +60,7 @@ function Result({ label, value, highlight }:{ label:string; value:string; highli
       border: `1px solid ${highlight ? 'rgba(0,229,255,.2)' : BORDER}` }}>
       <span style={{ fontSize: 12, color: DIM }}>{label}</span>
       <span style={{ fontSize: 13, fontWeight: highlight ? 700 : 400,
-        color: highlight ? ACCENT : '#e8f4ff', fontFamily: 'Space Mono, monospace' }}>
+        color: highlight ? ACCENT : 'var(--text)', fontFamily: 'Space Mono, monospace' }}>
         {value}
       </span>
     </div>
@@ -177,7 +177,7 @@ function GSTCalc() {
             <button key={r} onClick={() => setGstRate(r)}
               style={{ padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12,
                 background: gstRate === r ? ACCENT : 'rgba(255,255,255,.06)',
-                color: gstRate === r ? '#000' : '#e8f4ff' }}>
+                color: gstRate === r ? '#000' : 'var(--text)' }}>
               {r}%
             </button>
           ))}
@@ -315,7 +315,7 @@ function PercentCalc() {
           <button key={m} onClick={()=>setMode(m as any)}
             style={{ flex:1, padding:'7px 4px', borderRadius:8, border:'none', cursor:'pointer', fontSize:10,
               background: mode===m ? ACCENT : 'rgba(255,255,255,.06)',
-              color: mode===m ? '#000' : '#e8f4ff', fontWeight: mode===m ? 700 : 400 }}>
+              color: mode===m ? '#000' : 'var(--text)', fontWeight: mode===m ? 700 : 400 }}>
             {l}
           </button>
         ))}
@@ -331,7 +331,7 @@ function PercentCalc() {
             {[10,20,25,30,50,75].map(pct=>(
               <div key={pct} style={{ padding:'4px 10px', borderRadius:6, background:'rgba(255,255,255,.04)', border:`1px solid ${BORDER}`, fontSize:11 }}>
                 <span style={{ color: DIM }}>{pct}%: </span>
-                <span style={{ color:'#e8f4ff' }}>{((pct/100)*y).toFixed(1)}</span>
+                <span style={{ color:'var(--text)' }}>{((pct/100)*y).toFixed(1)}</span>
               </div>
             ))}
           </div>
@@ -449,7 +449,7 @@ function UnitConv() {
             style={{ padding:'6px 12px', borderRadius:8, border:'none', cursor:'pointer',
               fontSize:11, whiteSpace:'nowrap',
               background: category===k ? ACCENT : 'rgba(255,255,255,.06)',
-              color: category===k ? '#000' : '#e8f4ff' }}>
+              color: category===k ? '#000' : 'var(--text)' }}>
             {v.label}
           </button>
         ))}
@@ -462,7 +462,7 @@ function UnitConv() {
             <select value={String(val)} onChange={e=>(setFn as any)(e.target.value)}
               style={{ width:'100%', padding:'9px 10px', borderRadius:8,
                 background:'rgba(255,255,255,.06)', border:`1px solid ${BORDER}`,
-                color:'#e8f4ff', fontSize:13, outline:'none' }}>
+                color:'var(--text)', fontSize:13, outline:'none' }}>
               {cat.units.map(u=><option key={u.id} value={u.id} style={{ background:'#0d1b2a' }}>{u.label}</option>)}
             </select>
           </div>
@@ -499,7 +499,7 @@ export default function ToolsPage() {
   const current = TOOLS.find(t => t.id === active)!
 
   return (
-    <div style={{ minHeight:'100vh', background:BG, color:'#e8f4ff', display:'flex', flexDirection:'column',
+    <div style={{ minHeight:'100vh', background:BG, color:'var(--text)', display:'flex', flexDirection:'column',
       fontFamily:"'Noto Sans Devanagari',system-ui,sans-serif", maxWidth:480, margin:'0 auto' }}>
 
       {/* Header */}

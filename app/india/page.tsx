@@ -25,13 +25,13 @@ const S = {
   grid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10, padding:'16px', paddingBottom:90 },
   card: (active:boolean) => ({ background: active?'rgba(0,229,255,.08)':'rgba(255,255,255,.02)', border:`1px solid ${active?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`, borderRadius:14, padding:'14px 10px', textAlign:'center' as const, cursor:'pointer', transition:'all .2s' }),
   panel: { padding:'0 16px 16px' },
-  input: { width:'100%', background:'rgba(255,255,255,.03)', border:'1px solid rgba(0,229,255,.15)', borderRadius:10, padding:'10px 12px', color:'#ddeeff', fontSize:13, fontFamily:'Space Mono, monospace', outline:'none', boxSizing:'border-box' as const },
+  input: { width:'100%', background:'rgba(255,255,255,.03)', border:'1px solid rgba(0,229,255,.15)', borderRadius:10, padding:'10px 12px', color:'var(--text)', fontSize:13, fontFamily:'Space Mono, monospace', outline:'none', boxSizing:'border-box' as const },
   btn: { width:'100%', marginTop:10, padding:'11px', borderRadius:10, background:'rgba(0,229,255,.1)', border:'1px solid rgba(0,229,255,.25)', color:'#00e5ff', fontSize:13, cursor:'pointer', fontFamily:'Space Mono, monospace' },
-  result: { marginTop:12, padding:'14px', background:'rgba(0,229,255,.04)', border:'1px solid rgba(0,229,255,.1)', borderRadius:12, color:'#ddeeff', fontSize:12, lineHeight:1.7 },
-  label: { fontSize:10, color:'#1e3858', marginBottom:5, display:'block' },
+  result: { marginTop:12, padding:'14px', background:'rgba(0,229,255,.04)', border:'1px solid rgba(0,229,255,.1)', borderRadius:12, color:'var(--text)', fontSize:12, lineHeight:1.7 },
+  label: { fontSize:10, color:'var(--text-faint)', marginBottom:5, display:'block' },
   row: { display:'flex', justifyContent:'space-between', padding:'4px 0', borderBottom:'1px solid rgba(0,229,255,.04)' },
-  key: { color:'#1e3858', fontSize:11 },
-  val: { color:'#ddeeff', fontSize:11, fontWeight:'bold' as const },
+  key: { color:'var(--text-faint)', fontSize:11 },
+  val: { color:'var(--text)', fontSize:11, fontWeight:'bold' as const },
 }
 
 function Spinner() {
@@ -127,10 +127,10 @@ export default function IndiaHub() {
   return (
     <div style={S.page}>
       <div style={S.header}>
-        <button onClick={()=>router.push('/')} style={{background:'none',border:'none',color:'#1e3858',cursor:'pointer',fontSize:18}}>←</button>
+        <button onClick={()=>router.push('/')} style={{background:'none',border:'none',color:'var(--text-faint)',cursor:'pointer',fontSize:18}}>←</button>
         <div>
           <div style={{fontSize:16,color:'#00e5ff',letterSpacing:1}}>🇮🇳 INDIA HUB</div>
-          <div style={{fontSize:9,color:'#1e3858'}}>JARVIS India Services — Free, No Key</div>
+          <div style={{fontSize:9,color:'var(--text-faint)'}}>JARVIS India Services — Free, No Key</div>
         </div>
       </div>
 
@@ -139,8 +139,8 @@ export default function IndiaHub() {
         {TOOLS.map(t => (
           <button key={t.id} onClick={()=>{setActive(t.id);reset()}} style={S.card(active===t.id)}>
             <div style={{fontSize:24,marginBottom:4}}>{t.icon}</div>
-            <div style={{fontSize:10,color: active===t.id?'#00e5ff':'#ddeeff',fontWeight:'bold'}}>{t.label}</div>
-            <div style={{fontSize:9,color:'#1e3858',marginTop:2}}>{t.desc}</div>
+            <div style={{fontSize:10,color: active===t.id?'#00e5ff':'var(--text)',fontWeight:'bold'}}>{t.label}</div>
+            <div style={{fontSize:9,color:'var(--text-faint)',marginTop:2}}>{t.desc}</div>
           </button>
         ))}
       </div>
@@ -155,11 +155,11 @@ export default function IndiaHub() {
             <span style={S.label}>10-digit PNR Number</span>
             <input style={S.input} placeholder="2345678901" value={input} onChange={e=>setInput(e.target.value)} maxLength={10}/>
             <button style={S.btn} onClick={fetchPNR}>IRCTC pe Check Karo →</button>
-            <div style={{marginTop:8,fontSize:10,color:'#1e3858'}}>Note: PNR status IRCTC official site pe redirect hoga</div>
+            <div style={{marginTop:8,fontSize:10,color:'var(--text-faint)'}}>Note: PNR status IRCTC official site pe redirect hoga</div>
             {result?.type==='redirect' && <div style={S.result}>{result.msg}</div>}
 
             <div style={{marginTop:16,padding:'12px',background:'rgba(255,255,255,.02)',borderRadius:12,border:'1px solid rgba(255,255,255,.05)'}}>
-              <div style={{fontSize:11,color:'#2a5070',marginBottom:8}}>🔗 Quick Links</div>
+              <div style={{fontSize:11,color:'var(--border)',marginBottom:8}}>🔗 Quick Links</div>
               {[
                 ['IRCTC PNR','https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html'],
                 ['Train Running Status','https://etrain.info/'],
@@ -244,7 +244,7 @@ export default function IndiaHub() {
                   </div>
                 </div>
               ))}
-              <div style={{fontSize:9,color:'#1e3858',marginTop:8}}>Rates approximate — check IOCL/BPCL app for exact today's price</div>
+              <div style={{fontSize:9,color:'var(--text-faint)',marginTop:8}}>Rates approximate — check IOCL/BPCL app for exact today's price</div>
             </div>
             <div style={{marginTop:10,display:'flex',flexDirection:'column',gap:8}}>
               {[['IOCL Price','https://iocl.com/retail-selling-price'],['BPCL Price','https://mbp.bharatpetroleum.in/']].map(([l,u])=>(
@@ -266,11 +266,11 @@ export default function IndiaHub() {
                 <div key={i} style={S.row}>
                   <span style={{...S.key,width:60}}>{h.date}</span>
                   <span style={{...S.val,flex:1}}>{h.name}</span>
-                  <span style={{fontSize:9,color:'#1e3858'}}>{h.day}</span>
+                  <span style={{fontSize:9,color:'var(--text-faint)'}}>{h.day}</span>
                 </div>
               ))}
             </div>
-            <div style={{marginTop:8,fontSize:9,color:'#1e3858'}}>State holidays alag ho sakte hain</div>
+            <div style={{marginTop:8,fontSize:9,color:'var(--text-faint)'}}>State holidays alag ho sakte hain</div>
           </div>
         )}
 
@@ -305,10 +305,10 @@ export default function IndiaHub() {
             <button style={S.btn} onClick={()=>window.open(`https://vahan.parivahan.gov.in/vahanservice/vahan/ui/statevalidation/homepage.xhtml`,'_blank')}>
               Parivahan pe Check Karo →
             </button>
-            <div style={{marginTop:8,fontSize:10,color:'#1e3858'}}>VAHAN official portal pe redirect hoga</div>
+            <div style={{marginTop:8,fontSize:10,color:'var(--text-faint)'}}>VAHAN official portal pe redirect hoga</div>
 
             <div style={{marginTop:16,padding:'12px',background:'rgba(255,255,255,.02)',borderRadius:12,border:'1px solid rgba(255,255,255,.05)'}}>
-              <div style={{fontSize:11,color:'#2a5070',marginBottom:8}}>🔗 Parivahan Services</div>
+              <div style={{fontSize:11,color:'var(--border)',marginBottom:8}}>🔗 Parivahan Services</div>
               {[
                 ['Vehicle RC Status','https://vahan.parivahan.gov.in/'],
                 ['Driving Licence','https://sarathi.parivahan.gov.in/'],

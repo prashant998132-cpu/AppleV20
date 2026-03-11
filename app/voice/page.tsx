@@ -298,9 +298,9 @@ export default function VoicePage() {
       <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 14px',borderBottom:'1px solid rgba(255,255,255,.05)',background:'rgba(9,13,24,.96)',backdropFilter:'blur(10px)',flexShrink:0,zIndex:10}}>
         <div style={{fontFamily:"'Space Mono',monospace",fontSize:11,color:'#00e5ff',letterSpacing:2}}>🎙️ VOICE</div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          {battery!==null&&<span style={{fontSize:10,color:battery<20?'#ff4444':'#2a5070'}}>🔋 {battery}%</span>}
+          {battery!==null&&<span style={{fontSize:10,color:battery<20?'#ff4444':'var(--border)'}}>🔋 {battery}%</span>}
           {convMode&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:6,background:'rgba(0,229,255,.08)',color:'#00e5ff',border:'1px solid rgba(0,229,255,.2)'}}>💬 Conv</span>}
-          <button onClick={()=>setShowCfg(p=>!p)} style={{background:'none',border:'1px solid rgba(255,255,255,.08)',color:'#2a5070',fontSize:12,padding:'4px 10px',borderRadius:8,cursor:'pointer'}}>{showCfg?'✕':'⚙️'}</button>
+          <button onClick={()=>setShowCfg(p=>!p)} style={{background:'none',border:'1px solid rgba(255,255,255,.08)',color:'var(--border)',fontSize:12,padding:'4px 10px',borderRadius:8,cursor:'pointer'}}>{showCfg?'✕':'⚙️'}</button>
         </div>
       </header>
 
@@ -308,7 +308,7 @@ export default function VoicePage() {
         <div style={{background:'rgba(12,20,34,.98)',borderBottom:'1px solid rgba(255,255,255,.05)',padding:'12px 16px',flexShrink:0,overflowY:'auto',maxHeight:260}}>
           {/* Speed */}
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-            <span style={{fontSize:10,color:'#2a5070',width:44}}>Speed</span>
+            <span style={{fontSize:10,color:'var(--border)',width:44}}>Speed</span>
             <input type="range" min=".5" max="2" step=".1" value={speed} onChange={e=>setSpeed(parseFloat(e.target.value))} style={{flex:1,accentColor:'#00e5ff'}}/>
             <span style={{fontSize:11,color:'#00e5ff',width:28}}>{speed}x</span>
           </div>
@@ -316,32 +316,32 @@ export default function VoicePage() {
           {/* Voices */}
           <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:10}}>
             {VOICES.map(v=>(
-              <button key={v.id} onClick={()=>setVoice(v.id)} style={{padding:'4px 10px',borderRadius:9,fontSize:10,cursor:'pointer',border:`1px solid ${voice===v.id?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:voice===v.id?'rgba(0,229,255,.1)':'transparent',color:voice===v.id?'#00e5ff':'#2a5070'}}>{v.l}</button>
+              <button key={v.id} onClick={()=>setVoice(v.id)} style={{padding:'4px 10px',borderRadius:9,fontSize:10,cursor:'pointer',border:`1px solid ${voice===v.id?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:voice===v.id?'rgba(0,229,255,.1)':'transparent',color:voice===v.id?'#00e5ff':'var(--border)'}}>{v.l}</button>
             ))}
           </div>
 
           {/* Custom Wake Word */}
           <div style={{marginBottom:10}}>
-            <div style={{fontSize:10,color:'#2a5070',marginBottom:4}}>Custom Wake Word</div>
+            <div style={{fontSize:10,color:'var(--border)',marginBottom:4}}>Custom Wake Word</div>
             <input value={customWake} onChange={e=>setCustomWake(e.target.value)}
               placeholder='e.g. "aye bhai" (blank = default)'
-              style={{width:'100%',padding:'6px 10px',borderRadius:8,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.1)',color:'#e8f4ff',fontSize:12,outline:'none',boxSizing:'border-box'}}/>
+              style={{width:'100%',padding:'6px 10px',borderRadius:8,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.1)',color:'var(--text)',fontSize:12,outline:'none',boxSizing:'border-box'}}/>
           </div>
 
           {/* Sensitivity */}
           <div style={{display:'flex',gap:4,marginBottom:10}}>
-            <span style={{fontSize:10,color:'#2a5070',alignSelf:'center',marginRight:4}}>Sens:</span>
+            <span style={{fontSize:10,color:'var(--border)',alignSelf:'center',marginRight:4}}>Sens:</span>
             {(['high','medium','low'] as const).map(s=>(
-              <button key={s} onClick={()=>setSens(s)} style={{padding:'4px 10px',borderRadius:9,fontSize:10,cursor:'pointer',border:`1px solid ${sensitivity===s?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:sensitivity===s?'rgba(0,229,255,.1)':'transparent',color:sensitivity===s?'#00e5ff':'#2a5070'}}>{s}</button>
+              <button key={s} onClick={()=>setSens(s)} style={{padding:'4px 10px',borderRadius:9,fontSize:10,cursor:'pointer',border:`1px solid ${sensitivity===s?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:sensitivity===s?'rgba(0,229,255,.1)':'transparent',color:sensitivity===s?'#00e5ff':'var(--border)'}}>{s}</button>
             ))}
           </div>
 
           {/* Toggles */}
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            <button onClick={()=>setWakeOn(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${wakeOn?'rgba(167,139,250,.3)':'rgba(255,255,255,.06)'}`,background:wakeOn?'rgba(167,139,250,.1)':'transparent',color:wakeOn?'#a78bfa':'#2a5070'}}>👋 Wake: {wakeOn?'ON':'OFF'}</button>
-            <button onClick={()=>setCont(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${continuous?'rgba(0,230,118,.3)':'rgba(255,255,255,.06)'}`,background:continuous?'rgba(0,230,118,.1)':'transparent',color:continuous?'#00e676':'#2a5070'}}>🔄 Loop: {continuous?'ON':'OFF'}</button>
-            <button onClick={()=>setConvMode(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${convMode?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:convMode?'rgba(0,229,255,.1)':'transparent',color:convMode?'#00e5ff':'#2a5070'}}>💬 Conv: {convMode?'ON':'OFF'}</button>
-            <button onClick={()=>setNoiseGate(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${noiseGate?'rgba(255,171,0,.3)':'rgba(255,255,255,.06)'}`,background:noiseGate?'rgba(255,171,0,.08)':'transparent',color:noiseGate?'#ffab00':'#2a5070'}}>🎛️ Noise: {noiseGate?'ON':'OFF'}</button>
+            <button onClick={()=>setWakeOn(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${wakeOn?'rgba(167,139,250,.3)':'rgba(255,255,255,.06)'}`,background:wakeOn?'rgba(167,139,250,.1)':'transparent',color:wakeOn?'#a78bfa':'var(--border)'}}>👋 Wake: {wakeOn?'ON':'OFF'}</button>
+            <button onClick={()=>setCont(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${continuous?'rgba(0,230,118,.3)':'rgba(255,255,255,.06)'}`,background:continuous?'rgba(0,230,118,.1)':'transparent',color:continuous?'#00e676':'var(--border)'}}>🔄 Loop: {continuous?'ON':'OFF'}</button>
+            <button onClick={()=>setConvMode(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${convMode?'rgba(0,229,255,.3)':'rgba(255,255,255,.06)'}`,background:convMode?'rgba(0,229,255,.1)':'transparent',color:convMode?'#00e5ff':'var(--border)'}}>💬 Conv: {convMode?'ON':'OFF'}</button>
+            <button onClick={()=>setNoiseGate(p=>!p)} style={{padding:'5px 11px',borderRadius:10,fontSize:11,cursor:'pointer',border:`1px solid ${noiseGate?'rgba(255,171,0,.3)':'rgba(255,255,255,.06)'}`,background:noiseGate?'rgba(255,171,0,.08)':'transparent',color:noiseGate?'#ffab00':'var(--border)'}}>🎛️ Noise: {noiseGate?'ON':'OFF'}</button>
           </div>
           {battery!==null&&battery<20&&<div style={{marginTop:8,fontSize:10,color:'#ff6060'}}>⚡ Low battery — server TTS off, browser TTS only</div>}
         </div>
@@ -359,8 +359,8 @@ export default function VoicePage() {
 
         <div style={{fontSize:13,color:cfg.color,letterSpacing:.5,textAlign:'center'}}>
           {cfg.label}
-          {st==='idle'&&wakeOn&&<div style={{fontSize:10,color:'#2a5070',marginTop:2}}>Wake: "{customWake||'Hey JARVIS'}" / "Bhai" ({sensitivity})</div>}
-          {st==='idle'&&convMode&&<div style={{fontSize:10,color:'#2a5070',marginTop:2}}>Conversation mode — context yaad rahega</div>}
+          {st==='idle'&&wakeOn&&<div style={{fontSize:10,color:'var(--border)',marginTop:2}}>Wake: "{customWake||'Hey JARVIS'}" / "Bhai" ({sensitivity})</div>}
+          {st==='idle'&&convMode&&<div style={{fontSize:10,color:'var(--border)',marginTop:2}}>Conversation mode — context yaad rahega</div>}
         </div>
 
         {(st==='listening'||st==='speaking')&&<Waveform active level={audioLevel}/>}
@@ -369,11 +369,11 @@ export default function VoicePage() {
 
         {imgUrl&&<img src={imgUrl} alt="generated" style={{width:'100%',maxWidth:360,borderRadius:12}}/>}
 
-        {reply&&<div style={{padding:'14px 16px',background:'rgba(0,229,255,.04)',border:'1px solid rgba(0,229,255,.1)',borderRadius:14,color:'#ddeeff',fontSize:14,maxWidth:380,lineHeight:1.6,width:'100%'}}>
-          <div style={{fontSize:10,color:'#1e3858',marginBottom:6}}>JARVIS</div>
+        {reply&&<div style={{padding:'14px 16px',background:'rgba(0,229,255,.04)',border:'1px solid rgba(0,229,255,.1)',borderRadius:14,color:'var(--text)',fontSize:14,maxWidth:380,lineHeight:1.6,width:'100%'}}>
+          <div style={{fontSize:10,color:'var(--text-faint)',marginBottom:6}}>JARVIS</div>
           {reply}
           <button onClick={()=>navigator.share?.({text:reply}).catch(()=>navigator.clipboard?.writeText(reply).catch(()=>{}))}
-            style={{marginTop:8,background:'none',border:'none',color:'#1e3858',fontSize:11,cursor:'pointer'}}>↗ Share</button>
+            style={{marginTop:8,background:'none',border:'none',color:'var(--text-faint)',fontSize:11,cursor:'pointer'}}>↗ Share</button>
         </div>}
 
         {thinking&&(

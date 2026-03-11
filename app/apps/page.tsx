@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from 'react'
 import BottomNav from '../../components/shared/BottomNav'
 import { MEGA_APPS, ALL_CATEGORIES, CATEGORY_EMOJI, searchMegaApps, MEGA_STATS, type MegaApp, type MegaCategory } from '../../lib/integrations/mega'
 
-const BG='#05080f', CARD='rgba(255,255,255,.04)', BORDER='rgba(255,255,255,.07)', ACCENT='#00e5ff', DIM='#3a5570'
+const BG='var(--bg)', CARD='var(--bg-card)', BORDER='var(--border)', ACCENT='#00e5ff', DIM='var(--text-faint)'
 
 const CAT_COLORS: Record<string,string> = {
   'AI Tools':'#a78bfa','Design & Art':'#f472b6','Code & Dev':'#34d399','Media & Music':'#f87171',
@@ -36,7 +36,7 @@ function AppCard({app,pinned,onPin,q}:{app:MegaApp;pinned:boolean;onPin:(id:stri
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
         <span style={{fontSize:22,flexShrink:0}}>{app.emoji}</span>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:12,fontWeight:700,color:'#e8f4ff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{app.name}</div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{app.name}</div>
           <div style={{fontSize:9,color:DIM,marginTop:1}}>{app.desc}</div>
         </div>
         <div style={{display:'flex',gap:4,flexShrink:0,alignItems:'center'}}>
@@ -48,7 +48,7 @@ function AppCard({app,pinned,onPin,q}:{app:MegaApp;pinned:boolean;onPin:(id:stri
       <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
         {app.actions.slice(0,exp?undefined:3).map(a=>(
           <button key={a.id} onClick={()=>launchApp(app,a.id,q)}
-            style={{padding:'4px 8px',borderRadius:6,background:'rgba(255,255,255,.04)',border:`1px solid ${BORDER}`,color:'#a0b8d0',fontSize:9.5,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+            style={{padding:'4px 8px',borderRadius:6,background:'var(--bg-card)',border:`1px solid ${BORDER}`,color:'#a0b8d0',fontSize:9.5,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
             <span>{a.icon}</span><span>{a.label}</span>
           </button>
         ))}
@@ -88,7 +88,7 @@ export default function AppsPage(){
   },[search,cat,pinned,recent])
 
   return(
-    <div style={{minHeight:'100vh',background:BG,color:'#e8f4ff',fontFamily:"'Noto Sans',system-ui,sans-serif",maxWidth:480,margin:'0 auto',display:'flex',flexDirection:'column'}}>
+    <div style={{minHeight:'100vh',background:BG,color:'var(--text)',fontFamily:"'Noto Sans',system-ui,sans-serif",maxWidth:480,margin:'0 auto',display:'flex',flexDirection:'column'}}>
 
       {/* Header */}
       <header style={{padding:'12px 14px 8px',borderBottom:`1px solid ${BORDER}`,background:BG,position:'sticky',top:0,zIndex:20}}>
@@ -104,7 +104,7 @@ export default function AppsPage(){
           </div>
         </div>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍  Search apps, actions..."
-          style={{width:'100%',padding:'8px 12px',borderRadius:10,border:`1px solid ${search?'rgba(0,229,255,.3)':BORDER}`,background:'rgba(255,255,255,.03)',color:'#e8f4ff',fontSize:12,outline:'none',boxSizing:'border-box',marginBottom:8}}/>
+          style={{width:'100%',padding:'8px 12px',borderRadius:10,border:`1px solid ${search?'rgba(0,229,255,.3)':BORDER}`,background:'rgba(255,255,255,.03)',color:'var(--text)',fontSize:12,outline:'none',boxSizing:'border-box',marginBottom:8}}/>
         <div style={{display:'flex',gap:4,overflowX:'auto',paddingBottom:2}}>
           {(['All','Pinned','Recent','India'] as const).map(n=>(
             <button key={n} onClick={()=>{setCat(n);setSearch('')}}

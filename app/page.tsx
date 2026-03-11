@@ -1,7 +1,7 @@
 'use client'
 // app/page.tsx — JARVIS Chat v23
 // Theme system (4 themes) + Smart suggestions + UX polish
-import { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getTheme, setTheme, initTheme, THEME_META, type Theme } from '../lib/theme'
 import NavDrawer from '../components/shared/NavDrawer'
@@ -314,11 +314,13 @@ function getSmartStatus(text: string, mode: string): string {
 
 const STARTERS = [
   { icon:'🌤️', t:'Rewa ka mausam?' },
-  { icon:'📰', t:'Koi khabar suna aaj ki' },
+  { icon:'📰', t:'Aaj ki top khabar kya hai?' },
+  { icon:'🌸', t:'Top 5 anime recommend karo' },
+  { icon:'🧠', t:'Python sikhana hai — shuru kahan se karun?' },
+  { icon:'😄', t:'Ek mast joke sunao' },
+  { icon:'🪙', t:'Bitcoin ka aaj ka rate?' },
+  { icon:'🎵', t:'Arijit Singh ke best songs?' },
   { icon:'💡', t:'Ek interesting fact batao' },
-  { icon:'🔢', t:'18% of 4500' },
-  { icon:'😄', t:'Ek acha joke sunao' },
-  { icon:'⚡', t:'Newton ka second law explain karo' },
 ]
 
 
@@ -388,38 +390,76 @@ function Clock({ name }:{name:string}) {
   )
 }
 
+// ── SVG Icons ──────────────────────────────────────────────
+const IconCopy = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+const IconCheck = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+const IconThumbUp = ({on}:{on:boolean}) => <svg width="13" height="13" viewBox="0 0 24 24" fill={on?"currentColor":"none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+const IconThumbDown = ({on}:{on:boolean}) => <svg width="13" height="13" viewBox="0 0 24 24" fill={on?"currentColor":"none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+const IconPin = ({on}:{on:boolean}) => <svg width="13" height="13" viewBox="0 0 24 24" fill={on?"#ffab00":"none"} stroke={on?"#ffab00":"currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+const IconEdit = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+
+// ── IBtn — Claude-style labeled action button ───────────────
+function IBtn({ onClick, title, children, active, label }: { onClick:()=>void; title:string; children:React.ReactNode; active?:boolean; label?:string }) {
+  return (
+    <button onClick={onClick} title={title}
+      style={{ background:'none', border:'none', cursor:'pointer', padding:'4px 8px', borderRadius:7, color: active ? 'var(--accent)' : 'var(--text-faint)', display:'flex', alignItems:'center', gap:4, transition:'all .15s', fontSize:12, fontFamily:'inherit' }}
+      onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background='var(--bg-surface)';el.style.color='var(--text)'}}
+      onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.background='none';el.style.color=active?'var(--accent)':'var(--text-faint)'}}>
+      {children}
+      {label && <span style={{fontSize:11,fontWeight:500}}>{label}</span>}
+    </button>
+  )
+}
+
+// ── Share helper ────────────────────────────────────────────
+function shareMsg(content: string) {
+  try {
+    if (navigator.share) { navigator.share({ text: content }) }
+    else { navigator.clipboard.writeText(content) }
+  } catch {}
+}
+
 // ── Message ────────────────────────────────────────────────
 function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:'up'|'down')=>void; onRetry:()=>void; onPin?:(id:string)=>void; onEdit?:(id:string,content:string)=>void }) {
   const isU = m.role==='user'
   const isErr = m.content.startsWith('⚠️')||m.content.startsWith('📡')
   const clean = cleanResponse(m.content)
   const time = new Date(m.timestamp).toLocaleTimeString('hi-IN',{hour:'2-digit',minute:'2-digit'})
-  // Full markdown + KaTeX math rendering (v17)
+  const [copied, setCopied] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const html = renderMarkdown
+
+  function copyMsg() {
+    navigator.clipboard?.writeText(clean).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(()=>{})
+  }
+
   return (
-    <div style={{padding:'4px 14px',display:'flex',flexDirection:'column',alignItems:isU?'flex-end':'flex-start'}}>
-      {m.toolProgress&&<div style={{fontSize:10,color:'var(--text-muted)',marginBottom:3,display:'flex',gap:4}}>⚙️ {m.toolProgress}</div>}
+    <div style={{padding:'4px 14px 2px',display:'flex',flexDirection:'column',alignItems:isU?'flex-end':'flex-start'}}
+      onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}>
+      {m.toolProgress&&<div style={{fontSize:10,color:'var(--text-muted)',marginBottom:4,display:'flex',gap:4,paddingLeft:4}}>⚙️ {m.toolProgress}</div>}
       {m.thinking&&(
-        <details style={{marginBottom:4,maxWidth:'85%'}}>
-          <summary style={{fontSize:10,color:'#4a5090',cursor:'pointer'}}>🧠 Reasoning</summary>
-          <div style={{fontSize:11,color:'var(--text-faint)',padding:'6px 8px',background:'rgba(100,80,200,.06)',borderRadius:8,marginTop:4,maxHeight:100,overflow:'auto',whiteSpace:'pre-wrap'}}>{m.thinking}</div>
+        <details style={{marginBottom:4,maxWidth:'88%'}}>
+          <summary style={{fontSize:10,color:'#6060a0',cursor:'pointer',padding:'2px 4px'}}>🧠 Reasoning</summary>
+          <div style={{fontSize:11,color:'var(--text-faint)',padding:'6px 10px',background:'rgba(100,80,200,.06)',borderRadius:8,marginTop:4,maxHeight:120,overflow:'auto',whiteSpace:'pre-wrap',lineHeight:1.5}}>{m.thinking}</div>
         </details>
       )}
       {isU ? (
-        /* USER — bubble style */
-        <div style={{maxWidth:'85%',padding:'10px 13px',borderRadius:'16px 16px 4px 16px',
-          background:'var(--user-bg)',
-          border:'1px solid var(--user-border)',
-          color:'var(--text)',fontSize:13.5,lineHeight:1.6}}>
+        // USER — bubble right side
+        <div style={{maxWidth:'84%',padding:'10px 14px',borderRadius:'18px 18px 4px 18px',
+          background:'var(--user-bg)',border:'1px solid var(--user-border)',
+          color:'var(--text)',fontSize:14,lineHeight:1.65}}>
           <span dangerouslySetInnerHTML={{__html:html(clean)}}/>
         </div>
       ) : (
-        /* JARVIS — no bubble, plain on background */
-        <div style={{maxWidth:'92%',paddingLeft:4}}>
+        // JARVIS — no bubble, left side
+        <div style={{maxWidth:'92%',paddingLeft:2}}>
           {m.streaming&&!clean ? (
-            <div style={{display:'flex',flexDirection:'column',gap:6}}>
-              <span style={{color:'var(--text-muted)',fontSize:13}}>{m.toolProgress||'💭 Ek second...'}</span>
-              <div style={{display:'flex',gap:3,alignItems:'center'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <span style={{color:'var(--text-muted)',fontSize:13}}>{m.toolProgress||''}</span>
+              <div style={{display:'flex',gap:4,alignItems:'center'}}>
                 <span className="typing-dot"/><span className="typing-dot"/><span className="typing-dot"/>
               </div>
             </div>
@@ -427,44 +467,59 @@ function Msg({ m, onFeed, onRetry, onPin, onEdit }:{ m:Msg; onFeed:(id:string,v:
             clean.includes('|||MAP|||') ? (() => {
               const [title, url] = clean.split('|||MAP|||')
               return (<>
-                {title && <div style={{fontWeight:600,marginBottom:8,fontSize:12,color:'var(--text)'}}>{title}</div>}
-                <iframe src={url} width="100%" height={200} style={{borderRadius:8,border:'none'}} loading="lazy" title="Map"/>
+                {title && <div style={{fontWeight:600,marginBottom:8,fontSize:13,color:'var(--text)'}}>{title}</div>}
+                <iframe src={url} width="100%" height={200} style={{borderRadius:10,border:'none'}} loading="lazy" title="Map"/>
               </>)
             })() :
             /!\[image\]\(https?:/.test(clean) ? (() => {
               const imgMatch = clean.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/)
               const textPart = clean.replace(/!\[.*?\]\(https?:\/\/[^\)]+\)/g,'').trim()
               return (<>
-                {textPart && <div className="jarvis-msg" style={{marginBottom:8,color:'var(--jarvis-text)',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(textPart)}}/>}
-                {imgMatch && <img src={imgMatch[1]} alt="Generated" style={{maxWidth:'100%',borderRadius:8,display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
+                {textPart && <div className="jarvis-msg" style={{marginBottom:8,color:'var(--jarvis-text)',fontSize:14,lineHeight:1.7}} dangerouslySetInnerHTML={{__html:html(textPart)}}/>}
+                {imgMatch && <img src={imgMatch[1]} alt="Generated" style={{maxWidth:'100%',borderRadius:10,display:'block'}} loading="lazy" onError={e=>(e.currentTarget.style.display='none')}/>}
               </>)
             })() :
             isErr ? (
-              <div style={{color:'#ff6060',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
+              <div style={{color:'#ff6060',fontSize:13.5,lineHeight:1.65}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
             ) : (
-              <div className="jarvis-msg" style={{color:'var(--jarvis-text)',fontSize:13.5,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
+              <div className="jarvis-msg" style={{color:'var(--jarvis-text)',fontSize:14,lineHeight:1.7}} dangerouslySetInnerHTML={{__html:html(clean)}}/>
             )
           }
-          {m.streaming&&<span style={{display:'inline-block',width:2,height:14,background:'var(--accent)',marginLeft:2,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/>}
+          {m.streaming&&<span style={{display:'inline-block',width:2,height:15,background:'var(--accent)',marginLeft:2,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/>}
         </div>
       )}
-      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:3}}>
-        <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'monospace'}}>{time}</span>
-        {!isU&&m.responseTime&&<span style={{fontSize:9,color:'var(--text-faint)',background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:6,padding:'1px 5px',fontFamily:'monospace'}}>
-          {(m.responseTime/1000).toFixed(1)}s · {m.mode==='think'?'🧠':m.mode==='deep'?'🔬':m.mode==='flash'?'⚡':'🤖'}
+
+      {/* ── Claude-style toolbar — appears below on hover ── */}
+      <div style={{
+        display:'flex', alignItems:'center', gap:0, marginTop:4,
+        opacity: (hovered || !!m.feedback) ? 1 : 0,
+        transition:'opacity .2s', height: (hovered || !!m.feedback) ? 'auto' : 0,
+        overflow: 'hidden',
+        background: hovered ? 'var(--bg-surface)' : 'transparent',
+        borderRadius: 10, padding: hovered ? '2px 4px' : '0 4px',
+        border: hovered ? '1px solid var(--border)' : '1px solid transparent',
+        alignSelf: isU ? 'flex-end' : 'flex-start',
+        transition: 'all .15s',
+      }}>
+        <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'monospace',padding:'0 6px',borderRight:'1px solid var(--border)'}}>{time}</span>
+        {!isU&&m.responseTime&&<span style={{fontSize:9,color:'var(--text-faint)',padding:'2px 6px',fontFamily:'monospace',borderRight:'1px solid var(--border)'}}>
+          {(m.responseTime/1000).toFixed(1)}s {m.mode==='think'?'🧠':m.mode==='deep'?'🔬':m.mode==='flash'?'⚡':'🤖'}
         </span>}
-        {isU&&!m.streaming&&<button onClick={()=>onEdit?.(m.id,m.content)} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:10,cursor:'pointer'}} title="Edit">✏️</button>}
+        {isU&&!m.streaming&&<IBtn onClick={()=>onEdit?.(m.id,m.content)} title="Edit message" label="Edit"><IconEdit/></IBtn>}
         {!isU&&!m.streaming&&(<>
-          <button onClick={()=>onFeed(m.id,'up')} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,opacity:m.feedback==='up'?1:.25}} title="Badiya tha">👍</button>
-          <button onClick={()=>onFeed(m.id,'down')} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,opacity:m.feedback==='down'?1:.25}} title="Theek nahi tha">👎</button>
-          <button onClick={()=>navigator.clipboard?.writeText(clean).catch(()=>{})} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:11,cursor:'pointer'}} title="Copy">⎘</button>
-          <button onClick={()=>onPin?.(m.id)} style={{background:'none',border:'none',color:m.pinned?'#ffab00':'var(--text-faint)',fontSize:11,cursor:'pointer'}} title="Pin">📌</button>
-          <button onClick={()=>navigator.share?navigator.share({text:clean}).catch(()=>{}):navigator.clipboard?.writeText(clean).catch(()=>{})} style={{background:'none',border:'none',color:'var(--text-faint)',fontSize:11,cursor:'pointer'}} title="Share">↗</button>
-          {isErr&&<button onClick={onRetry} style={{padding:'2px 8px',borderRadius:10,border:'1px solid rgba(255,80,80,.3)',color:'#ff6060',background:'none',fontSize:10,cursor:'pointer'}}>↺ Retry</button>}
+          <IBtn onClick={copyMsg} title={copied?'Copied!':'Copy'} label={copied ? 'Copied!' : 'Copy'}>{copied?<IconCheck/>:<IconCopy/>}</IBtn>
+          <IBtn onClick={()=>onFeed(m.id,'up')} title="Good response" active={m.feedback==='up'} label={m.feedback==='up'?'Liked':undefined}><IconThumbUp on={m.feedback==='up'}/></IBtn>
+          <IBtn onClick={()=>onFeed(m.id,'down')} title="Bad response" active={m.feedback==='down'}><IconThumbDown on={m.feedback==='down'}/></IBtn>
+          <IBtn onClick={()=>shareMsg(clean)} title="Share" label="Share">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </IBtn>
+          <IBtn onClick={()=>onPin?.(m.id)} title="Pin message" active={!!m.pinned}><IconPin on={!!m.pinned}/></IBtn>
+          {isErr&&<IBtn onClick={onRetry} title="Retry"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.8"/></svg></IBtn>}
         </>)}
       </div>
-      {m.toolsUsed?.length?<div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:2}}>{m.toolsUsed.map(t=><span key={t} style={{fontSize:9,padding:'1px 6px',borderRadius:8,background:'var(--accent-dim)',color:'var(--text-muted)'}}>{t.replace(/_/g,' ')}</span>)}</div>:null}
-      {m.card && <div style={{maxWidth:'85%'}}><RichCardView card={m.card}/></div>}
+
+      {m.toolsUsed?.length?<div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4,paddingLeft:2,alignSelf:'flex-start'}}>{m.toolsUsed.map(t=><span key={t} style={{fontSize:9,padding:'2px 7px',borderRadius:9,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)'}}>{t.replace(/_/g,' ')}</span>)}</div>:null}
+      {m.card && <div style={{maxWidth:'88%',marginTop:4}}><RichCardView card={m.card}/></div>}
     </div>
   )
 }
@@ -504,6 +559,7 @@ export default function Page() {
   const [currentSessionId,setCurrentSessionId]=useState('')
   const [micActive,setMicActive]=useState(false)
   const micRef = useRef<any>(null)
+  const abortRef = useRef<AbortController|null>(null)
   const [currentTheme,setCurrentTheme]=useState<Theme>('dark')
   const [themeOpen,setThemeOpen]=useState(false)
   const router = useRouter()
@@ -881,9 +937,27 @@ export default function Page() {
     rec.start()
   }, [micActive])
 
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setLoad(false)
+    setMsgs(p => p.map(m => m.streaming ? {
+      ...m, streaming: false,
+      content: m.content || '⚠️ Generation rok diya.',
+      responseTime: undefined,
+    } : m))
+    haptic('light')
+  }, [])
+
   const send=useCallback(async(text:string)=>{
     if(!text.trim()||loading) return
     haptic('light')
+    // Custom instructions prefix
+    let finalText = text
+    try {
+      const ci = localStorage.getItem('jarvis_custom_instructions') || ''
+      if (ci.trim()) finalText = text // will be prepended in memory context
+    } catch {}
     setSlashHints([])
     // Check for slash command first
     const slashParsed = parseSlashCommand(text)
@@ -892,6 +966,8 @@ export default function Page() {
       await executeSlash(slashParsed.cmd, slashParsed.arg)
       return
     }
+    const abort = new AbortController()
+    abortRef.current = abort
     setLoad(true); setInput(''); setUrlChip(''); setProactive(null)
     const mood=detectMood(text)
     const uId='u_'+Date.now(), aId='a_'+Date.now()
@@ -1292,10 +1368,10 @@ export default function Page() {
             {/* Quick shortcuts row */}
             <div style={{display:'flex',gap:8,marginTop:16,width:'100%',maxWidth:440}}>
               {[
-                {icon:'📚',label:'Study',href:'/study'},
+                {icon:'🌅',label:'Briefing',href:'/briefing'},
                 {icon:'🧠',label:'Learn',href:'/learn'},
                 {icon:'🌸',label:'Anime',href:'/anime'},
-                {icon:'🔌',label:'APIs',href:'/connected'},
+                {icon:'⚡',label:'System',href:'/system'},
               ].map(({icon,label,href})=>(
                 <a key={href} href={href}
                   style={{flex:1,padding:'8px 4px',borderRadius:10,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:10,textDecoration:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
@@ -1356,13 +1432,13 @@ export default function Page() {
 
       {/* 🔄 Regenerate button — shows after last AI response */}
       {lastAI && !loading && msgs.length >= 2 && (
-        <div style={{display:'flex',justifyContent:'center',padding:'0 16px 6px',background:'transparent'}}>
+        <div style={{display:'flex',justifyContent:'center',padding:'0 16px 6px'}}>
           <button onClick={regenerate}
-            style={{display:'flex',alignItems:'center',gap:5,padding:'5px 14px',borderRadius:20,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',color:'#3a5570',fontSize:11,cursor:'pointer',transition:'all .2s'}}
-            onMouseEnter={e=>(e.currentTarget.style.borderColor='rgba(0,229,255,.3)',e.currentTarget.style.color='#00e5ff')}
-            onMouseLeave={e=>(e.currentTarget.style.borderColor='rgba(255,255,255,.08)',e.currentTarget.style.color='#3a5570')}
-          >
-            <span style={{fontSize:13}}>↺</span> Regenerate
+            style={{display:'flex',alignItems:'center',gap:5,padding:'5px 14px',borderRadius:20,background:'var(--bg-surface)',border:'1px solid var(--border)',color:'var(--text-muted)',fontSize:11,cursor:'pointer',transition:'all .2s'}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(0,229,255,.3)';e.currentTarget.style.color='var(--accent)';e.currentTarget.style.background='var(--accent-bg)'}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--text-muted)';e.currentTarget.style.background='var(--bg-surface)'}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+            Regenerate
           </button>
         </div>
       )}
@@ -1392,7 +1468,7 @@ export default function Page() {
         </div>
       )}
 
-      <div style={{padding:'8px 12px',borderTop:'1px solid var(--border)',background:'var(--header-bg)',flexShrink:0,position:'relative'}}>
+      <div style={{padding:'8px 12px 10px',borderTop:'1px solid var(--border)',background:'var(--header-bg)',flexShrink:0,position:'relative'}}>
 
         {/* ── Plus Popup (compact) ─────────────────── */}
         {plusOpen&&(
@@ -1484,59 +1560,65 @@ export default function Page() {
           </>
         )}
 
-        {/* ── Input Row ──────────────────────────────── */}
-        <div style={{display:'flex',gap:6,alignItems:'flex-end'}}>
-          <button onClick={()=>{setPlusOpen(p=>!p);setCompressOpen(false)}}
-            style={{width:40,height:40,borderRadius:11,flexShrink:0,
-              background:plusOpen?'var(--accent-bg)':'var(--bg-surface)',
-              border:`1px solid ${plusOpen?'var(--border-acc)':'var(--border)'}`,
-              color:plusOpen?'var(--accent)':'var(--text-muted)',fontSize:22,cursor:'pointer',
-              display:'flex',alignItems:'center',justifyContent:'center',fontWeight:300}}>
-            {plusOpen?'×':'+'}
-          </button>
+        {/* ── Input Container — ChatGPT/Claude style ─── */}
+        <div style={{
+          background:'var(--bg-input)',
+          border:`1.5px solid ${loading?'var(--accent)':'var(--border)'}`,
+          borderRadius:20,overflow:'hidden',
+          boxShadow:loading?'0 0 0 3px rgba(0,229,255,.07)':'0 2px 12px rgba(0,0,0,.2)',
+          transition:'border-color .2s,box-shadow .2s',
+        }}>
           <textarea ref={taRef} value={input}
             onChange={e=>{handleInput(e.target.value);handleInputChange(e.target.value)}}
             onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(input)}}}
             placeholder={loading?'Soch raha hun...':'Kuch poocho ya batao...'}
             rows={1} disabled={loading}
-            style={{flex:1,padding:'10px 12px',borderRadius:12,background:'var(--bg-input)',
-              border:'1px solid var(--border)',color:'var(--text)',fontSize:14,resize:'none',
-              outline:'none',lineHeight:1.5,maxHeight:120,overflow:'hidden',fontFamily:'inherit'}}/>
-          <button onClick={()=>send(input)} disabled={!input.trim()||loading}
-            style={{width:40,height:40,borderRadius:11,
-              background:input.trim()&&!loading?'var(--accent-bg)':'var(--bg-surface)',
-              border:`1px solid ${input.trim()&&!loading?'var(--border-acc)':'var(--border)'}`,
-              color:input.trim()&&!loading?'var(--accent)':'var(--text-faint)',fontSize:18,cursor:'pointer',
-              flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-            {loading?<span style={{width:14,height:14,border:'2px solid var(--accent-bg)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin .8s linear infinite',display:'block'}}/>:'↑'}
-          </button>
-          {/* 🎙️ Mic button */}
-          <button onClick={toggleMic} title={micActive?'Mic band karo':'Bolkar message karo'}
-            style={{width:40,height:40,borderRadius:11,flexShrink:0,
-              background:micActive?'rgba(255,50,50,.18)':'var(--bg-surface)',
-              border:`1px solid ${micActive?'rgba(255,80,80,.5)':'var(--border)'}`,
-              color:micActive?'#ff5555':'var(--text-muted)',fontSize:16,cursor:'pointer',
-              display:'flex',alignItems:'center',justifyContent:'center',
-              transition:'all .2s',animation:micActive?'pulse 1.2s ease-in-out infinite':undefined}}>
-            {micActive ? '⏹' : '🎙️'}
-          </button>
-        </div>
-
-        {/* ── Bottom strip ──────────────────────────── */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:4}}>
-          <div style={{fontSize:8,color:'var(--text-faint)'}}>
-            {mode==='auto'?`🤖 Auto → ${(()=>{const q2=input.toLowerCase();return /solve|neet|jee|math|reason|explain.*step/i.test(q2)?'Think':/news|weather|image|search|movie|song|map|live/i.test(q2)?'Deep':'Flash'})()}`:mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'} · Enter to send
+            style={{
+              display:'block',width:'100%',padding:'14px 16px 6px',
+              background:'transparent',border:'none',color:'var(--text)',
+              fontSize:14,resize:'none',outline:'none',lineHeight:1.6,
+              maxHeight:180,overflow:'auto',fontFamily:'inherit',
+            }}/>
+          {/* Toolbar row */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 8px 8px'}}>
+            <div style={{display:'flex',gap:1,alignItems:'center'}}>
+              {/* + Attach/Mode */}
+              <button onClick={()=>{setPlusOpen(p=>!p);setCompressOpen(false)}}
+                style={{width:30,height:28,borderRadius:7,background:plusOpen?'var(--accent-bg)':'transparent',border:`1px solid ${plusOpen?'var(--border-acc)':'transparent'}`,color:plusOpen?'var(--accent)':'var(--text-faint)',fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:300,transition:'all .15s'}}>
+                {plusOpen?'×':'+'}
+              </button>
+              {/* Compress */}
+              <button onClick={()=>{if(!input.trim()){setToast({msg:'Pehle type karo!',type:'info'});return}setCompressOpen(p=>!p);setPlusOpen(false)}}
+                style={{padding:'4px 7px',borderRadius:7,background:compressOpen?'rgba(167,139,250,.12)':'transparent',border:`1px solid ${compressOpen?'rgba(167,139,250,.3)':'transparent'}`,color:compressOpen?'#a78bfa':'var(--text-faint)',fontSize:10,cursor:'pointer',transition:'all .15s',letterSpacing:.3,fontWeight:600}}>
+                Aa
+              </button>
+              {/* Mode chip */}
+              <button onClick={()=>{setPlusOpen(p=>!p);setCompressOpen(false)}}
+                style={{padding:'3px 9px',borderRadius:20,background:'transparent',border:'1px solid transparent',color:'var(--text-faint)',fontSize:10,cursor:'pointer',letterSpacing:.3,transition:'all .15s',whiteSpace:'nowrap'}}>
+                {mode==='auto'?`🤖 Auto·${(()=>{const q2=input.toLowerCase();return /solve|math|reason|explain.*step/i.test(q2)?'Think':/news|weather|image|search|movie|song|map/i.test(q2)?'Deep':'Flash'})()}`:mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}
+              </button>
+            </div>
+            <div style={{display:'flex',gap:3,alignItems:'center'}}>
+              {/* Mic */}
+              <button onClick={toggleMic}
+                style={{width:30,height:28,borderRadius:7,background:micActive?'rgba(255,50,50,.15)':'transparent',border:`1px solid ${micActive?'rgba(255,80,80,.4)':'transparent'}`,color:micActive?'#ff5555':'var(--text-faint)',fontSize:13,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .2s',animation:micActive?'pulse 1.2s ease-in-out infinite':undefined}}
+                title={micActive?'Stop':'Voice'}>
+                {micActive?'⏹':'🎙️'}
+              </button>
+              {/* Stop / Send */}
+              {loading ? (
+                <button onClick={stopGeneration} style={{width:32,height:32,borderRadius:8,background:'rgba(255,80,80,.15)',border:'1px solid rgba(255,80,80,.35)',color:'#ff6060',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .2s'}} title="Stop generating">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#ff6060"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                </button>
+              ) : (
+                <button onClick={()=>send(input)} disabled={!input.trim()}
+                  style={{width:32,height:32,borderRadius:8,background:input.trim()?'var(--accent)':'transparent',border:`1px solid ${input.trim()?'var(--accent)':'transparent'}`,color:input.trim()?'#000':'var(--text-faint)',cursor:input.trim()?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .2s'}}
+                  title="Send (Enter)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                </button>
+              )}
+            </div>
           </div>
-          <button onClick={()=>{
-              if(!input.trim()){setToast({msg:'Pehle type karo, phir compress!',type:'info'});return}
-              setCompressOpen(p=>!p);setPlusOpen(false)
-            }}
-            style={{display:'flex',alignItems:'center',gap:3,padding:'3px 7px',borderRadius:7,
-              background:input.trim()?'rgba(167,139,250,.1)':'rgba(255,255,255,.02)',
-              border:`1px solid ${input.trim()?'rgba(167,139,250,.2)':'rgba(255,255,255,.04)'}`,
-              color:input.trim()?'#a78bfa':'#2a2050',fontSize:10,cursor:'pointer',transition:'all .2s'}}>
-            🗜️ <span style={{fontSize:9}}>Compress</span>
-          </button>
         </div>
       </div>
 

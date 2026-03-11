@@ -14,7 +14,7 @@ import {
 
 // ── Theme ──────────────────────────────────────────────────
 const BG       = '#090d18'
-const CARD     = 'rgba(255,255,255,.04)'
+const CARD     = 'var(--bg-card)'
 const BORDER   = 'rgba(255,255,255,.07)'
 const ACCENT   = '#00e5ff'
 const CANVA_C  = '#8B5CF6'   // Canva purple
@@ -39,7 +39,7 @@ function TemplateCard({ t, onSelect, selected }: { t: CanvaTemplate; onSelect: (
       }}
     >
       <div style={{ fontSize: 24, textAlign: 'center' }}>{t.emoji}</div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: selected ? '#c4b5fd' : '#e8f4ff', textAlign: 'center', lineHeight: 1.3 }}>{t.name}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: selected ? '#c4b5fd' : 'var(--text)', textAlign: 'center', lineHeight: 1.3 }}>{t.name}</div>
       <div style={{ fontSize: 9, color: DIM, textAlign: 'center' }}>{t.dimensions || t.category}</div>
     </div>
   )
@@ -62,7 +62,7 @@ function BriefCard({ brief, template, onOpen }: { brief: DesignBrief; template: 
       ].map(row => row.value && (
         <div key={row.label} style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 9, color: DIM, marginBottom: 2 }}>{row.icon} {row.label}</div>
-          <div style={{ fontSize: 12, color: '#e8f4ff', padding: '6px 10px', background: 'rgba(255,255,255,.04)', borderRadius: 8, lineHeight: 1.5 }}>{row.value}</div>
+          <div style={{ fontSize: 12, color: 'var(--text)', padding: '6px 10px', background: 'var(--bg-card)', borderRadius: 8, lineHeight: 1.5 }}>{row.value}</div>
         </div>
       ))}
 
@@ -161,7 +161,7 @@ function CanvaPageInner() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: BG, color: '#e8f4ff', display: 'flex',
+      minHeight: '100vh', background: BG, color: 'var(--text)', display: 'flex',
       flexDirection: 'column', fontFamily: "'Noto Sans Devanagari',system-ui,sans-serif",
       maxWidth: 480, margin: '0 auto',
     }}>
@@ -191,7 +191,7 @@ function CanvaPageInner() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, marginTop: 10, background: 'rgba(255,255,255,.04)', borderRadius: 10, padding: 3 }}>
+        <div style={{ display: 'flex', gap: 0, marginTop: 10, background: 'var(--bg-card)', borderRadius: 10, padding: 3 }}>
           {([['create', '✨ AI Design Brief'], ['browse', '📚 Templates Browse']] as const).map(([t, l]) => (
             <button key={t} onClick={() => setTab(t)}
               style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12,
@@ -221,7 +221,7 @@ function CanvaPageInner() {
                 style={{
                   width: '100%', padding: '11px 13px', borderRadius: 12,
                   background: 'rgba(255,255,255,.05)', border: `1px solid ${BORDER}`,
-                  color: '#e8f4ff', fontSize: 13, outline: 'none', resize: 'none',
+                  color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'none',
                   lineHeight: 1.6, boxSizing: 'border-box',
                 }}
               />
@@ -235,7 +235,7 @@ function CanvaPageInner() {
                   {suggested.map(t => (
                     <button key={t.id} onClick={() => setSelected(selected?.id === t.id ? null : t)}
                       style={{ padding: '5px 10px', borderRadius: 8, border: `1px solid ${selected?.id === t.id ? 'rgba(139,92,246,.5)' : BORDER}`,
-                        background: selected?.id === t.id ? 'rgba(139,92,246,.15)' : 'rgba(255,255,255,.04)',
+                        background: selected?.id === t.id ? 'rgba(139,92,246,.15)' : 'var(--bg-card)',
                         color: selected?.id === t.id ? '#c4b5fd' : '#a0b8d0', fontSize: 11, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 4 }}>
                       {t.emoji} {t.name}
@@ -329,7 +329,7 @@ function CanvaPageInner() {
                 <button key={cat} onClick={() => setCatFilter(cat)}
                   style={{ padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                     fontSize: 11, whiteSpace: 'nowrap',
-                    background: catFilter === cat ? CANVA_C : 'rgba(255,255,255,.06)',
+                    background: catFilter === cat ? CANVA_C : 'var(--border)',
                     color: catFilter === cat ? '#fff' : '#a0b8d0',
                     fontWeight: catFilter === cat ? 700 : 400 }}>
                   {cat}

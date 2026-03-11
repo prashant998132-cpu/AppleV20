@@ -143,10 +143,10 @@ const MUSIC_MOODS = [
 // ════════════════════════════════════════════════════════════
 const C = {
   card:   { background:'rgba(255,255,255,.025)', border:'1px solid rgba(255,255,255,.06)', borderRadius:14 } as React.CSSProperties,
-  input:  { width:'100%', padding:'10px 13px', borderRadius:11, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', color:'#e8f4ff', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:'inherit' },
-  chip:   (on:boolean, color='#00e5ff') => ({ padding:'6px 13px', borderRadius:20, fontSize:11, cursor:'pointer' as const, border:`1px solid ${on ? color+'55' : 'rgba(255,255,255,.07)'}`, background: on ? color+'14' : 'transparent', color: on ? color : '#2a5070', transition:'all .15s', whiteSpace:'nowrap' as const }),
-  btn:    (c='#00e5ff', disabled=false) => ({ padding:'12px 0', width:'100%', borderRadius:13, fontSize:13, fontWeight:600, cursor: disabled ? 'not-allowed' as const : 'pointer' as const, background: disabled ? 'rgba(255,255,255,.03)' : `${c}18`, border:`1px solid ${disabled ? 'rgba(255,255,255,.06)' : c+'44'}`, color: disabled ? '#1e3858' : c, display:'flex' as const, alignItems:'center' as const, justifyContent:'center' as const, gap:8, transition:'all .15s' }),
-  label:  { fontSize:10, color:'#2a5070', marginBottom:7, letterSpacing:.5 } as React.CSSProperties,
+  input:  { width:'100%', padding:'10px 13px', borderRadius:11, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', color:'var(--text)', fontSize:13, outline:'none', boxSizing:'border-box' as const, fontFamily:'inherit' },
+  chip:   (on:boolean, color='#00e5ff') => ({ padding:'6px 13px', borderRadius:20, fontSize:11, cursor:'pointer' as const, border:`1px solid ${on ? color+'55' : 'rgba(255,255,255,.07)'}`, background: on ? color+'14' : 'transparent', color: on ? color : 'var(--border)', transition:'all .15s', whiteSpace:'nowrap' as const }),
+  btn:    (c='#00e5ff', disabled=false) => ({ padding:'12px 0', width:'100%', borderRadius:13, fontSize:13, fontWeight:600, cursor: disabled ? 'not-allowed' as const : 'pointer' as const, background: disabled ? 'rgba(255,255,255,.03)' : `${c}18`, border:`1px solid ${disabled ? 'rgba(255,255,255,.06)' : c+'44'}`, color: disabled ? 'var(--text-faint)' : c, display:'flex' as const, alignItems:'center' as const, justifyContent:'center' as const, gap:8, transition:'all .15s' }),
+  label:  { fontSize:10, color:'var(--border)', marginBottom:7, letterSpacing:.5 } as React.CSSProperties,
 }
 
 function Spinner({ color='#00e5ff' }: { color?: string }) {
@@ -289,7 +289,7 @@ function ImageTab({ onSaved }: { onSaved: ()=>void }) {
         <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5}}>
           {STYLES.map(s => (
             <button key={s.id} onClick={() => setStyle(s.id)}
-              style={{padding:'7px 4px', borderRadius:10, fontSize:10, cursor:'pointer', textAlign:'center', border:`1px solid ${style===s.id?'rgba(0,229,255,.4)':'rgba(255,255,255,.06)'}`, background:style===s.id?'rgba(0,229,255,.1)':'rgba(255,255,255,.02)', color:style===s.id?'#00e5ff':'#2a5070', lineHeight:1.4}}>
+              style={{padding:'7px 4px', borderRadius:10, fontSize:10, cursor:'pointer', textAlign:'center', border:`1px solid ${style===s.id?'rgba(0,229,255,.4)':'rgba(255,255,255,.06)'}`, background:style===s.id?'rgba(0,229,255,.1)':'rgba(255,255,255,.02)', color:style===s.id?'#00e5ff':'var(--border)', lineHeight:1.4}}>
               {s.label}
             </button>
           ))}
@@ -347,7 +347,7 @@ function ImageTab({ onSaved }: { onSaved: ()=>void }) {
 
       {/* Advanced */}
       <div style={{marginBottom:14}}>
-        <button onClick={() => setShowAdv(p=>!p)} style={{background:'none',border:'none',color:'#2a5070',fontSize:11,cursor:'pointer',padding:0}}>
+        <button onClick={() => setShowAdv(p=>!p)} style={{background:'none',border:'none',color:'var(--border)',fontSize:11,cursor:'pointer',padding:0}}>
           {showAdv?'▲':'▼'} Advanced
         </button>
         {showAdv && (
@@ -381,7 +381,7 @@ function ImageTab({ onSaved }: { onSaved: ()=>void }) {
             <div style={{display:'flex', gap:6, marginBottom:12}}>
               {results.map((_, i) => (
                 <button key={i} onClick={() => setSelected(i)}
-                  style={{flex:1, padding:'6px', borderRadius:8, fontSize:11, cursor:'pointer', border:`1px solid ${selected===i?'rgba(0,229,255,.4)':'rgba(255,255,255,.06)'}`, background:selected===i?'rgba(0,229,255,.1)':'transparent', color:selected===i?'#00e5ff':'#2a5070'}}>
+                  style={{flex:1, padding:'6px', borderRadius:8, fontSize:11, cursor:'pointer', border:`1px solid ${selected===i?'rgba(0,229,255,.4)':'rgba(255,255,255,.06)'}`, background:selected===i?'rgba(0,229,255,.1)':'transparent', color:selected===i?'#00e5ff':'var(--border)'}}>
                   V{i+1}
                 </button>
               ))}
@@ -411,7 +411,7 @@ function ImageTab({ onSaved }: { onSaved: ()=>void }) {
                 ⬇️ Download
               </button>
               <button onClick={() => navigator.share?.({url:results[selected].url}).catch(()=>navigator.clipboard?.writeText(results[selected].url))}
-                style={{flex:1, padding:'9px', borderRadius:10, fontSize:12, cursor:'pointer', border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.04)', color:'#2a5070'}}>
+                style={{flex:1, padding:'9px', borderRadius:10, fontSize:12, cursor:'pointer', border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.04)', color:'var(--border)'}}>
                 ↗ Share
               </button>
             </div>
@@ -421,7 +421,7 @@ function ImageTab({ onSaved }: { onSaved: ()=>void }) {
           </div>
           {/* Regenerate */}
           <button onClick={generate}
-            style={{marginTop:8, width:'100%', padding:'9px', borderRadius:10, background:'transparent', border:'1px solid rgba(255,255,255,.06)', color:'#2a5070', fontSize:12, cursor:'pointer'}}>
+            style={{marginTop:8, width:'100%', padding:'9px', borderRadius:10, background:'transparent', border:'1px solid rgba(255,255,255,.06)', color:'var(--border)', fontSize:12, cursor:'pointer'}}>
             🔄 New Variants (different seeds)
           </button>
         </div>
@@ -501,7 +501,7 @@ function GalleryTab({ refreshKey }: { refreshKey: number }) {
 
       {/* Stats */}
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
-        <span style={{fontSize:10, color:'#1e3858'}}>{filtered.length}/{images.length} images</span>
+        <span style={{fontSize:10, color:'var(--text-faint)'}}>{filtered.length}/{images.length} images</span>
         <div style={{display:'flex', gap:8}}>
           {bulkMode && selected.size > 0 && <button onClick={bulkDelete} style={{...C.chip(true,'#ff4444'), fontSize:10, padding:'3px 10px'}}>Delete {selected.size}</button>}
           {images.length > 0 && <button onClick={clearAll} style={{background:'none', border:'none', color:'#ff4444', fontSize:10, cursor:'pointer'}}>Clear All</button>}
@@ -509,7 +509,7 @@ function GalleryTab({ refreshKey }: { refreshKey: number }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div style={{textAlign:'center', padding:'50px 0', color:'#1e3858', fontSize:13}}>
+        <div style={{textAlign:'center', padding:'50px 0', color:'var(--text-faint)', fontSize:13}}>
           {images.length === 0 ? '🎨 Koi image nahi — Image tab mein banao!' : 'Koi result nahi.'}
         </div>
       ) : (
@@ -541,7 +541,7 @@ function GalleryTab({ refreshKey }: { refreshKey: number }) {
         <div style={{position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,.96)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:16}}
           onClick={e => e.currentTarget===e.target && setExpanded(null)}>
           <button onClick={() => setExpanded(null)}
-            style={{position:'absolute', top:16, right:16, background:'rgba(255,255,255,.1)', border:'none', color:'#e8f4ff', fontSize:20, width:34, height:34, borderRadius:'50%', cursor:'pointer'}}>✕</button>
+            style={{position:'absolute', top:16, right:16, background:'rgba(255,255,255,.1)', border:'none', color:'var(--text)', fontSize:20, width:34, height:34, borderRadius:'50%', cursor:'pointer'}}>✕</button>
           <img src={expanded.puterPath ? undefined : expanded.url} 
             ref={el => { 
               if(el && expanded.puterPath && !el.src) { 
@@ -556,7 +556,7 @@ function GalleryTab({ refreshKey }: { refreshKey: number }) {
             </div>
             <div style={{display:'flex', gap:8, marginBottom:8}}>
               <button onClick={() => toggleLike(expanded)}
-                style={{flex:1, padding:'10px', borderRadius:10, fontSize:13, cursor:'pointer', border:`1px solid ${expanded.liked?'rgba(255,107,107,.4)':'rgba(255,255,255,.08)'}`, background:expanded.liked?'rgba(255,107,107,.12)':'rgba(255,255,255,.04)', color:expanded.liked?'#ff6b6b':'#2a5070'}}>
+                style={{flex:1, padding:'10px', borderRadius:10, fontSize:13, cursor:'pointer', border:`1px solid ${expanded.liked?'rgba(255,107,107,.4)':'rgba(255,255,255,.08)'}`, background:expanded.liked?'rgba(255,107,107,.12)':'rgba(255,255,255,.04)', color:expanded.liked?'#ff6b6b':'var(--border)'}}>
                 {expanded.liked ? '❤️ Liked' : '🤍 Like'}
               </button>
               <a href={expanded.url} download={`studio_${expanded.id}.jpg`} target="_blank" rel="noreferrer"
@@ -568,7 +568,7 @@ function GalleryTab({ refreshKey }: { refreshKey: number }) {
                 🗑️ Delete
               </button>
             </div>
-            <div style={{fontSize:10, color:'#1e3858', textAlign:'center'}}>
+            <div style={{fontSize:10, color:'var(--text-faint)', textAlign:'center'}}>
               {expanded.style} · {expanded.model} · {new Date(expanded.timestamp).toLocaleString('hi-IN')}
               {expanded.tags?.length > 0 && <> · {expanded.tags.join(', ')}</>}
             </div>
@@ -708,7 +708,7 @@ function VoiceTab() {
               {fetching ? <Spinner/> : 'Fetch'}
             </button>
           </div>
-          <div style={{fontSize:10, color:'#1e3858', marginTop:6}}>Article ka text automatically extract ho jaayega → phir TTS generate karo</div>
+          <div style={{fontSize:10, color:'var(--text-faint)', marginTop:6}}>Article ka text automatically extract ho jaayega → phir TTS generate karo</div>
           {text && (
             <div style={{marginTop:10, padding:'10px 12px', background:'rgba(0,229,255,.04)', border:'1px solid rgba(0,229,255,.1)', borderRadius:10}}>
               <div style={{fontSize:10, color:'#2a6080', marginBottom:5}}>✅ Text extracted ({text.length} chars)</div>
@@ -721,7 +721,7 @@ function VoiceTab() {
         <div style={{marginBottom:14}}>
           <div style={{display:'flex', justifyContent:'space-between', marginBottom:7}}>
             <span style={C.label}>Text</span>
-            <span style={{fontSize:10, color:text.length>900?'#ff6060':'#1e3858'}}>{text.length}/1000</span>
+            <span style={{fontSize:10, color:text.length>900?'#ff6060':'var(--text-faint)'}}>{text.length}/1000</span>
           </div>
           <textarea value={text} onChange={e=>setText(e.target.value.slice(0,1000))} rows={5}
             placeholder="Jo bolwana chahte ho..." style={{...C.input, resize:'none', lineHeight:1.6}}/>
@@ -752,7 +752,7 @@ function VoiceTab() {
           <span style={{fontSize:11, color:'#00e5ff'}}>{speed.toFixed(1)}×</span>
         </div>
         <input type="range" min=".5" max="2" step=".1" value={speed} onChange={e=>setSpeed(parseFloat(e.target.value))} style={{width:'100%', accentColor:'#00e5ff'}}/>
-        <div style={{display:'flex', justifyContent:'space-between', fontSize:9, color:'#1e3858', marginTop:3}}><span>0.5× Slow</span><span>Normal</span><span>2× Fast</span></div>
+        <div style={{display:'flex', justifyContent:'space-between', fontSize:9, color:'var(--text-faint)', marginTop:3}}><span>0.5× Slow</span><span>Normal</span><span>2× Fast</span></div>
       </div>
 
       <button onClick={generate} disabled={!text.trim()||loading} style={C.btn('#00e5ff', !text.trim()||loading)}>
@@ -775,7 +775,7 @@ function VoiceTab() {
       {/* History */}
       {history.length > 0 && (
         <div style={{marginTop:20}}>
-          <div style={{fontSize:10, color:'#2a5070', marginBottom:10}}>Saved TTS ({history.length})</div>
+          <div style={{fontSize:10, color:'var(--border)', marginBottom:10}}>Saved TTS ({history.length})</div>
           {history.slice(0,6).map(item => (
             <div key={item.id} style={{...C.card, padding:'10px 12px', marginBottom:7, display:'flex', alignItems:'center', gap:10}}>
               <button onClick={async() => { 
@@ -788,7 +788,7 @@ function VoiceTab() {
                 style={{width:30, height:30, borderRadius:'50%', background:'rgba(0,229,255,.1)', border:'1px solid rgba(0,229,255,.2)', color:'#00e5ff', fontSize:12, cursor:'pointer', flexShrink:0}}>▶</button>
               <div style={{flex:1, overflow:'hidden'}}>
                 <div style={{fontSize:11, color:'#c8dff0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{item.text.slice(0,45)}…</div>
-                <div style={{fontSize:9, color:'#1e3858', marginTop:2}}>{item.source==='url'?'🔗':'✍️'} {item.voice.split('-').slice(0,2).join('-')} · {new Date(item.timestamp).toLocaleString('hi-IN',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}</div>
+                <div style={{fontSize:9, color:'var(--text-faint)', marginTop:2}}>{item.source==='url'?'🔗':'✍️'} {item.voice.split('-').slice(0,2).join('-')} · {new Date(item.timestamp).toLocaleString('hi-IN',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}</div>
               </div>
               <button onClick={() => sdbDel('audio',item.id).then(()=>setHistory(p=>p.filter(i=>i.id!==item.id)))}
                 style={{background:'none', border:'none', color:'#ff4444', fontSize:16, cursor:'pointer', flexShrink:0}}>×</button>
@@ -916,7 +916,7 @@ function MusicTab() {
                 style={{display:'block', padding:'11px', borderRadius:10, background:'rgba(167,139,250,.1)', border:'1px solid rgba(167,139,250,.2)', color:'#a78bfa', fontSize:13, textAlign:'center', textDecoration:'none'}}>
                 🎵 Mubert mein open karo →
               </a>
-              <div style={{fontSize:10, color:'#1e3858', marginTop:8, textAlign:'center'}}>HuggingFace token daalo Settings mein for direct generation</div>
+              <div style={{fontSize:10, color:'var(--text-faint)', marginTop:8, textAlign:'center'}}>HuggingFace token daalo Settings mein for direct generation</div>
             </>
           )}
         </div>
@@ -924,7 +924,7 @@ function MusicTab() {
 
       {history.filter(i=>i.type==='blob').length > 0 && (
         <div style={{marginTop:20}}>
-          <div style={{fontSize:10, color:'#2a5070', marginBottom:10}}>Saved Tracks</div>
+          <div style={{fontSize:10, color:'var(--border)', marginBottom:10}}>Saved Tracks</div>
           {history.filter(i=>i.type==='blob'||i.puterPath).slice(0,6).map(item => (
             <MusicHistoryItem key={item.id} item={item}/>
           ))}
@@ -1101,12 +1101,12 @@ function CanvasTab() {
         </div>
         <input type="range" min="1" max="30" value={size} onChange={e=>setSize(parseInt(e.target.value))}
           style={{flex:1, accentColor:color}}/>
-        <span style={{fontSize:10, color:'#2a5070', width:20}}>{size}px</span>
+        <span style={{fontSize:10, color:'var(--border)', width:20}}>{size}px</span>
       </div>
 
       {/* BG color */}
       <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:10}}>
-        <span style={{fontSize:10, color:'#2a5070'}}>BG:</span>
+        <span style={{fontSize:10, color:'var(--border)'}}>BG:</span>
         {['#090d18','#ffffff','#1a1a2e','#0d1b2a'].map(c => (
           <button key={c} onClick={()=>{setBg(c); const ctx=getCtx(); if(ctx){ctx.fillStyle=c;ctx.globalCompositeOperation='destination-over';ctx.fillRect(0,0,canvasRef.current!.width,canvasRef.current!.height);ctx.globalCompositeOperation='source-over'}}}
             style={{width:20,height:20,borderRadius:5,background:c,border:`1px solid ${bg===c?'#00e5ff':'rgba(255,255,255,.1)'}`,cursor:'pointer'}}/>
@@ -1135,7 +1135,7 @@ function CanvasTab() {
       {/* Saved canvases */}
       {saved.length > 0 && (
         <div style={{marginTop:16}}>
-          <div style={{fontSize:10, color:'#2a5070', marginBottom:8}}>Saved Drawings ({saved.length})</div>
+          <div style={{fontSize:10, color:'var(--border)', marginBottom:8}}>Saved Drawings ({saved.length})</div>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
             {saved.slice(0,6).map(c => (
               <div key={c.id} style={{borderRadius:10, overflow:'hidden', border:'1px solid rgba(255,255,255,.06)', position:'relative'}}>
@@ -1172,7 +1172,7 @@ export default function StudioPage() {
   ]
 
   return (
-    <div style={{position:'fixed', inset:0, display:'flex', flexDirection:'column', background:'#090d18', color:'#ddeeff', fontFamily:"'Inter',sans-serif"}}>
+    <div style={{position:'fixed', inset:0, display:'flex', flexDirection:'column', background:'#090d18', color:'var(--text)', fontFamily:"'Inter',sans-serif"}}>
       <div className="bg-grid"/>
 
       {/* Header */}
@@ -1180,8 +1180,8 @@ export default function StudioPage() {
         <div style={{display:'flex', alignItems:'center', gap:10}}>
           <div style={{width:28, height:28, borderRadius:8, background:'linear-gradient(135deg,rgba(167,139,250,.2),rgba(0,229,255,.1))', border:'1px solid rgba(167,139,250,.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14}}>🎨</div>
           <div>
-            <div style={{fontSize:12, fontWeight:700, color:'#e8f4ff', letterSpacing:2, fontFamily:"'Space Mono',monospace"}}>STUDIO</div>
-            <div style={{fontSize:8, color:'#1e3858', letterSpacing:1}}>CREATE · SAVE · SHARE</div>
+            <div style={{fontSize:12, fontWeight:700, color:'var(--text)', letterSpacing:2, fontFamily:"'Space Mono',monospace"}}>STUDIO</div>
+            <div style={{fontSize:8, color:'var(--text-faint)', letterSpacing:1}}>CREATE · SAVE · SHARE</div>
           </div>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:6}}>
@@ -1196,7 +1196,7 @@ export default function StudioPage() {
       <div style={{display:'flex', borderBottom:'1px solid rgba(255,255,255,.04)', flexShrink:0, background:'rgba(9,13,24,.96)', overflowX:'auto'}}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{flex:1, minWidth:60, padding:'9px 0', background:'transparent', border:'none', borderBottom:`2px solid ${tab===t.id?'#a78bfa':'transparent'}`, color:tab===t.id?'#a78bfa':'#1e3858', fontSize:10, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:2, transition:'all .15s', flexShrink:0}}>
+            style={{flex:1, minWidth:60, padding:'9px 0', background:'transparent', border:'none', borderBottom:`2px solid ${tab===t.id?'#a78bfa':'transparent'}`, color:tab===t.id?'#a78bfa':'var(--text-faint)', fontSize:10, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:2, transition:'all .15s', flexShrink:0}}>
             <span style={{fontSize:16}}>{t.icon}</span>
             <span style={{letterSpacing:.5}}>{t.label}</span>
           </button>

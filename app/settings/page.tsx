@@ -9,7 +9,7 @@ import { getSyncStatus, flushSyncQueue, SUPABASE_SETUP_SQL } from '../../lib/pro
 import { loadReminders, deleteReminder, editReminder, type Reminder } from '../../lib/reminders'
 import { getTheme, toggleTheme, initTheme, type Theme } from '../../lib/theme'
 
-type Tab = 'profile' | 'keys' | 'memory' | 'reminders' | 'about'
+type Tab = 'profile' | 'keys' | 'memory' | 'reminders' | 'ai' | 'about'
 
 // ── KEY CONFIGS ────────────────────────────────────────────
 const KEY_GROUPS = [
@@ -106,12 +106,12 @@ function RemindersTab() {
 
   return (
     <div>
-      <div style={{ fontSize: 12, color: '#2a5070', marginBottom: 16 }}>
+      <div style={{ fontSize: 12, color: 'var(--border)', marginBottom: 16 }}>
         Yahan tumhare saare reminders hain — edit, delete, manage karo.
       </div>
 
       {activeRem.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: '#1e3858' }}>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-faint)' }}>
           Koi active reminder nahi.{'\n'}Chat mein bolo: "Kal 8 baje yaad dilao"
         </div>
       ) : (
@@ -121,22 +121,22 @@ function RemindersTab() {
               {editId === r.id ? (
                 <div>
                   <input value={editMsg} onChange={e => setEditMsg(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(0,229,255,.2)', color: '#e8f4ff', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 8 }}/>
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(0,229,255,.2)', color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 8 }}/>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => saveEdit(r.id)} style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'rgba(0,229,255,.1)', border: '1px solid rgba(0,229,255,.2)', color: '#00e5ff', fontSize: 11, cursor: 'pointer' }}>Save</button>
-                    <button onClick={() => setEditId(null)} style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,.08)', color: '#2a5070', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={() => setEditId(null)} style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,.08)', color: 'var(--border)', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                   </div>
                 </div>
               ) : (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ fontSize: 13, color: '#e8f4ff', flex: 1, lineHeight: 1.4 }}>{r.message}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text)', flex: 1, lineHeight: 1.4 }}>{r.message}</div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8 }}>
-                      <button onClick={() => { setEditId(r.id); setEditMsg(r.message) }} style={{ background: 'none', border: 'none', color: '#2a5070', fontSize: 13, cursor: 'pointer' }}>✏️</button>
+                      <button onClick={() => { setEditId(r.id); setEditMsg(r.message) }} style={{ background: 'none', border: 'none', color: 'var(--border)', fontSize: 13, cursor: 'pointer' }}>✏️</button>
                       <button onClick={() => del(r.id)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: 13, cursor: 'pointer' }}>🗑️</button>
                     </div>
                   </div>
-                  <div style={{ marginTop: 6, display: 'flex', gap: 10, fontSize: 10, color: '#1e3858' }}>
+                  <div style={{ marginTop: 6, display: 'flex', gap: 10, fontSize: 10, color: 'var(--text-faint)' }}>
                     <span>⏰ {new Date(r.fireAt).toLocaleString('hi-IN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
                     <span>{REPEAT_LABEL[r.repeat || 'none']}</span>
                   </div>
@@ -208,7 +208,7 @@ function KeysTab() {
       {KEY_GROUPS.map(g => (
         <div key={g.label} style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, color: '#00e5ff', fontWeight: 700, marginBottom: 2 }}>{g.label}</div>
-          <div style={{ fontSize: 10, color: '#1e3858', marginBottom: 10 }}>{g.desc}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 10 }}>{g.desc}</div>
           {g.keys.map(k => {
             const ts = testing[k.id] || 'idle'
             return (
@@ -221,17 +221,17 @@ function KeysTab() {
                   </div>
                   <a href={k.link} target="_blank" rel="noreferrer" style={{ fontSize: 9, color: '#00e5ff', padding: '2px 7px', borderRadius: 5, border: '1px solid rgba(0,229,255,.15)', textDecoration: 'none' }}>Get →</a>
                 </div>
-                {k.note && <div style={{ fontSize: 10, color: '#1e3858', marginBottom: 7 }}>{k.note}</div>}
+                {k.note && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 7 }}>{k.note}</div>}
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input
                     type={showKey[k.id] ? 'text' : 'password'}
                     value={vals[k.id] || ''}
                     placeholder={k.ph}
                     onChange={e => setVals(p => ({ ...p, [k.id]: e.target.value }))}
-                    style={{ flex: 1, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', color: '#ddeeff', fontSize: 11, outline: 'none', fontFamily: "'Space Mono',monospace" }}
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', color: 'var(--text)', fontSize: 11, outline: 'none', fontFamily: "'Space Mono',monospace" }}
                   />
                   <button onClick={() => setShowKey(p => ({ ...p, [k.id]: !p[k.id] }))}
-                    style={{ padding: '8px 8px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,.07)', color: '#2a5070', fontSize: 13, cursor: 'pointer' }}>
+                    style={{ padding: '8px 8px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,.07)', color: 'var(--border)', fontSize: 13, cursor: 'pointer' }}>
                     {showKey[k.id] ? '🙈' : '👁'}
                   </button>
                   {k.verify && (
@@ -298,23 +298,23 @@ function ProfileTab() {
   const fields = [
     { key: 'name',     label: 'Naam',          ph: 'Tumhara naam...',                   icon: '👤' },
     { key: 'location', label: 'Location',       ph: 'Rewa, Madhya Pradesh',               icon: '📍' },
-    { key: 'goal',     label: 'Goal / Kaam',    ph: 'NEET, coding, job, etc.',            icon: '🎯' },
+    { key: 'goal',     label: 'Goal / Kaam',    ph: 'Coding, music, design, kuch bhi...',            icon: '🎯' },
     { key: 'age',      label: 'Age',            ph: '18',                                 icon: '🎂' },
   ]
 
   return (
     <div>
-      <div style={{ fontSize: 10, color: '#1e3858', marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 16, lineHeight: 1.6 }}>
         Yeh info JARVIS ko personality deta hai — teri baaton mein context aata hai.
       </div>
       {fields.map(f => (
         <div key={f.key} style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: '#2a5070', marginBottom: 5 }}>{f.icon} {f.label}</div>
+          <div style={{ fontSize: 10, color: 'var(--border)', marginBottom: 5 }}>{f.icon} {f.label}</div>
           <input
             value={(p as any)[f.key]}
             onChange={e => setP(prev => ({ ...prev, [f.key]: e.target.value }))}
             placeholder={f.ph}
-            style={{ width: '100%', padding: '11px 13px', borderRadius: 11, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', color: '#e8f4ff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '11px 13px', borderRadius: 11, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
       ))}
@@ -326,11 +326,11 @@ function ProfileTab() {
       <div style={{ marginTop: 20, padding: '12px 14px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#e8f4ff' }}>🌗 Theme</div>
-            <div style={{ fontSize: 10, color: '#2a5070', marginTop: 2 }}>Currently: {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>🌗 Theme</div>
+            <div style={{ fontSize: 10, color: 'var(--border)', marginTop: 2 }}>Currently: {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</div>
           </div>
           <button onClick={handleToggleTheme}
-            style={{ padding: '8px 16px', borderRadius: 10, background: theme === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(0,112,192,.1)', border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,.1)' : 'rgba(0,112,192,.3)'}`, color: theme === 'dark' ? '#e8f4ff' : '#0070c0', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+            style={{ padding: '8px 16px', borderRadius: 10, background: theme === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(0,112,192,.1)', border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,.1)' : 'rgba(0,112,192,.3)'}`, color: theme === 'dark' ? 'var(--text)' : '#0070c0', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
             {theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}
           </button>
         </div>
@@ -392,14 +392,14 @@ function MemoryTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 10, color: '#1e3858' }}>JARVIS ne seekha ({mems.length} memories)</div>
+        <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>JARVIS ne seekha ({mems.length} memories)</div>
         {mems.length > 0 && (
           <button onClick={clearAll} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: 11, cursor: 'pointer' }}>Sab hatao</button>
         )}
       </div>
 
       {mems.length === 0 && (
-        <div style={{ color: '#1e3858', fontSize: 13, textAlign: 'center', padding: '30px 0' }}>
+        <div style={{ color: 'var(--text-faint)', fontSize: 13, textAlign: 'center', padding: '30px 0' }}>
           Abhi kuch nahi seekha.<br/>Chat karo — JARVIS khud yaad rakhega. 🧠
         </div>
       )}
@@ -410,7 +410,7 @@ function MemoryTab() {
             <div style={{ display: 'flex', gap: 6 }}>
               <input value={editVal} onChange={e => setEditVal(e.target.value)} autoFocus
                 onKeyDown={e => e.key === 'Enter' && saveEdit(m.id)}
-                style={{ flex: 1, padding: '6px 9px', borderRadius: 7, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(0,229,255,.2)', color: '#e8f4ff', fontSize: 12, outline: 'none' }} />
+                style={{ flex: 1, padding: '6px 9px', borderRadius: 7, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(0,229,255,.2)', color: 'var(--text)', fontSize: 12, outline: 'none' }} />
               <button onClick={() => saveEdit(m.id)} style={{ background: 'rgba(0,229,255,.1)', border: '1px solid rgba(0,229,255,.2)', color: '#00e5ff', borderRadius: 7, padding: '6px 10px', fontSize: 11, cursor: 'pointer' }}>✓</button>
               <button onClick={() => setEditing(null)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: 14, cursor: 'pointer' }}>✕</button>
             </div>
@@ -422,7 +422,7 @@ function MemoryTab() {
                 <div style={{ fontSize: 9, color: '#1a3050', marginTop: 3 }}>importance: {m.importance}/10 · used {m.useCount || 1}×</div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <button onClick={() => { setEditing(m.id); setEditVal(m.data) }} style={{ background: 'none', border: 'none', color: '#2a5070', fontSize: 14, cursor: 'pointer' }}>✎</button>
+                <button onClick={() => { setEditing(m.id); setEditVal(m.data) }} style={{ background: 'none', border: 'none', color: 'var(--border)', fontSize: 14, cursor: 'pointer' }}>✎</button>
                 <button onClick={() => del(m.id)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: 14, cursor: 'pointer' }}>×</button>
               </div>
             </div>
@@ -455,7 +455,7 @@ function SyncStatus() {
   return (
     <div style={{ marginTop: 16, padding: '12px 14px', background: status.enabled ? 'rgba(0,230,118,.04)' : 'rgba(255,255,255,.02)', border: `1px solid ${status.enabled ? 'rgba(0,230,118,.15)' : 'rgba(255,255,255,.06)'}`, borderRadius: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: status.enabled ? '#00e676' : '#2a5070' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: status.enabled ? '#00e676' : 'var(--border)' }}>
           {status.enabled ? '🟢 Cloud Sync Active' : '⚫ Sync Disabled (local only)'}
         </div>
         {status.enabled && status.queueSize > 0 && (
@@ -466,21 +466,21 @@ function SyncStatus() {
         )}
       </div>
       {status.enabled ? (
-        <div style={{ fontSize: 10, color: '#2a5070', lineHeight: 1.8 }}>
+        <div style={{ fontSize: 10, color: 'var(--border)', lineHeight: 1.8 }}>
           Queued: {status.queueSize} items · Device: {status.deviceId.slice(0,16)}...
         </div>
       ) : (
         <div>
-          <div style={{ fontSize: 11, color: '#1e3858', marginBottom: 8, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 8, lineHeight: 1.6 }}>
             Supabase URL + Anon Key daalo Keys tab mein for cross-device sync.
           </div>
           <button onClick={() => setShowSQL(p=>!p)}
-            style={{ padding: '6px 12px', borderRadius: 9, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#2a5070', fontSize: 11, cursor: 'pointer' }}>
+            style={{ padding: '6px 12px', borderRadius: 9, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: 'var(--border)', fontSize: 11, cursor: 'pointer' }}>
             {showSQL ? '▲ Hide' : '▼ Show'} Supabase Setup SQL
           </button>
           {showSQL && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 10, color: '#1e3858', marginBottom: 6 }}>Supabase SQL Editor mein paste karo (ek baar):</div>
+              <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 6 }}>Supabase SQL Editor mein paste karo (ek baar):</div>
               <pre style={{ background: 'rgba(0,0,0,.4)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 8, padding: '10px', fontSize: 9, color: '#4a7090', overflowX: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                 {SUPABASE_SETUP_SQL}
               </pre>
@@ -492,6 +492,118 @@ function SyncStatus() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── AI Behavior Tab ────────────────────────────────────────
+function AIBehaviorTab() {
+  const CI_KEY = 'jarvis_custom_instructions'
+  const TEMP_KEY = 'jarvis_temperature'
+  const LANG_KEY = 'jarvis_response_lang'
+  const DENSE_KEY = 'jarvis_response_density'
+
+  const [ci, setCi] = useState(() => { try { return localStorage.getItem(CI_KEY) || '' } catch { return '' } })
+  const [temp, setTemp] = useState(() => { try { return parseFloat(localStorage.getItem(TEMP_KEY) || '0.7') } catch { return 0.7 } })
+  const [lang, setLang] = useState(() => { try { return localStorage.getItem(LANG_KEY) || 'hinglish' } catch { return 'hinglish' } })
+  const [density, setDensity] = useState(() => { try { return localStorage.getItem(DENSE_KEY) || 'balanced' } catch { return 'balanced' } })
+  const [saved, setSaved] = useState(false)
+
+  function save() {
+    try {
+      if (ci.trim()) localStorage.setItem(CI_KEY, ci.trim())
+      else localStorage.removeItem(CI_KEY)
+      localStorage.setItem(TEMP_KEY, String(temp))
+      localStorage.setItem(LANG_KEY, lang)
+      localStorage.setItem(DENSE_KEY, density)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {}
+  }
+
+  const S: React.CSSProperties = { background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 12, padding: '14px 16px', marginBottom: 12 }
+  const lbl: React.CSSProperties = { fontSize: 11, color: '#3a6080', letterSpacing: 1, fontWeight: 700, marginBottom: 8, display: 'block' }
+  const inputSt: React.CSSProperties = { width: '100%', background: '#0c1422', border: '1px solid rgba(0,229,255,.15)', color: 'var(--text)', borderRadius: 10, padding: '10px 12px', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'vertical' as const, minHeight: 100, lineHeight: 1.5 }
+
+  return (
+    <div>
+      {/* Custom Instructions — like ChatGPT */}
+      <div style={S}>
+        <span style={lbl}>📝 CUSTOM INSTRUCTIONS (ChatGPT-style)</span>
+        <div style={{ fontSize: 11, color: 'var(--border)', marginBottom: 8 }}>
+          Yeh hamesha JARVIS ke saath hoga — apne baare mein batao, kaise jawab chahiye, kya context hai.
+        </div>
+        <textarea
+          value={ci}
+          onChange={e => setCi(e.target.value)}
+          placeholder="E.g.: Main ek engineering student hoon. Simple Hinglish mein samjhao. Short answers do jab tak na poocha jaaye. Technical topics mein examples dena. Kabhi boring mat rehna."
+          style={inputSt}
+        />
+        <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 4 }}>{ci.length}/1000 characters</div>
+      </div>
+
+      {/* Temperature — like all AI apps */}
+      <div style={S}>
+        <span style={lbl}>🌡️ CREATIVITY / TEMPERATURE</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <input type="range" min="0" max="1" step="0.1" value={temp}
+            onChange={e => setTemp(parseFloat(e.target.value))}
+            style={{ flex: 1, accentColor: '#00e5ff' }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#00e5ff', minWidth: 28 }}>{temp.toFixed(1)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--border)' }}>
+          <span>Precise & Factual</span>
+          <span>Balanced</span>
+          <span>Creative & Playful</span>
+        </div>
+      </div>
+
+      {/* Language preference */}
+      <div style={S}>
+        <span style={lbl}>🗣️ RESPONSE LANGUAGE</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['hinglish', '🇮🇳 Hinglish'], ['hindi', '🇮🇳 Hindi only'], ['english', '🇬🇧 English']].map(([v, l]) => (
+            <button key={v} onClick={() => setLang(v)}
+              style={{ flex: 1, padding: '8px 4px', borderRadius: 9, border: `1px solid ${lang === v ? 'rgba(0,229,255,.4)' : 'rgba(255,255,255,.06)'}`, background: lang === v ? 'rgba(0,229,255,.08)' : 'transparent', color: lang === v ? '#00e5ff' : 'var(--border)', fontSize: 10, cursor: 'pointer', fontWeight: lang === v ? 700 : 400 }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Response density */}
+      <div style={S}>
+        <span style={lbl}>📏 RESPONSE LENGTH</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['brief', '⚡ Brief'], ['balanced', '⚖️ Balanced'], ['detailed', '📚 Detailed']].map(([v, l]) => (
+            <button key={v} onClick={() => setDensity(v)}
+              style={{ flex: 1, padding: '8px 4px', borderRadius: 9, border: `1px solid ${density === v ? 'rgba(0,229,255,.4)' : 'rgba(255,255,255,.06)'}`, background: density === v ? 'rgba(0,229,255,.08)' : 'transparent', color: density === v ? '#00e5ff' : 'var(--border)', fontSize: 10, cursor: 'pointer', fontWeight: density === v ? 700 : 400 }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Keyboard shortcuts */}
+      <div style={S}>
+        <span style={lbl}>⌨️ KEYBOARD SHORTCUTS</span>
+        {[
+          ['Enter', 'Send message'],
+          ['Shift+Enter', 'New line'],
+          ['/', 'Slash commands'],
+          ['Esc', 'Close panels'],
+        ].map(([key, desc]) => (
+          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,.03)', fontSize: 12 }}>
+            <span style={{ color: '#3a6080' }}>{desc}</span>
+            <code style={{ background: 'rgba(0,229,255,.08)', border: '1px solid rgba(0,229,255,.15)', borderRadius: 5, padding: '1px 7px', color: '#00e5ff', fontSize: 11 }}>{key}</code>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={save}
+        style={{ width: '100%', padding: '13px', borderRadius: 12, background: saved ? 'rgba(52,211,153,.15)' : 'rgba(0,229,255,.08)', border: `1px solid ${saved ? 'rgba(52,211,153,.4)' : 'rgba(0,229,255,.25)'}`, color: saved ? '#34d399' : '#00e5ff', fontSize: 14, cursor: 'pointer', fontWeight: 700, marginTop: 4 }}>
+        {saved ? '✓ Saved!' : 'Save Settings'}
+      </button>
     </div>
   )
 }
@@ -568,16 +680,16 @@ function AboutTab() {
         <div style={{ fontSize: 11, fontWeight: 600, color: '#00e676', marginBottom: 8 }}>☁️ Vercel Bandwidth Saved</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 120, padding: '8px 10px', background: 'rgba(0,0,0,.2)', borderRadius: 8 }}>
-            <div style={{ fontSize: 9, color: '#1e3858', marginBottom: 3 }}>🎙️ TTS SAVED</div>
+            <div style={{ fontSize: 9, color: 'var(--text-faint)', marginBottom: 3 }}>🎙️ TTS SAVED</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#00e676' }}>{Math.round((bwStats.tts.savedKB || 0) / 1024 * 10) / 10} MB</div>
-            <div style={{ fontSize: 9, color: '#1e3858', marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>
               Browser: {bwStats.tts.browser||0} · Cache: {bwStats.tts.cache||0} · Stream: {bwStats.tts.server_stream||0}
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 120, padding: '8px 10px', background: 'rgba(0,0,0,.2)', borderRadius: 8 }}>
-            <div style={{ fontSize: 9, color: '#1e3858', marginBottom: 3 }}>🖼️ IMAGE SAVED</div>
+            <div style={{ fontSize: 9, color: 'var(--text-faint)', marginBottom: 3 }}>🖼️ IMAGE SAVED</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#00e676' }}>{Math.round((bwStats.img.savedKB || 0) / 1024 * 10) / 10} MB</div>
-            <div style={{ fontSize: 9, color: '#1e3858', marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>
               Pollinations: {bwStats.img.pollinations||0} · Cache: {bwStats.img.cache||0}
             </div>
           </div>
@@ -589,8 +701,8 @@ function AboutTab() {
 
       <div style={{ padding: '14px', background: 'rgba(0,229,255,.04)', border: '1px solid rgba(0,229,255,.08)', borderRadius: 12, marginBottom: 16, textAlign: 'center' }}>
         <div style={{ fontSize: 28, marginBottom: 6 }}>🤖</div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: '#e8f4ff', fontFamily: "'Space Mono',monospace", letterSpacing: 2 }}>JARVIS v13</div>
-        <div style={{ fontSize: 11, color: '#1e3858', marginTop: 4 }}>"Jons Bhai" — Your proactive AI companion</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Space Mono',monospace", letterSpacing: 2 }}>JARVIS v13</div>
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>"Jons Bhai" — Your proactive AI companion</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
@@ -598,7 +710,7 @@ function AboutTab() {
           <div key={l as string} style={{ padding: '12px 8px', background: '#0c1422', border: '1px solid rgba(255,255,255,.05)', borderRadius: 10, textAlign: 'center' }}>
             <div style={{ fontSize: 18 }}>{i}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#00e5ff', marginTop: 4 }}>{v}</div>
-            <div style={{ fontSize: 10, color: '#1e3858' }}>{l}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{l}</div>
           </div>
         ))}
       </div>
@@ -639,11 +751,12 @@ export default function SettingsPage() {
     { id: 'keys',    icon: '🔑', label: 'API Keys' },
     { id: 'memory',  icon: '🧠', label: 'Memory' },
     { id: 'reminders', icon: '⏰', label: 'Alerts' },
+    { id: 'ai',      icon: '⚡', label: 'AI' },
     { id: 'about',   icon: 'ℹ️', label: 'About' },
   ]
 
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#090d18', color: '#ddeeff', fontFamily: "'Inter',sans-serif" }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#090d18', color: 'var(--text)', fontFamily: "'Inter',sans-serif" }}>
       <div className="bg-grid" />
 
       <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,.05)', background: 'rgba(9,13,24,.97)', flexShrink: 0, zIndex: 10 }}>
@@ -655,7 +768,7 @@ export default function SettingsPage() {
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,.04)', flexShrink: 0, background: 'rgba(9,13,24,.96)' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', borderBottom: `2px solid ${tab === t.id ? '#00e5ff' : 'transparent'}`, color: tab === t.id ? '#00e5ff' : '#1e3858', fontSize: 11, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', borderBottom: `2px solid ${tab === t.id ? '#00e5ff' : 'transparent'}`, color: tab === t.id ? '#00e5ff' : 'var(--text-faint)', fontSize: 11, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <span style={{ fontSize: 16 }}>{t.icon}</span>
             <span>{t.label}</span>
           </button>
@@ -667,6 +780,7 @@ export default function SettingsPage() {
         {tab === 'keys'    && <KeysTab />}
         {tab === 'memory'  && <MemoryTab />}
         {tab === 'reminders' && <RemindersTab />}
+        {tab === 'ai'      && <AIBehaviorTab />}
         {tab === 'about'   && <AboutTab />}
       </div>
 

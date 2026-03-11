@@ -1,44 +1,26 @@
 // lib/render/markdown.ts
-// JARVIS Chat Renderer v17
-// - Markdown (bold, italic, code, lists, headings, links)
-// - KaTeX math: $inline$ and $$display$$
-// - Safe HTML output for dangerouslySetInnerHTML
-// All client-side, zero API, works offline
+// JARVIS Chat Renderer v25
+// Claude/ChatGPT-level code blocks, markdown, math
 
 'use client'
 
-// ── Escape HTML ────────────────────────────────────────────
 function esc(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
-// ── KaTeX render (safe wrapper) ───────────────────────────
 function renderKaTeX(formula: string, display: boolean): string {
   try {
     if (typeof window !== 'undefined' && (window as any).katex) {
-      return (window as any).katex.renderToString(formula, {
-        displayMode: display,
-        throwOnError: false,
-        output: 'html',
-        trust: false,
-      })
+      return (window as any).katex.renderToString(formula, { displayMode: display, throwOnError: false, output: 'html', trust: false })
     }
   } catch {}
-  // Fallback: styled code block
   return display
     ? `<div class="math-display" style="overflow-x:auto;padding:8px;background:rgba(0,229,255,.06);border-radius:6px;text-align:center;font-family:monospace;color:#00e5ff">$$${esc(formula)}$$</div>`
     : `<code style="color:#00e5ff;background:rgba(0,229,255,.08);padding:1px 4px;border-radius:3px">$${esc(formula)}$</code>`
 }
 
-// ── Single-pass math replacer (used in renderMarkdown) ────
 function processMath(text: string): string {
-  // Display math first (greedy match $$...$$)
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, f) => renderKaTeX(f.trim(), true))
-  // Inline math $...$  (only if contains math symbols)
   text = text.replace(/\$([^$\n]+?)\$/g, (orig, f) => {
     if (/[+\-=^_{}\\]|\\[a-zA-Z]|\d/.test(f)) return renderKaTeX(f.trim(), false)
     return orig
@@ -46,88 +28,143 @@ function processMath(text: string): string {
   return text
 }
 
-// ── Code block renderer ───────────────────────────────────
+// Language → color mapping (like VS Code / GitHub)
+const LANG_COLORS: Record<string, string> = {
+  js:'#f7df1e', javascript:'#f7df1e', ts:'#3178c6', typescript:'#3178c6',
+  py:'#3776ab', python:'#3776ab', rs:'#f74c00', rust:'#f74c00',
+  go:'#00add8', java:'#ed8b00', cpp:'#f34b7d', c:'#555555',
+  css:'#563d7c', html:'#e34c26', sh:'#89e051', bash:'#89e051',
+  json:'#f39c12', md:'#083fa1', markdown:'#083fa1', sql:'#e38c00',
+  jsx:'#61dafb', tsx:'#3178c6', vue:'#42b883', svelte:'#ff3e00',
+  dart:'#00b4ab', kotlin:'#7f52ff', swift:'#f05138', rb:'#701516',
+  php:'#4f5d95', r:'#276dc3', yaml:'#cb171e', xml:'#f34b7d',
+}
+
 function processCode(text: string): string {
-  // Fenced code blocks ```lang\n...\n```
+  // Fenced code blocks
   text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const escaped = esc(code.trim())
-    const langLabel = lang ? `<span style="font-size:10px;color:#666;padding-right:6px">${lang}</span>` : ''
+    const langLower = lang.toLowerCase()
+    const langColor = LANG_COLORS[langLower] || '#8899aa'
+    const langLabel = lang
+      ? `<span style="font-size:10px;font-weight:600;color:${langColor};letter-spacing:.5px;text-transform:uppercase;font-family:'Space Mono',monospace">${lang}</span>`
+      : `<span style="font-size:10px;color:#445566;letter-spacing:.5px;font-family:'Space Mono',monospace">CODE</span>`
     const copyId = `cp_${Math.random().toString(36).slice(2,8)}`
-    const copyBtn = `<button onclick="(()=>{navigator.clipboard.writeText(${JSON.stringify(code.trim())}).then(()=>{const b=document.getElementById('${copyId}');if(b){b.textContent='✓';b.style.color='#00e5ff';setTimeout(()=>{b.textContent='⎘';b.style.color='#3a5570'},1500)}})})()" id="${copyId}" style="background:none;border:none;color:#3a5570;font-size:13px;cursor:pointer;padding:0 4px;float:right;line-height:1;transition:color .15s" title="Copy code">⎘</button>`
-    return `<pre style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;overflow-x:auto;margin:8px 0;font-size:12px;line-height:1.5"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${langLabel}${copyBtn}</div><code style="color:#e8f4ff;font-family:'Space Mono',monospace">${escaped}</code></pre>`
+    // SVG copy icon + checkmark feedback (Claude-style)
+    const copyBtn = `<button onclick="(()=>{
+      const b=document.getElementById('${copyId}');
+      navigator.clipboard.writeText(${JSON.stringify(code.trim())}).then(()=>{
+        if(b){
+          b.innerHTML='<svg width=\\'12\\' height=\\'12\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'#34d399\\' stroke-width=\\'2.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><polyline points=\\'20 6 9 17 4 12\\'></polyline></svg> Copied!';
+          b.style.color='#34d399';b.style.borderColor='rgba(52,211,153,.3)';
+          setTimeout(()=>{b.innerHTML='<svg width=\\'12\\' height=\\'12\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.8\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'9\\' y=\\'9\\' width=\\'13\\' height=\\'13\\' rx=\\'2\\' ry=\\'2\\'></rect><path d=\\'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\\'></path></svg> Copy code';b.style.color='';b.style.borderColor='';},2000)
+        }
+      }).catch(()=>{})
+    })()" id="${copyId}" title="Copy code"
+      style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:7px;color:rgba(255,255,255,.45);padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;font-family:inherit;transition:all .15s"
+      onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.8)'"
+      onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.color='rgba(255,255,255,.45)'"
+    ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy code</button>`
+    
+    return `<div style="background:rgba(5,8,15,.7);border:1px solid rgba(255,255,255,.09);border-radius:10px;overflow:hidden;margin:10px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07)">
+    ${langLabel}
+    ${copyBtn}
+  </div>
+  <pre style="margin:0;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.6"><code style="color:#e8f4ff;font-family:'Space Mono',Consolas,monospace;white-space:pre">${escaped}</code></pre>
+</div>`
   })
-  // Inline code `...`
+  // Inline code
   text = text.replace(/`([^`]+)`/g, (_, code) =>
-    `<code style="background:rgba(255,255,255,.08);color:#00e5ff;padding:1px 5px;border-radius:4px;font-family:'Space Mono',monospace;font-size:0.9em">${esc(code)}</code>`
+    `<code style="background:rgba(0,229,255,.1);color:#00e5ff;padding:1.5px 6px;border-radius:5px;font-family:'Space Mono',monospace;font-size:0.88em;border:1px solid rgba(0,229,255,.15)">${esc(code)}</code>`
   )
   return text
 }
 
-// ── Full markdown renderer ─────────────────────────────────
 export function renderMarkdown(raw: string): string {
   if (!raw) return ''
-
   let t = raw
 
-  // 1. Protect code blocks (don't process math inside code)
+  // 1. Protect code blocks
   const codeBlocks: string[] = []
   t = t.replace(/```[\s\S]*?```/g, m => { codeBlocks.push(m); return `\x00CODE${codeBlocks.length-1}\x00` })
   const inlineCodes: string[] = []
   t = t.replace(/`[^`]+`/g, m => { inlineCodes.push(m); return `\x00INLINE${inlineCodes.length-1}\x00` })
 
-  // 2. Math rendering
+  // 2. Math
   t = processMath(t)
 
-  // 3. Headings
-  t = t.replace(/^### (.+)$/gm, '<h3 style="font-size:14px;color:#00e5ff;margin:10px 0 4px;font-weight:700">$1</h3>')
-  t = t.replace(/^## (.+)$/gm,  '<h2 style="font-size:16px;color:#00e5ff;margin:12px 0 5px;font-weight:700">$1</h2>')
-  t = t.replace(/^# (.+)$/gm,   '<h1 style="font-size:18px;color:#00e5ff;margin:14px 0 6px;font-weight:700">$1</h1>')
+  // 3. Block-level
+  const lines = t.split('\n')
+  const out: string[] = []
+  let inList = false, inOL = false
 
-  // 4. Bold, italic
-  t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-  t = t.replace(/\*\*(.+?)\*\*/g,     '<strong style="color:#e8f4ff;font-weight:700">$1</strong>')
-  t = t.replace(/\*(.+?)\*/g,         '<em style="color:#b8d4f4">$1</em>')
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i]
 
-  // 5. Lists
-  t = t.replace(/^(\s*)[-•]\s+(.+)$/gm,
-    '<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#00e5ff;margin-top:1px">•</span><span>$2</span></div>')
-  t = t.replace(/^(\s*)\d+\.\s+(.+)$/gm,
-    '<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#00e5ff;min-width:16px;text-align:right">$1.</span><span>$2</span></div>')
+    // Headings
+    if (/^### (.+)/.test(line))      { if(inList){out.push('</ul>');inList=false}if(inOL){out.push('</ol>');inOL=false}; out.push(`<h3 style="font-size:15px;font-weight:700;color:var(--text);margin:14px 0 6px;line-height:1.4">${line.replace(/^### /,'')}</h3>`); continue }
+    if (/^## (.+)/.test(line))       { if(inList){out.push('</ul>');inList=false}if(inOL){out.push('</ol>');inOL=false}; out.push(`<h2 style="font-size:16px;font-weight:700;color:var(--text);margin:16px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px">${line.replace(/^## /,'')}</h2>`); continue }
+    if (/^# (.+)/.test(line))        { if(inList){out.push('</ul>');inList=false}if(inOL){out.push('</ol>');inOL=false}; out.push(`<h1 style="font-size:18px;font-weight:800;color:var(--text);margin:16px 0 8px">${line.replace(/^# /,'')}</h1>`); continue }
+    
+    // Horizontal rule
+    if (/^---+$/.test(line.trim()))  { out.push('<hr style="border:none;border-top:1px solid var(--border);margin:12px 0"/>'); continue }
 
-  // 6. Links
-  t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener" style="color:#00e5ff;text-decoration:underline">$1</a>')
+    // Ordered list
+    if (/^\d+\. (.+)/.test(line)) {
+      if (inList) { out.push('</ul>'); inList = false }
+      if (!inOL) { out.push('<ol style="margin:6px 0;padding-left:22px;display:flex;flex-direction:column;gap:3px">'); inOL = true }
+      out.push(`<li style="font-size:13.5px;line-height:1.6;color:var(--text)">${inlineFormat(line.replace(/^\d+\. /,''))}</li>`)
+      continue
+    }
 
-  // 7. Horizontal rule
-  t = t.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:8px 0"/>')
+    // Unordered list
+    if (/^[-*•] (.+)/.test(line)) {
+      if (inOL) { out.push('</ol>'); inOL = false }
+      if (!inList) { out.push('<ul style="margin:6px 0;padding-left:18px;display:flex;flex-direction:column;gap:3px;list-style:none">'); inList = true }
+      out.push(`<li style="font-size:13.5px;line-height:1.6;color:var(--text);display:flex;gap:7px;align-items:baseline"><span style="color:var(--accent);flex-shrink:0;font-size:10px">▸</span><span>${inlineFormat(line.replace(/^[-*•] /,''))}</span></li>`)
+      continue
+    }
 
-  // 8. Blockquote
-  t = t.replace(/^> (.+)$/gm,
-    '<div style="border-left:3px solid #00e5ff;padding-left:10px;color:#8bacc8;font-style:italic;margin:4px 0">$1</div>')
+    // Close lists
+    if (inList && line.trim() === '') { out.push('</ul>'); inList = false }
+    if (inOL && line.trim() === '') { out.push('</ol>'); inOL = false }
 
-  // 9. Line breaks → <br>
-  t = t.replace(/\n/g, '<br/>')
+    // Blockquote
+    if (/^> (.+)/.test(line)) {
+      out.push(`<blockquote style="border-left:3px solid var(--accent);padding:4px 12px;margin:6px 0;color:var(--text-muted);font-style:italic;background:var(--accent-dim);border-radius:0 6px 6px 0">${inlineFormat(line.replace(/^> /,''))}</blockquote>`)
+      continue
+    }
 
-  // 10. Restore code blocks
-  t = t.replace(/\x00CODE(\d+)\x00/g, (_, i) => processCode(codeBlocks[parseInt(i)]))
-  t = t.replace(/\x00INLINE(\d+)\x00/g, (_, i) => processCode(inlineCodes[parseInt(i)]))
+    // Empty line
+    if (line.trim() === '') { out.push('<div style="height:6px"/>'); continue }
+
+    // Normal paragraph
+    out.push(`<p style="margin:0 0 4px;font-size:13.5px;line-height:1.7;color:inherit">${inlineFormat(line)}</p>`)
+  }
+
+  if (inList) out.push('</ul>')
+  if (inOL) out.push('</ol>')
+
+  t = out.join('\n')
+
+  // 4. Restore
+  t = t.replace(/\x00CODE(\d+)\x00/g, (_, i) => processCode(codeBlocks[+i]))
+  t = t.replace(/\x00INLINE(\d+)\x00/g, (_, i) => processCode(inlineCodes[+i]))
 
   return t
 }
 
-// ── Chat bubble text splitter (image vs text) ─────────────
-export function splitImageAndText(content: string): { text: string; imageUrl: string | null; mapQuery: string | null } {
-  const imgMatch = content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/)
-  const mapMatch = content.match(/\[MAP:\s*([^\]]+)\]/)
-
-  const text = content
-    .replace(/!\[.*?\]\(https?:\/\/[^)]+\)/g, '')
-    .replace(/\[MAP:\s*[^\]]+\]/g, '')
-    .trim()
-
-  return {
-    text,
-    imageUrl: imgMatch ? imgMatch[1] : null,
-    mapQuery: mapMatch ? mapMatch[1] : null,
-  }
+function inlineFormat(text: string): string {
+  // Bold + italic
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:700">$1</strong>')
+  text = text.replace(/\*(.+?)\*/g, '<em style="color:var(--text-dim)">$1</em>')
+  text = text.replace(/__(.+?)__/g, '<strong>$1</strong>')
+  text = text.replace(/_(.+?)_/g, '<em>$1</em>')
+  // Strikethrough
+  text = text.replace(/~~(.+?)~~/g, '<del style="opacity:.6">$1</del>')
+  // Links
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$1</a>')
+  return text
 }

@@ -24,7 +24,7 @@ const BG      = '#090d18'
 const CARD    = 'rgba(255,255,255,.04)'
 const BORDER  = 'rgba(255,255,255,.07)'
 const ACCENT  = '#00e5ff'
-const DIM     = '#1e3858'
+const DIM     = 'var(--text-faint)'
 
 type TabType = 'photos' | 'videos' | 'audio' | 'music' | 'all'
 
@@ -392,7 +392,7 @@ export default function MediaVaultPage() {
   })()
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, color: '#e8f4ff', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', background: BG, color: 'var(--text)', paddingBottom: 80 }}>
       {/* Viewer */}
       {viewer && (
         <Viewer
@@ -476,7 +476,7 @@ export default function MediaVaultPage() {
             style={{
               width: '100%', padding: '7px 34px 7px 30px', borderRadius: 10,
               background: 'rgba(255,255,255,.04)', border: `1px solid ${BORDER}`,
-              color: '#e8f4ff', fontSize: 12, outline: 'none', boxSizing: 'border-box',
+              color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box',
             }}
           />
           {searchQ && (
