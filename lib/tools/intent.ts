@@ -7,7 +7,7 @@ export type ToolCategory =
   | 'weather' | 'time' | 'news' | 'finance' | 'knowledge'
   | 'location' | 'india' | 'education' | 'entertainment'
   | 'image_gen' | 'productivity' | 'science' | 'health'
-  | 'sports' | 'food' | 'fun' | 'search' | 'code' | 'travel' | 'none'
+  | 'sports' | 'food' | 'fun' | 'search' | 'code' | 'travel' | 'android' | 'none'
 
 export interface IntentResult {
   categories: ToolCategory[]    // ordered by confidence
@@ -56,6 +56,14 @@ const PATTERNS: { cat: ToolCategory; weight: number; re: RegExp }[] = [
   // ENTERTAINMENT
   { cat: 'entertainment', weight: 10, re: /\b(movie|film|web series|netflix|amazon prime|hotstar|youtube|video|song|gaana|गाना|music|sangeet|संगीत|watch|dekhna|देखना|trailer|release|bollywood|hollywood|actor|actress|director|imdb|rating|review|serial|episode)\b/i },
   { cat: 'entertainment', weight: 7,  re: /\b(bhajan|गाने|playlist|album|artist|genre|trending song|new song|naya gaana)\b/i },
+
+
+  // ANDROID CONTROL
+  { cat: 'android', weight: 12, re: /\b(open|launch|start|kholo|chalu karo|chalao)\s+(youtube|instagram|whatsapp|telegram|spotify|camera|maps|gmail|calendar|settings|chrome|netflix|phone|messages|play|paytm|gpay|phonepe|zomato|swiggy|flipkart|amazon|hotstar|gaana|irctc|jio|ola|uber)\b/i },
+  { cat: 'android', weight: 12, re: /\b(wifi|bluetooth|torch|flashlight|brightness|volume|screenshot|screen shot)\s*(on|off|toggle|chalu|band|set|kar|karo)\b/i },
+  { cat: 'android', weight: 12, re: /\b(call karo|phone karo|call|dial)\s+[\d+]/i },
+  { cat: 'android', weight: 11, re: /\b(alarm\s*(?:laga|set|baja)|wake me|mujhe jagao)\s+/i },
+  { cat: 'android', weight: 10, re: /\b(macrodroid|android\s*control|phone\s*control|system\s*control)\b/i },
 
   // IMAGE GENERATION
   { cat: 'image_gen', weight: 10, re: /\b(image|तस्वीर|photo|generate|banao|बनाओ|create picture|draw|art|design|photo|चित्र|wallpaper|poster|illustration|render|ai image|generate image|photo banana)\b/i },

@@ -43,6 +43,7 @@ const NAV_SECTIONS = [
   {
     label: 'SYSTEM',
     items: [
+      { path: '/android',   icon: '🤖', label: 'Android',    color: '#34d399', desc: 'APK + MacroDroid' },
       { path: '/connected', icon: '🔌', label: 'APIs',       color: '#00e5ff', desc: 'Integrations' },
       { path: '/settings',  icon: '⚙️', label: 'Settings',   color: '#94a3b8', desc: 'Preferences' },
     ]
