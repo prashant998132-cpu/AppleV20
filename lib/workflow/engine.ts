@@ -201,7 +201,6 @@ export const DEEP_LINKS: Record<string, string> = {
   // Finance
   'paytm':      'paytmmp://',
   'phonepe':    'phonepe://',
-  'gpay':       'tez://',
   'cred':       'cred://',
 
   // Travel
