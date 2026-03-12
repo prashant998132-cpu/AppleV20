@@ -12,6 +12,7 @@ import { addMemory, buildMemoryContext, getProfile, setProfile, saveChat, getTod
 import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime, parseRepeatPattern } from '../lib/reminders'
 import { checkProactive, trackHabit, generateDailySummary } from '../lib/proactive/engine'
 import { parseAndroidCommand, executeAndroidCommand, isAndroidTWA, isAndroid } from '../lib/android/bridge'
+import { detectWorkflow, createPlan, getSmartContext, trackUsage, getTopCommands, checkBatteryAlert, type WorkflowPlan } from '../lib/workflow/engine'
 import { processAndSave } from '../lib/memory/extractor'
 import { parseSlashCommand, cmdNasa, cmdWiki, cmdJoke, cmdShayari, cmdMap, cmdQuote, cmdQR, cmdMeaning, cmdSearch, cmdCanva, cmdApp, SLASH_COMMANDS } from '../lib/chat/slashCommands'
 import { pollinationsUrl } from '../lib/media/image'
@@ -544,6 +545,7 @@ export default function Page() {
   const [urlChip,setUrlChip]=useState('')
   const [proactive,setProactive]=useState<string|null>(null)
   const [proactiveAction,setProactiveAction]=useState<{msg:string,label:string}|null>(null)
+  const [activePlan,setActivePlan]=useState<WorkflowPlan|null>(null)
   const [showSummary,setShowSummary]=useState(false)
   const [searchOpen,setSearchOpen]=useState(false)
   const [searchQ,setSearchQ]=useState('')
@@ -982,6 +984,18 @@ export default function Page() {
     syncSaveChat({role:'user',content:text,timestamp:userTs,mood}).catch(()=>{})
     trackWeeklyChat()
     trackHabit(text).catch(()=>{})
+
+    // ── Usage tracking ─────────────────────────────────
+    trackUsage(text)
+
+    // ── Workflow detection — BEFORE AI call ───────────
+    const wfTemplate = detectWorkflow(text)
+    if (wfTemplate) {
+      const plan = createPlan(wfTemplate, text)
+      setActivePlan(plan)
+      // Continue to AI — AI fills in the actual content
+      // Plan UI shows in chat as progress steps
+    }
 
     // ── Android command check (TWA only) ──────────────
     if (isAndroid()) {
