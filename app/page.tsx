@@ -988,7 +988,7 @@ export default function Page() {
       const androidCmd = parseAndroidCommand(text)
       if (androidCmd) {
         const result = await executeAndroidCommand(androidCmd)
-        const botMsg: Message = { id:'a'+Date.now(), role:'assistant', content:result, timestamp:Date.now(), mode:'flash' }
+        const botMsg: Msg = { id:'a'+Date.now(), role:'assistant', content:result, timestamp:Date.now(), mode:'flash' }
         setMsgs(m=>[...m, botMsg])
         setLoad(false)
         setInput('')
