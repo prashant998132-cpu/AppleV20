@@ -23,6 +23,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -30,16 +35,9 @@ jobs:
         run: yes | sdkmanager --licenses || true
 
       - name: 🔑 Decode Keystore
-        working-directory: android-apk
         run: |
-          mkdir -p app/keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore/jarvis.keystore
-
-      - name: 🔧 Setup Gradle wrapper
-        working-directory: android-apk
-        run: |
-          gradle wrapper --gradle-version 8.2 || true
-          chmod +x gradlew 2>/dev/null || true
+          mkdir -p android-apk/app/keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android-apk/app/keystore/jarvis.keystore
 
       - name: 🔨 Build Release APK
         working-directory: android-apk
@@ -47,39 +45,32 @@ jobs:
           KEYSTORE_PATH: keystore/jarvis.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          # Download gradle wrapper if not present
-          if [ ! -f "gradlew" ]; then
-            curl -L https://services.gradle.org/distributions/gradle-8.2-bin.zip -o gradle.zip
-            unzip -q gradle.zip
-            ./gradle-8.2/bin/gradle wrapper
-          fi
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+        run: gradle assembleRelease --no-daemon --stacktrace
 
-      - name: 📝 Rename APK
+      - name: 📦 Find & Copy APK
         run: |
           VERSION="${{ github.event.inputs.version || '25.0.0' }}"
           APK=$(find android-apk -name "*release*.apk" | head -1)
-          echo "Found: $APK"
+          echo "APK found: $APK"
           cp "$APK" "JARVIS-v${VERSION}.apk"
+          ls -la JARVIS-*.apk
 
-      - name: 📤 Upload APK
+      - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: JARVIS-APK-v${{ github.event.inputs.version || '25.0.0' }}
           path: JARVIS-*.apk
           retention-days: 30
 
-      - name: 🚀 GitHub Release
+      - name: 🚀 Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: apk-v${{ github.event.inputs.version || '25.0.0' }}
           name: JARVIS APK v${{ github.event.inputs.version || '25.0.0' }}
           body: |
-            JARVIS APK — Full-screen Android App
+            ## JARVIS APK
+            Install → Full-screen JARVIS → Auto-updates hote rehte hain!
             PWA: https://apple-v20.vercel.app
-            Auto-updates bhi hain!
           files: JARVIS-*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
