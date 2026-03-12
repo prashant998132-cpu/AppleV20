@@ -37,6 +37,7 @@ const NAV_SECTIONS = [
       { path: '/tools',    icon: '🧮', label: 'Calculators', color: '#fbbf24', desc: 'SIP/EMI/GST' },
       { path: '/media',    icon: '📁', label: 'Media',       color: '#60a5fa', desc: 'Files' },
       { path: '/voice',    icon: '🎤', label: 'Voice',       color: '#e879f9', desc: 'Speech' },
+      { path: '/dashboard', icon: '📊', label: 'Dashboard',   color: '#00ff88', desc: 'Tasks + Notes + Goals' },
       { path: '/system',   icon: '⚡', label: 'System',      color: '#22d3ee', desc: 'Dashboard' },
     ]
   },

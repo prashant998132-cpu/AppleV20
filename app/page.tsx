@@ -13,6 +13,7 @@ import { checkAndFireReminders, requestNotifPermission, addReminder, parseRemind
 import { checkProactive, trackHabit, generateDailySummary } from '../lib/proactive/engine'
 import { parseAndroidCommand, executeAndroidCommand, isAndroidTWA, isAndroid } from '../lib/android/bridge'
 import { detectWorkflow, createPlan, getSmartContext, trackUsage, getTopCommands, checkBatteryAlert, type WorkflowPlan } from '../lib/workflow/engine'
+import { canRequest, recordRequest } from '../lib/rateLimit'
 import { processAndSave } from '../lib/memory/extractor'
 import { parseSlashCommand, cmdNasa, cmdWiki, cmdJoke, cmdShayari, cmdMap, cmdQuote, cmdQR, cmdMeaning, cmdSearch, cmdCanva, cmdApp, SLASH_COMMANDS } from '../lib/chat/slashCommands'
 import { pollinationsUrl } from '../lib/media/image'
@@ -987,6 +988,15 @@ export default function Page() {
 
     // ── Usage tracking ─────────────────────────────────
     trackUsage(text)
+
+    // ── Rate limit check ──────────────────────────────
+    const rlCheck = canRequest('groq')
+    if (!rlCheck.allowed) {
+      setMsgs(m => [...m, { id: Date.now()+'', role:'assistant', content:`⚠️ ${rlCheck.reason}
+
+Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
+      // Don't return — Puter fallback will handle it
+    }
 
     // ── Workflow detection — BEFORE AI call ───────────
     const wfTemplate = detectWorkflow(text)
