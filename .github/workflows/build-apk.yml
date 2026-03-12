@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 25.0.0)'
+        description: 'Version'
         required: false
         default: '25.0.0'
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -23,14 +23,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🟢 Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: 📦 Install Bubblewrap
-        run: npm install -g @bubblewrap/cli@1.22.2
-
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -38,41 +30,41 @@ jobs:
         run: yes | sdkmanager --licenses || true
 
       - name: 🔑 Decode Keystore
+        working-directory: android-apk
         run: |
-          mkdir -p twa/keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > twa/keystore/jarvis.keystore
+          mkdir -p app/keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore/jarvis.keystore
 
-      - name: 🏗️ Init Bubblewrap Project
-        working-directory: twa
+      - name: 🔧 Setup Gradle wrapper
+        working-directory: android-apk
         run: |
-          bubblewrap init --manifest https://apple-v20.vercel.app/manifest.json --directory . --skipPwaValidation || true
+          gradle wrapper --gradle-version 8.2 || true
+          chmod +x gradlew 2>/dev/null || true
 
-      - name: ⚙️ Patch signing config
-        run: |
-          python3 -c "
-          import json
-          f = 'twa/twa-manifest.json'
-          d = json.load(open(f))
-          d['signingKey'] = {'path': 'keystore/jarvis.keystore', 'alias': 'jarvis'}
-          json.dump(d, open(f,'w'), indent=2)
-          print('patched')
-          "
-
-      - name: 🔨 Build APK
-        working-directory: twa
+      - name: 🔨 Build Release APK
+        working-directory: android-apk
         env:
-          BUBBLEWRAP_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          BUBBLEWRAP_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
-        run: bubblewrap build --skipPwaValidation
+          KEYSTORE_PATH: keystore/jarvis.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          # Download gradle wrapper if not present
+          if [ ! -f "gradlew" ]; then
+            curl -L https://services.gradle.org/distributions/gradle-8.2-bin.zip -o gradle.zip
+            unzip -q gradle.zip
+            ./gradle-8.2/bin/gradle wrapper
+          fi
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
-      - name: 📝 Find APK
+      - name: 📝 Rename APK
         run: |
           VERSION="${{ github.event.inputs.version || '25.0.0' }}"
-          APK=$(find twa -name "*.apk" | head -1)
-          echo "APK: $APK"
+          APK=$(find android-apk -name "*release*.apk" | head -1)
+          echo "Found: $APK"
           cp "$APK" "JARVIS-v${VERSION}.apk"
 
-      - name: 📤 Upload Artifact
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: JARVIS-APK-v${{ github.event.inputs.version || '25.0.0' }}
@@ -85,9 +77,9 @@ jobs:
           tag_name: apk-v${{ github.event.inputs.version || '25.0.0' }}
           name: JARVIS APK v${{ github.event.inputs.version || '25.0.0' }}
           body: |
-            JARVIS APK - Trusted Web Activity
+            JARVIS APK — Full-screen Android App
             PWA: https://apple-v20.vercel.app
-            Auto-updates included!
+            Auto-updates bhi hain!
           files: JARVIS-*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
