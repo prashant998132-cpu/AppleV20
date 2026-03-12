@@ -107,7 +107,7 @@ export default function AnimePage() {
   function addToWatchlist(a: Anime, status: WatchItem['status'] = 'plan') {
     const w = watchlist.filter((x:WatchItem) => x.mal_id !== a.mal_id)
     const upd = [...w, { mal_id: a.mal_id, title: a.title_english || a.title, image: a.image, status, totalEp: a.episodes }]
-    setWatchlist(upd); saveWatch(upd)
+    setWatchlist(updated); saveWatch(updated)
   }
 
   function updateStatus(id: number, status: WatchItem['status']) {
