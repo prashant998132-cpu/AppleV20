@@ -7,11 +7,6 @@ on:
         description: 'Version (e.g. 25.0.0)'
         required: false
         default: '25.0.0'
-  push:
-    branches: [main]
-    paths:
-      - 'twa/**'
-      - 'public/.well-known/assetlinks.json'
 
 jobs:
   build-apk:
@@ -33,19 +28,35 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 📦 Install Bubblewrap CLI
+      - name: 📦 Install Bubblewrap
         run: npm install -g @bubblewrap/cli@1.22.2
 
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: ✅ Accept Android licenses
+      - name: ✅ Accept Licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: 🔑 Decode keystore
+      - name: 🔑 Decode Keystore
         run: |
           mkdir -p twa/keystore
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > twa/keystore/jarvis.keystore
+
+      - name: 🏗️ Init Bubblewrap Project
+        working-directory: twa
+        run: |
+          bubblewrap init --manifest https://apple-v20.vercel.app/manifest.json --directory . --skipPwaValidation || true
+
+      - name: ⚙️ Patch signing config
+        run: |
+          python3 -c "
+          import json
+          f = 'twa/twa-manifest.json'
+          d = json.load(open(f))
+          d['signingKey'] = {'path': 'keystore/jarvis.keystore', 'alias': 'jarvis'}
+          json.dump(d, open(f,'w'), indent=2)
+          print('patched')
+          "
 
       - name: 🔨 Build APK
         working-directory: twa
@@ -54,32 +65,29 @@ jobs:
           BUBBLEWRAP_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
         run: bubblewrap build --skipPwaValidation
 
-      - name: 📝 Rename APK
+      - name: 📝 Find APK
         run: |
           VERSION="${{ github.event.inputs.version || '25.0.0' }}"
-          find twa -name "*.apk" | head -1 | xargs -I{} mv {} twa/JARVIS-v${VERSION}.apk
-          ls twa/*.apk
+          APK=$(find twa -name "*.apk" | head -1)
+          echo "APK: $APK"
+          cp "$APK" "JARVIS-v${VERSION}.apk"
 
-      - name: 📤 Upload APK
+      - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: JARVIS-APK-v${{ github.event.inputs.version || '25.0.0' }}
-          path: twa/JARVIS-*.apk
+          path: JARVIS-*.apk
           retention-days: 30
 
-      - name: 🚀 Create GitHub Release
-        if: github.event_name == 'workflow_dispatch'
+      - name: 🚀 GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.event.inputs.version || '25.0.0' }}
-          name: JARVIS v${{ github.event.inputs.version || '25.0.0' }}
+          tag_name: apk-v${{ github.event.inputs.version || '25.0.0' }}
+          name: JARVIS APK v${{ github.event.inputs.version || '25.0.0' }}
           body: |
-            ## JARVIS APK — Trusted Web Activity
+            JARVIS APK - Trusted Web Activity
             PWA: https://apple-v20.vercel.app
-            Auto-updates: Haan — APK hamesha latest PWA load karta hai
-            Min Android: 5.0 (API 21)
-          files: twa/JARVIS-*.apk
-          draft: false
-          prerelease: false
+            Auto-updates included!
+          files: JARVIS-*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
