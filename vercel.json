@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/scheduler?task=multi&multi=1&secret=jarvis-cron-2025",
+      "path": "/api/scheduler?task=multi&cache_warmup=1&secret=jarvis-cron-2025",
       "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/scheduler?task=cache_warmup&secret=jarvis-cron-2025",
-      "schedule": "0 */6 * * *"
     }
   ]
 }
