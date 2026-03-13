@@ -11,7 +11,7 @@ import { renderMarkdown } from '../lib/render/markdown'
 import { addMemory, buildMemoryContext, getProfile, setProfile, saveChat, getTodayChats, runMaintenance, searchChats, createHistorySession, updateHistorySession, getHistorySession, getSessionsToCompress, markSessionCompressed, type HistorySession } from '../lib/db'
 import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime, parseRepeatPattern } from '../lib/reminders'
 import { checkProactive, trackHabit, generateDailySummary } from '../lib/proactive/engine'
-import { parseAndroidCommand, executeAndroidCommand, isAndroidTWA, isAndroid } from '../lib/android/bridge'
+
 import { detectWorkflow, createPlan, getSmartContext, trackUsage, getTopCommands, checkBatteryAlert, type WorkflowPlan } from '../lib/workflow/engine'
 import { canRequest, recordRequest } from '../lib/rateLimit'
 import { processAndSave } from '../lib/memory/extractor'
@@ -1007,18 +1007,7 @@ Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
       // Plan UI shows in chat as progress steps
     }
 
-    // ── Android command check (TWA only) ──────────────
-    if (isAndroid()) {
-      const androidCmd = parseAndroidCommand(text)
-      if (androidCmd) {
-        const result = await executeAndroidCommand(androidCmd)
-        const botMsg: Msg = { id:'a'+Date.now(), role:'assistant', content:result, timestamp:Date.now(), mode:'flash' }
-        setMsgs(m=>[...m, botMsg])
-        setLoad(false)
-        setInput('')
-        return
-      }
-    }
+
     try{localStorage.setItem('jarvis_last_topic',JSON.stringify({topic:text.slice(0,40),date:new Date().toDateString()}))}catch{}
 
     try{
