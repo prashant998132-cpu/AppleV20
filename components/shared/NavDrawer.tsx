@@ -44,6 +44,7 @@ const NAV_SECTIONS = [
   {
     label: 'SYSTEM',
     items: [
+      { path: '/termux',    icon: '📱', label: 'Phone',      color: '#00ff88', desc: 'Termux Control' },
       { path: '/connected', icon: '🔌', label: 'APIs',       color: '#00e5ff', desc: 'Integrations' },
       { path: '/settings',  icon: '⚙️', label: 'Settings',   color: '#94a3b8', desc: 'Preferences' },
     ]

@@ -18,6 +18,7 @@ import { processAndSave } from '../lib/memory/extractor'
 import { parseSlashCommand, cmdNasa, cmdWiki, cmdJoke, cmdShayari, cmdMap, cmdQuote, cmdQR, cmdMeaning, cmdSearch, cmdCanva, cmdApp, SLASH_COMMANDS } from '../lib/chat/slashCommands'
 import { pollinationsUrl } from '../lib/media/image'
 import { puterImage, loadPuter } from '../lib/providers/puter'
+import { detectTermuxCommand, isTermuxAvailable, termuxRun } from '../lib/termux/bridge'
 import { generateAndSaveTitle, startNewSession, trackSessionMessage } from '../lib/chat/autoTitle'
 import { shouldShowWeeklySummary, generateWeeklySummary, trackWeeklyChat } from '../lib/proactive/weekly'
 import ChatHistorySidebar from '../components/shared/ChatHistorySidebar'
@@ -996,6 +997,35 @@ export default function Page() {
 
 Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
       // Don't return — Puter fallback will handle it
+    }
+
+    // ── Termux command check — BEFORE AI call ──────────
+    const termuxCmd = detectTermuxCommand(text)
+    if (termuxCmd) {
+      const available = await isTermuxAvailable()
+      if (available) {
+        setStatus(`📱 ${termuxCmd.label}...`)
+        const result = await termuxRun(termuxCmd.cmd)
+        const botMsg: Msg = {
+          id: 'tx' + Date.now(), role: 'assistant',
+          content: result.ok
+            ? `${termuxCmd.label} ✓\n\`\`\`\n${result.output}\n\`\`\``
+            : `❌ ${result.output}`,
+          timestamp: Date.now(), mode: 'flash'
+        }
+        setMsgs(m => [...m, botMsg])
+        setLoad(false); setInput(''); setStatus('')
+        return
+      }
+      // Termux not running — suggest setup
+      const botMsg: Msg = {
+        id: 'tx' + Date.now(), role: 'assistant',
+        content: `📱 Phone control ke liye Termux server start karo!\n\nSetup: [Phone Control →](/termux) (2 min, free, MacroDroid se better)`,
+        timestamp: Date.now(), mode: 'flash'
+      }
+      setMsgs(m => [...m, botMsg])
+      setLoad(false); setInput(''); setStatus('')
+      return
     }
 
     // ── Workflow detection — BEFORE AI call ───────────
