@@ -340,6 +340,25 @@ function haptic(type: 'light'|'medium'|'heavy'|'error') {
 // ── Weather mini widget ────────────────────────────────────
 function WeatherBadge() {
   const [w, setW] = useState<{temp:string;icon:string;loc:string}|null>(null)
+  // ── Global copy button handler (for code blocks) ──────
+  useEffect(() => {
+    function handleCopy(e: MouseEvent) {
+      const btn = (e.target as HTMLElement).closest('.jarvis-copy-btn') as HTMLElement | null
+      if (!btn) return
+      const encoded = btn.getAttribute('data-code') || ''
+      try {
+        const code = decodeURIComponent(escape(atob(encoded)))
+        navigator.clipboard.writeText(code).then(() => {
+          btn.textContent = '✓ Copied'
+          btn.style.color = '#34d399'
+          setTimeout(() => { btn.textContent = '⎘ Copy'; btn.style.color = '' }, 2000)
+        }).catch(() => {})
+      } catch {}
+    }
+    document.addEventListener('click', handleCopy)
+    return () => document.removeEventListener('click', handleCopy)
+  }, [])
+
   useEffect(() => {
     const cached = sessionStorage.getItem('jarvis_weather')
     if (cached) { try { setW(JSON.parse(cached)) } catch {} return }
