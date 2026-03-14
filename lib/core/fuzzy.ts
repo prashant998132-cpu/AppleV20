@@ -3,8 +3,8 @@
 
 // ─── Common voice/typing errors ───────────────────────────
 const CORRECTIONS: [RegExp, string][] = [
-  // Torch variants
-  [/\btr[oa]?[uo]?c?h\b/gi, 'torch'],
+  // Torch variants — voice typos: Troch, Torach, Toch, Torsh
+  [/\btr?[oa]?[ur]?[oc]+h?\b/gi, 'torch'],
   [/\bfl[ae]sh\s*li[gq]ht\b/gi, 'flashlight'],
   // Battery
   [/\bba[t]+[ae]r[yi]\b/gi, 'battery'],
