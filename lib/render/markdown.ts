@@ -40,36 +40,53 @@ const LANG_COLORS: Record<string, string> = {
   php:'#4f5d95', r:'#276dc3', yaml:'#cb171e', xml:'#f34b7d',
 }
 
+// Global code store — no inline JS escaping issues!
+const _codeStore: Record<string, string> = {}
+
+function _initCopy() {
+  if (typeof window === 'undefined') return
+  (window as any).__jarviscopy = (id: string) => {
+    const code = _codeStore[id]
+    if (!code) return
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.getElementById(id)
+      if (btn) {
+        const orig = btn.textContent || '⎘ Copy'
+        btn.textContent = '✓ Copied!'
+        ;(btn as HTMLElement).style.color = '#34d399'
+        setTimeout(() => { btn.textContent = orig; (btn as HTMLElement).style.color = '' }, 2000)
+      }
+    }).catch(() => {})
+  }
+}
+_initCopy()
+
 function processCode(text: string): string {
-  // Fenced code blocks — clean approach, no inline JS escaping issues
   text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const escaped = esc(code.trim())
     const langLower = lang.toLowerCase()
     const langColor = LANG_COLORS[langLower] || '#8899aa'
     const langLabel = lang
-      ? `<span style="font-size:10px;font-weight:600;color:${langColor};letter-spacing:.5px;text-transform:uppercase">${lang}</span>`
+      ? `<span style="font-size:10px;font-weight:600;color:${langColor};text-transform:uppercase">${esc(lang)}</span>`
       : `<span style="font-size:10px;color:#667788">CODE</span>`
-    // Store code in data-attribute — no inline JS escaping issues!
-    const safeCode = code.trim().replace(/"/g,'&quot;').replace(/'/g,'&#39;')
-    const copyBtn = `<button 
-      data-copy="${safeCode}"
-      onclick="(()=>{const b=this;const t=b.getAttribute('data-copy').replace(/&quot;/g,'\"').replace(/&#39;/g,\"'\");navigator.clipboard.writeText(t).then(()=>{b.textContent='✓ Copied';b.style.color='#34d399';setTimeout(()=>{b.textContent='⎘ Copy';b.style.color=''},2000)}).catch(()=>{})})()"
-      style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.5);padding:3px 9px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s"
-      onmouseover="this.style.color='rgba(255,255,255,.9)'"
-      onmouseout="this.style.color='rgba(255,255,255,.5)'"
+    // Store code globally — no escaping needed in HTML!
+    const id = 'cp_' + Math.random().toString(36).slice(2, 10)
+    _codeStore[id] = code.trim()
+    const copyBtn = `<button id="${id}" onclick="window.__jarviscopy && window.__jarviscopy('${id}')"
+      style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.5);padding:3px 10px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s"
+      onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'"
     >⎘ Copy</button>`
 
     return `<div style="background:rgba(5,8,15,.8);border:1px solid rgba(255,255,255,.09);border-radius:10px;overflow:hidden;margin:10px 0">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07)">
-    ${langLabel}
-    ${copyBtn}
+    ${langLabel}${copyBtn}
   </div>
-  <pre style="margin:0;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.6"><code style="color:#e8f4ff;font-family:'Space Mono',Consolas,monospace;white-space:pre">${escaped}</code></pre>
+  <pre style="margin:0;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.6"><code style="color:#e8f4ff;font-family:monospace;white-space:pre">${escaped}</code></pre>
 </div>`
   })
   // Inline code
-  text = text.replace(/`([^`]+)`/g, (_, code) =>
-    `<code style="background:rgba(0,229,255,.1);color:#00e5ff;padding:1.5px 6px;border-radius:5px;font-family:'Space Mono',monospace;font-size:0.88em;border:1px solid rgba(0,229,255,.15)">${esc(code)}</code>`
+  text = text.replace(/`([^`]+)`/g, (_, c) =>
+    `<code style="background:rgba(0,229,255,.1);color:#00e5ff;padding:1.5px 6px;border-radius:5px;font-family:monospace;font-size:.88em;border:1px solid rgba(0,229,255,.15)">${esc(c)}</code>`
   )
   return text
 }
