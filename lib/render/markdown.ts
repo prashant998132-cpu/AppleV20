@@ -41,32 +41,25 @@ const LANG_COLORS: Record<string, string> = {
 }
 
 function processCode(text: string): string {
-  // Fenced code blocks
+  // Fenced code blocks — clean approach, no inline JS escaping issues
   text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const escaped = esc(code.trim())
     const langLower = lang.toLowerCase()
     const langColor = LANG_COLORS[langLower] || '#8899aa'
     const langLabel = lang
-      ? `<span style="font-size:10px;font-weight:600;color:${langColor};letter-spacing:.5px;text-transform:uppercase;font-family:'Space Mono',monospace">${lang}</span>`
-      : `<span style="font-size:10px;color:#445566;letter-spacing:.5px;font-family:'Space Mono',monospace">CODE</span>`
-    const copyId = `cp_${Math.random().toString(36).slice(2,8)}`
-    // SVG copy icon + checkmark feedback (Claude-style)
-    const copyBtn = `<button onclick="(()=>{
-      const b=document.getElementById('${copyId}');
-      navigator.clipboard.writeText(${JSON.stringify(code.trim())}).then(()=>{
-        if(b){
-          b.innerHTML='<svg width=\\'12\\' height=\\'12\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'#34d399\\' stroke-width=\\'2.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><polyline points=\\'20 6 9 17 4 12\\'></polyline></svg> Copied!';
-          b.style.color='#34d399';b.style.borderColor='rgba(52,211,153,.3)';
-          setTimeout(()=>{b.innerHTML='<svg width=\\'12\\' height=\\'12\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.8\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'9\\' y=\\'9\\' width=\\'13\\' height=\\'13\\' rx=\\'2\\' ry=\\'2\\'></rect><path d=\\'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\\'></path></svg> Copy code';b.style.color='';b.style.borderColor='';},2000)
-        }
-      }).catch(()=>{})
-    })()" id="${copyId}" title="Copy code"
-      style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:7px;color:rgba(255,255,255,.45);padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;font-family:inherit;transition:all .15s"
-      onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.8)'"
-      onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.color='rgba(255,255,255,.45)'"
-    ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy code</button>`
-    
-    return `<div style="background:rgba(5,8,15,.7);border:1px solid rgba(255,255,255,.09);border-radius:10px;overflow:hidden;margin:10px 0">
+      ? `<span style="font-size:10px;font-weight:600;color:${langColor};letter-spacing:.5px;text-transform:uppercase">${lang}</span>`
+      : `<span style="font-size:10px;color:#667788">CODE</span>`
+    // Store code in data-attribute — no inline JS escaping issues!
+    const safeCode = code.trim().replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+    const copyBtn = `<button 
+      data-copy="${safeCode}"
+      onclick="(()=>{const b=this;const t=b.getAttribute('data-copy').replace(/&quot;/g,'\"').replace(/&#39;/g,\"'\");navigator.clipboard.writeText(t).then(()=>{b.textContent='✓ Copied';b.style.color='#34d399';setTimeout(()=>{b.textContent='⎘ Copy';b.style.color=''},2000)}).catch(()=>{})})()"
+      style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.5);padding:3px 9px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s"
+      onmouseover="this.style.color='rgba(255,255,255,.9)'"
+      onmouseout="this.style.color='rgba(255,255,255,.5)'"
+    >⎘ Copy</button>`
+
+    return `<div style="background:rgba(5,8,15,.8);border:1px solid rgba(255,255,255,.09);border-radius:10px;overflow:hidden;margin:10px 0">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07)">
     ${langLabel}
     ${copyBtn}
@@ -80,6 +73,7 @@ function processCode(text: string): string {
   )
   return text
 }
+
 
 export function renderMarkdown(raw: string): string {
   if (!raw) return ''
