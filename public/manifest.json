@@ -1,25 +1,76 @@
 {
-  "name": "JARVIS — Jons Bhai",
+  "name": "JARVIS \u2014 Jons Bhai",
   "short_name": "JARVIS",
-  "description": "Sarcastic, caring, proactive AI companion — Hinglish, offline-first",
+  "description": "Sarcastic, caring, proactive AI companion \u2014 Hinglish, offline-first",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#090d18",
   "theme_color": "#090d18",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ],
   "shortcuts": [
-    { "name": "Chat",       "url": "/",          "description": "JARVIS se baat karo" },
-    { "name": "Briefing",   "url": "/briefing",  "description": "Subah ka update lo" },
-    { "name": "Learn",      "url": "/learn",     "description": "AI course banao" },
-    { "name": "Anime",      "url": "/anime",     "description": "Watchlist dekhna" },
-    { "name": "Voice",      "url": "/voice",     "description": "Aawaz se baat karo" },
-    { "name": "Settings",   "url": "/settings",  "description": "Keys aur profile" }
+    {
+      "name": "Chat",
+      "url": "/",
+      "description": "JARVIS se baat karo"
+    },
+    {
+      "name": "Briefing",
+      "url": "/briefing",
+      "description": "Subah ka update lo"
+    },
+    {
+      "name": "Learn",
+      "url": "/learn",
+      "description": "AI course banao"
+    },
+    {
+      "name": "Anime",
+      "url": "/anime",
+      "description": "Watchlist dekhna"
+    },
+    {
+      "name": "Voice",
+      "url": "/voice",
+      "description": "Aawaz se baat karo"
+    },
+    {
+      "name": "Settings",
+      "url": "/settings",
+      "description": "Keys aur profile"
+    }
   ],
-  "categories": ["utilities", "productivity", "lifestyle"],
-  "prefer_related_applications": false
+  "categories": [
+    "utilities",
+    "productivity",
+    "lifestyle"
+  ],
+  "prefer_related_applications": false,
+  "share_target": {
+    "action": "/?share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

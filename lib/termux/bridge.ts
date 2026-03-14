@@ -1,154 +1,135 @@
-// lib/termux/bridge.ts — Termux HTTP Bridge (FREE, no MacroDroid needed)
-// Setup: Phone pe Termux install karo, phir:
-//   pkg install nodejs && node ~/.jarvis-server.js
-// JARVIS → localhost:1234 → Termux → Android commands
+// lib/termux/bridge.ts — Termux HTTP Bridge v2
+// Setup: Termux mein node ~/.jarvis-server.js chalao
 
-const TERMUX_URL = 'http://localhost:1234'
+const URL = 'http://localhost:1234'
 
-export interface TermuxResult {
-  ok: boolean
-  output: string
-}
+export interface TermuxResult { ok: boolean; output: string }
 
-// ─── Check if Termux server is running ────────────────────
 export async function isTermuxAvailable(): Promise<boolean> {
   try {
-    const r = await fetch(`${TERMUX_URL}/ping`, { signal: AbortSignal.timeout(1000) })
+    const r = await fetch(`${URL}/ping`, { signal: AbortSignal.timeout(1500) })
     return r.ok
   } catch { return false }
 }
 
-// ─── Send command to Termux ────────────────────────────────
 export async function termuxRun(cmd: string): Promise<TermuxResult> {
   try {
-    const r = await fetch(`${TERMUX_URL}/run`, {
+    const r = await fetch(`${URL}/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cmd }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(8000),
     })
     const d = await r.json()
     return { ok: true, output: d.output || 'Done ✓' }
-  } catch (e) {
-    return { ok: false, output: 'Termux server nahi chal raha. Setup guide: /termux' }
+  } catch {
+    return { ok: false, output: 'Termux server nahi chal raha. Chat mein "termux setup" likho.' }
   }
 }
 
-// ─── Command patterns (Hinglish + English) ────────────────
-const TERMUX_CMDS: Array<{ re: RegExp; cmd: (m: RegExpMatchArray) => string; label: string }> = [
-  // Notifications
-  { re: /notification.*(bhej|send|de|daal)|bhej.*notification/i,
-    cmd: m => `termux-notification --title "JARVIS" --content "${m[0]}"`,
-    label: '🔔 Notification' },
+// ─── All Termux commands ──────────────────────────────────
+const CMDS: Array<{re:RegExp; cmd:(m:RegExpMatchArray)=>string; label:string}> = [
   // Torch
-  { re: /torch|flashlight|light\s*(on|off|chalu|band)/i,
-    cmd: m => /off|band/.test(m[0]) ? 'termux-torch off' : 'termux-torch on',
-    label: '🔦 Torch' },
+  { re: /torch\s*(on|chalu|jala)|light\s*on|flashlight\s*on/i,
+    cmd: ()=>'termux-torch on', label:'🔦 Torch ON' },
+  { re: /torch\s*(off|band|bujha)|light\s*off|flashlight\s*off/i,
+    cmd: ()=>'termux-torch off', label:'🔦 Torch OFF' },
+  // Battery
+  { re: /battery|charge|baatri|kitni\s*charge/i,
+    cmd: ()=>'termux-battery-status', label:'🔋 Battery' },
   // Volume
-  { re: /volume\s*(up|down|zyada|kam|max|zero|0|mute)/i,
-    cmd: m => /up|zyada/.test(m[0]) ? 'termux-volume music 15'
-           : /down|kam/.test(m[0]) ? 'termux-volume music 5'
-           : /max/.test(m[0]) ? 'termux-volume music 15'
-           : 'termux-volume music 0',
-    label: '🔊 Volume' },
-  // Battery check
-  { re: /battery|charge|charging|baatri/i,
-    cmd: () => 'termux-battery-status',
-    label: '🔋 Battery' },
-  // WiFi info
-  { re: /wifi.*info|wifi.*kya|network.*info|ip address/i,
-    cmd: () => 'termux-wifi-connectioninfo',
-    label: '📶 WiFi Info' },
+  { re: /volume\s*(up|badha|zyada|max)/i,
+    cmd: ()=>'termux-volume music 15', label:'🔊 Volume UP' },
+  { re: /volume\s*(down|kam|ghata|zero|mute)/i,
+    cmd: ()=>'termux-volume music 0', label:'🔇 Volume DOWN' },
+  { re: /volume\s*(\d+)/i,
+    cmd: m=>`termux-volume music ${m[1]}`, label:'🔊 Volume' },
   // Vibrate
-  { re: /vibrate|hila|buzz/i,
-    cmd: () => 'termux-vibrate -d 500',
-    label: '📳 Vibrate' },
-  // Camera photo
-  { re: /photo\s*(le|kheencho|click|lo)|selfie/i,
-    cmd: () => 'termux-camera-photo /sdcard/JARVIS_photo.jpg && echo "Photo saved!"',
-    label: '📸 Photo' },
-  // SMS (read)
-  { re: /sms\s*(padh|read|dekh|dikhao)/i,
-    cmd: () => 'termux-sms-list -l 5',
-    label: '💬 SMS Read' },
-  // Alarm
-  { re: /alarm\s*(\d{1,2}[:.]\d{2}|\d{1,2}\s*(baj|am|pm))/i,
-    cmd: m => {
-      const t = m[0].match(/(\d{1,2})[:.:]?(\d{2})?/)
-      const h = t ? t[1] : '7', min = t?.[2] || '00'
-      return `termux-alarm --hour ${h} --minute ${min}`
-    },
-    label: '⏰ Alarm' },
+  { re: /vibrat|hila|buzz/i,
+    cmd: ()=>'termux-vibrate -d 500 -f', label:'📳 Vibrate' },
+  // WiFi
+  { re: /wifi\s*(info|kya|status|check|speed)|network\s*info|ip\s*address/i,
+    cmd: ()=>'termux-wifi-connectioninfo', label:'📶 WiFi Info' },
   // Location
-  { re: /location|gps|meri\s*(jagah|location)|kahan\s*hoon/i,
-    cmd: () => 'termux-location',
-    label: '📍 Location' },
+  { re: /location|gps|kahan\s*hoon|meri\s*jagah|coordinates/i,
+    cmd: ()=>'termux-location -p gps -r once', label:'📍 Location' },
+  // SMS read
+  { re: /sms\s*(padh|read|dekh|dikhao|list)|last\s*message/i,
+    cmd: ()=>'termux-sms-list -l 5', label:'💬 SMS List' },
+  // Contacts
+  { re: /contact\s*(list|dikhao|dekh)|phone\s*book/i,
+    cmd: ()=>'termux-contact-list | head -50', label:'👥 Contacts' },
+  // Call log
+  { re: /call\s*(log|history|record)|recent\s*call/i,
+    cmd: ()=>'termux-call-log -l 10', label:'📞 Call Log' },
+  // Camera
+  { re: /photo\s*(le|kheencho|click|lo)|selfie|camera\s*(on|kholo)/i,
+    cmd: ()=>'termux-camera-photo /sdcard/JARVIS_$(date +%s).jpg && echo "Photo saved to /sdcard"',
+    label:'📸 Photo' },
+  // Screenshot
+  { re: /screenshot|screen\s*shot|screen\s*capture/i,
+    cmd: ()=>'termux-screenshot -q 90 /sdcard/JARVIS_ss_$(date +%s).jpg && echo "Screenshot saved"',
+    label:'📷 Screenshot' },
+  // Notification
+  { re: /notification\s*(bhej|send|de|dikhao)|notify/i,
+    cmd: m=>`termux-notification --title "JARVIS" --content "${(m.input||'').slice(0,50)}"`,
+    label:'🔔 Notification' },
   // Clipboard
-  { re: /clipboard|copy\s*karo|copy\s*kar/i,
-    cmd: m => {
-      const txt = m.input?.replace(/clipboard|copy\s*karo?/gi,'').trim() || ''
-      return txt ? `echo "${txt}" | termux-clipboard-set && echo "Copied!"` : 'termux-clipboard-get'
-    },
-    label: '📋 Clipboard' },
-  // Open app (deep link fallback)
-  { re: /\b(kholo|open|launch|start)\s+(youtube|whatsapp|instagram|maps|camera|settings|chrome)\b/i,
-    cmd: m => {
-      const app = m[2]?.toLowerCase()
-      const pkg: Record<string, string> = {
-        youtube: 'com.google.android.youtube',
-        whatsapp: 'com.whatsapp',
-        instagram: 'com.instagram.android',
-        maps: 'com.google.android.apps.maps',
-        camera: 'com.android.camera2',
-        settings: 'com.android.settings',
-        chrome: 'com.android.chrome',
+  { re: /clipboard|copy\s*kar|text\s*copy/i,
+    cmd: ()=>'termux-clipboard-get', label:'📋 Clipboard' },
+  // Speech (TTS)
+  { re: /bol\s*do|speak|tts|awaaz\s*mein/i,
+    cmd: m=>{
+      const txt = (m.input||'').replace(/bol\s*do|speak|tts|awaaz\s*mein/gi,'').trim()
+      return `termux-tts-speak "${txt || 'JARVIS ready'}"`
+    }, label:'🔊 Speak' },
+  // Alarm
+  { re: /alarm\s*(?:laga|set|baja|laga do).*?(\d{1,2})[:.h](\d{2})?/i,
+    cmd: m=>{
+      const h=m[1]||'7', min=m[2]||'00'
+      return `termux-notification --title "⏰ Alarm Set" --content "${h}:${min} baje alarm lagaya"`
+    }, label:'⏰ Alarm' },
+  // Open apps
+  { re: /\b(kholo|open|launch)\s+(youtube|whatsapp|instagram|maps|camera|settings|chrome|spotify|telegram)\b/i,
+    cmd: m=>{
+      const apps: Record<string,string> = {
+        youtube:'com.google.android.youtube', whatsapp:'com.whatsapp',
+        instagram:'com.instagram.android', maps:'com.google.android.apps.maps',
+        camera:'com.android.camera2', settings:'com.android.settings',
+        chrome:'com.android.chrome', spotify:'com.spotify.music',
+        telegram:'org.telegram.messenger'
       }
-      return pkg[app] ? `am start -n ${pkg[app]}` : `echo "App nahi mila"`
-    },
-    label: '📱 Open App' },
+      const a = (m[2]||'').toLowerCase()
+      return apps[a] ? `am start -n ${apps[a]}` : `echo "App not found: ${a}"`
+    }, label:'📱 Open App' },
+  // Storage info
+  { re: /storage|space\s*kitna|memory|disk/i,
+    cmd: ()=>'df -h /sdcard | tail -1', label:'💾 Storage' },
+  // Device info
+  { re: /device\s*info|phone\s*info|system\s*info|about\s*phone/i,
+    cmd: ()=>'getprop ro.product.model && getprop ro.build.version.release && echo "RAM: $(free -m | awk \'/Mem/{print $2}\')"',
+    label:'📱 Device Info' },
 ]
 
-// ─── Detect if message is a Termux command ─────────────────
-export function detectTermuxCommand(text: string): {
-  cmd: string; label: string
-} | null {
-  for (const { re, cmd, label } of TERMUX_CMDS) {
+export function detectTermuxCommand(text: string): {cmd:string; label:string}|null {
+  for (const {re,cmd,label} of CMDS) {
     const m = text.match(re)
     if (m) return { cmd: cmd(m), label }
   }
   return null
 }
 
-// ─── Setup script for Termux (shown to user) ──────────────
-export const TERMUX_SERVER_SCRIPT = `
-// Save this as ~/.jarvis-server.js in Termux
-// Run: node ~/.jarvis-server.js
-
-const http = require('http')
-const { execSync } = require('child_process')
-
-http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET')
-  res.setHeader('Content-Type', 'application/json')
-  
-  if (req.url === '/ping') {
-    res.end(JSON.stringify({ ok: true }))
-    return
-  }
-  
-  if (req.url === '/run' && req.method === 'POST') {
-    let body = ''
-    req.on('data', d => body += d)
-    req.on('end', () => {
-      try {
-        const { cmd } = JSON.parse(body)
-        const output = execSync(cmd, { timeout: 5000 }).toString().trim()
-        res.end(JSON.stringify({ ok: true, output: output || 'Done ✓' }))
-      } catch (e) {
-        res.end(JSON.stringify({ ok: false, output: e.message }))
-      }
-    })
-  }
-}).listen(1234, () => console.log('JARVIS Termux Bridge running on :1234'))
-`.trim()
+// Server script — show to user for setup
+export const TERMUX_SERVER_SCRIPT = `const http=require('http'),{execSync}=require('child_process')
+http.createServer((req,res)=>{
+  res.setHeader('Access-Control-Allow-Origin','*')
+  res.setHeader('Content-Type','application/json')
+  if(req.url==='/ping'){res.end(JSON.stringify({ok:true}));return}
+  if(req.url==='/run'&&req.method==='POST'){
+    let b=''
+    req.on('data',d=>b+=d)
+    req.on('end',()=>{
+      try{const{cmd}=JSON.parse(b);const o=execSync(cmd,{timeout:8000}).toString().trim();res.end(JSON.stringify({ok:true,output:o||'Done!'}))}
+      catch(e){res.end(JSON.stringify({ok:false,output:e.message}))}
+    })}
+}).listen(1234,()=>console.log('JARVIS Bridge :1234 ✓'))`

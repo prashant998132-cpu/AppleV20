@@ -321,6 +321,9 @@ export function parseSlashCommand(input: string): ParsedCommand | null {
   const KNOWN = [
     'nasa','wiki','joke','shayari','map','quote','qr','meaning','search','img','image',
     'summarize','calc',
+    // Phone control
+    'call','sms','whatsapp','wa','contacts','photo','camera','battery','location','nfc',
+    'navigate','nav','upi','pay','gpay','copy','share','wakelock','screen',
     // App shortcuts
     'canva','design',           // Design
     'figma','excalidraw',       // Design
@@ -346,7 +349,20 @@ export function parseSlashCommand(input: string): ParsedCommand | null {
 
 // All available commands for autocomplete
 export const SLASH_COMMANDS = [
-  { cmd: '/nasa',         desc: 'NASA ka aaj ka space photo',          icon: '🚀' },
+  // ── Phone Control ────────────────────────────────────────
+  { cmd: '/call',         desc: '/call [number] — Seedha dial karo',         icon: '📞' },
+  { cmd: '/sms',          desc: '/sms [num]|[msg] — SMS app khulega',        icon: '💬' },
+  { cmd: '/whatsapp',     desc: '/whatsapp [num] [msg] — WhatsApp kholega',  icon: '💚' },
+  { cmd: '/contacts',     desc: 'Contact Picker — select karo',             icon: '👥' },
+  { cmd: '/photo',        desc: 'Camera khulega — photo lo',                icon: '📸' },
+  { cmd: '/battery',      desc: 'Battery status check karo',                icon: '🔋' },
+  { cmd: '/location',     desc: 'Teri location batao',                      icon: '📍' },
+  { cmd: '/navigate',     desc: '/navigate [jagah] — Maps navigation',      icon: '🗺️' },
+  { cmd: '/upi',          desc: '/upi [upi-id] [amount] — Payment',         icon: '💸' },
+  { cmd: '/nfc',          desc: 'NFC tag scan karo',                        icon: '📡' },
+  { cmd: '/wakelock',     desc: 'Screen on rakhna (presentation mode)',     icon: '💡' },
+  { cmd: '/share',        desc: '/share [text] — Share karo',               icon: '🔗' },
+  // ── Info & Tools ──────────────────────────────────────────
   { cmd: '/wiki',         desc: '/wiki [topic] — Wikipedia summary',    icon: '📖' },
   { cmd: '/joke',         desc: 'Ek random joke suno',                  icon: '😂' },
   { cmd: '/shayari',      desc: 'AI-generated Hindi/Urdu shayari',      icon: '🌹' },

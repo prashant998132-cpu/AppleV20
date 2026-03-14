@@ -19,6 +19,7 @@ import { parseSlashCommand, cmdNasa, cmdWiki, cmdJoke, cmdShayari, cmdMap, cmdQu
 import { pollinationsUrl } from '../lib/media/image'
 import { puterImage, loadPuter } from '../lib/providers/puter'
 import { detectTermuxCommand, isTermuxAvailable, termuxRun } from '../lib/termux/bridge'
+import { makeCall, openSMS, openWhatsApp, openMaps, navigate, openUPI, vibrate, getBattery, getLocation, getNetworkInfo, pickContact, isContactPickerSupported, openCamera, keepScreenOn, releaseWakeLock, copyText, shareContent, scanNFC } from '../lib/phone/webApis'
 import { generateAndSaveTitle, startNewSession, trackSessionMessage } from '../lib/chat/autoTitle'
 import { shouldShowWeeklySummary, generateWeeklySummary, trackWeeklyChat } from '../lib/proactive/weekly'
 import ChatHistorySidebar from '../components/shared/ChatHistorySidebar'
@@ -776,6 +777,131 @@ export default function Page() {
       const groqKey = typeof window !== 'undefined' ? localStorage.getItem('jarvis_key_GROQ_API_KEY') || undefined : undefined
       const nasaKey = typeof window !== 'undefined' ? localStorage.getItem('jarvis_key_NASA_API_KEY') || undefined : undefined
       switch (cmd) {
+        // ── Phone Control Commands ─────────────────────────
+        case 'call': {
+          if (!arg) { show('📞 Usage: /call [number] — jaise /call 9876543210'); break }
+          const num = arg.replace(/[^\d+]/g, '')
+          show(`📞 Calling **${num}**...`)
+          makeCall(num)
+          break
+        }
+        case 'sms': {
+          if (!arg) { show('💬 Usage: /sms [number]|[message] — jaise /sms 9876543210|Haan aa raha hoon'); break }
+          const [num, ...msgParts] = arg.split('|')
+          const msg = msgParts.join('|').trim()
+          show(`💬 SMS app khul raha hai **${num.trim()}** ke liye...`)
+          openSMS(num.trim(), msg || undefined)
+          break
+        }
+        case 'whatsapp':
+        case 'wa': {
+          if (!arg) { show('💚 Usage: /whatsapp [number] [message]'); break }
+          const parts = arg.split(' ')
+          const num = parts[0]
+          const msg = parts.slice(1).join(' ')
+          show(`💚 WhatsApp khul raha hai...`)
+          openWhatsApp(num, msg || undefined)
+          break
+        }
+        case 'contacts': {
+          if (!isContactPickerSupported()) {
+            show('👥 Contact Picker is browser mein support nahi karta. Chrome Android mein kaam karta hai.')
+            break
+          }
+          show('👥 Contact select karo...')
+          const contact = await pickContact()
+          if (contact) {
+            const nums = contact.tel.join(', ')
+            show(`👤 **${contact.name}**\n📞 ${nums}\n\n[Call karo →](tel:${contact.tel[0]}) · [WhatsApp →](https://wa.me/${contact.tel[0]?.replace(/[\s+\-()]/g,'')})`)
+          } else {
+            show('❌ Contact select nahi hua.')
+          }
+          break
+        }
+        case 'photo':
+        case 'camera': {
+          show('📸 Camera khul raha hai...')
+          const photoUrl = await openCamera()
+          if (photoUrl) {
+            showImg(photoUrl, '📸 Photo liya')
+          } else {
+            show('❌ Photo nahi liya.')
+          }
+          break
+        }
+        case 'battery': {
+          show('🔋 Battery check kar raha hun...')
+          const bat = await getBattery()
+          if (bat) {
+            const status = bat.charging ? '⚡ Charging' : '🔋 Not charging'
+            const time = bat.minutes > 0 ? ` · ~${bat.minutes} min left` : ''
+            show(`${bat.level >= 50 ? '🟢' : bat.level >= 20 ? '🟡' : '🔴'} **${bat.level}%** · ${status}${time}`)
+          } else {
+            show('❌ Battery API support nahi karta yeh browser.')
+          }
+          break
+        }
+        case 'location': {
+          show('📍 Location dhundh raha hun...')
+          const loc = await getLocation()
+          if (loc) {
+            show(`📍 **Location mili!**\nLat: ${loc.lat.toFixed(6)}, Lon: ${loc.lon.toFixed(6)}\nAccuracy: ${Math.round(loc.accuracy)}m\n\n[Maps mein dekho →](https://maps.google.com/maps?q=${loc.lat},${loc.lon})`)
+          } else {
+            show('❌ Location nahi mili. Permission de do.')
+          }
+          break
+        }
+        case 'navigate':
+        case 'nav': {
+          if (!arg) { show('🗺️ Usage: /navigate [jagah] — jaise /navigate Connaught Place Delhi'); break }
+          show(`🗺️ **${arg}** ke liye navigation shuru...`)
+          navigate(arg)
+          break
+        }
+        case 'upi':
+        case 'pay':
+        case 'gpay': {
+          if (!arg) { show('💸 Usage: /upi [upi-id] [amount] — jaise /upi name@paytm 100'); break }
+          const [upiId, amtStr] = arg.split(' ')
+          const amt = amtStr ? parseFloat(amtStr) : undefined
+          show(`💸 UPI payment: **${upiId}**${amt ? ` — ₹${amt}` : ''}\nPayment app khul raha hai...`)
+          openUPI(upiId, amt)
+          break
+        }
+        case 'nfc': {
+          show('📡 NFC scan shuru... Tag phone ke paas laao (10 seconds)')
+          const nfcData = await scanNFC()
+          if (nfcData) {
+            show(`📡 **NFC Tag Scanned!**\n\`\`\`\n${nfcData}\n\`\`\``)
+          } else {
+            show('❌ NFC nahi mila ya support nahi karta.')
+          }
+          break
+        }
+        case 'wakelock':
+        case 'screen': {
+          if (arg === 'off' || arg === 'release') {
+            releaseWakeLock()
+            show('💡 Screen lock release ho gaya.')
+          } else {
+            const ok = await keepScreenOn()
+            show(ok ? '💡 Screen on rahegi! (band karne ke liye /wakelock off)' : '❌ Wake Lock support nahi karta.')
+          }
+          break
+        }
+        case 'share': {
+          if (!arg) { show('🔗 Usage: /share [text]'); break }
+          const ok = await shareContent('JARVIS', arg)
+          show(ok ? '✅ Shared!' : '❌ Share fail hua.')
+          break
+        }
+        case 'copy': {
+          if (!arg) { show('📋 Usage: /copy [text]'); break }
+          const ok = await copyText(arg)
+          show(ok ? `✅ Copied: "${arg.slice(0,50)}"` : '❌ Copy fail hua.')
+          break
+        }
+        // ── Original Commands ─────────────────────────────
         case 'nasa': {
           const r = await cmdNasa(nasaKey)
           if (r.type === 'image') showImg(r.content, r.title)
@@ -997,6 +1123,45 @@ export default function Page() {
 
 Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
       // Don't return — Puter fallback will handle it
+    }
+
+    // ── Auto-detect phone actions — BEFORE AI call ─────
+    const tl = text.toLowerCase()
+    // Auto call detection: "call karo 9876543210"
+    const callMatch = text.match(/(?:call\s*karo|dial|call)\s+(\+?[\d\s\-]{8,15})/i)
+    if (callMatch) {
+      const num = callMatch[1].replace(/\s/g,'')
+      const botMsg: Msg = { id:'ph'+Date.now(), role:'assistant',
+        content:`📞 Calling **${num}**...`, timestamp:Date.now(), mode:'flash' }
+      setMsgs(m=>[...m, botMsg]); setLoad(false); setInput('')
+      makeCall(num); return
+    }
+    // Auto WhatsApp: "whatsapp karo 9876543210" or "whatsapp pe bhejo"
+    const waMatch = text.match(/whatsapp\s*(?:karo|pe|par|bhejo|send)?\s*(\+?[\d\s\-]{8,15})/i)
+    if (waMatch) {
+      const num = waMatch[1].replace(/\s/g,'')
+      const botMsg: Msg = { id:'ph'+Date.now(), role:'assistant',
+        content:`💚 WhatsApp khul raha hai ${num}...`, timestamp:Date.now(), mode:'flash' }
+      setMsgs(m=>[...m, botMsg]); setLoad(false); setInput('')
+      openWhatsApp(num); return
+    }
+    // Auto navigate: "navigate to X" / "X ka rasta batao"
+    const navMatch = text.match(/(?:navigate\s*to|rasta\s*batao|le\s*chalo|direction[s]?\s*(?:to|for)|route\s*to)\s+(.+)/i)
+    if (navMatch) {
+      const dest = navMatch[1].trim()
+      const botMsg: Msg = { id:'ph'+Date.now(), role:'assistant',
+        content:`🗺️ **${dest}** ke liye navigation shuru!`, timestamp:Date.now(), mode:'flash' }
+      setMsgs(m=>[...m, botMsg]); setLoad(false); setInput('')
+      navigate(dest); return
+    }
+    // Auto UPI: "9876@paytm ko 500 bhejo"
+    const upiMatch = text.match(/([\w.]+@[\w]+)\s*(?:ko|to)?\s*(?:Rs?\.?|₹)?\s*(\d+)/i)
+    if (upiMatch) {
+      const [,id,amt] = upiMatch
+      const botMsg: Msg = { id:'ph'+Date.now(), role:'assistant',
+        content:`💸 UPI: **${id}** — ₹${amt}\nPayment app khul raha hai...`, timestamp:Date.now(), mode:'flash' }
+      setMsgs(m=>[...m, botMsg]); setLoad(false); setInput('')
+      openUPI(id, parseFloat(amt)); return
     }
 
     // ── Termux command check — BEFORE AI call ──────────
