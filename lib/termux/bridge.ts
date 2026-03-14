@@ -30,9 +30,9 @@ export async function termuxRun(cmd: string): Promise<TermuxResult> {
 // ─── All Termux commands ──────────────────────────────────
 const CMDS: Array<{re:RegExp; cmd:(m:RegExpMatchArray)=>string; label:string}> = [
   // Torch
-  { re: /tr?o?r?ch|flashlight|torch|light\s*(on|chalu|jala|kar|karo)/i,
-    cmd: m => /off|band|bujha|bnd/.test(m[0]) ? 'termux-torch off' : 'termux-torch on',
-    label: m => /off|band|bujha/.test(m?.[0]||'') ? '🔦 Torch OFF' : '🔦 Torch ON' } as any,
+  { re: /tor?c?h|troch|trouch|flashlight|torch/i,
+    cmd: m => /off|band|bujha/.test(m.input||'') ? 'termux-torch off' : 'termux-torch on',
+    label: '🔦 Torch' },
   // Battery
   { re: /battery|charge|baatri|kitni\s*charge/i,
     cmd: ()=>'termux-battery-status', label:'🔋 Battery' },
