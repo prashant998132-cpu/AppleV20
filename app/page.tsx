@@ -19,6 +19,8 @@ import { parseSlashCommand, cmdNasa, cmdWiki, cmdJoke, cmdShayari, cmdMap, cmdQu
 import { pollinationsUrl } from '../lib/media/image'
 import { puterImage, loadPuter } from '../lib/providers/puter'
 import { detectTermuxCommand, isTermuxAvailable, termuxRun } from '../lib/termux/bridge'
+import { fuzzyDetect, normalize, getIntentLabel } from '../lib/intent/fuzzy'
+import { fuzzyNormalize, detectIntent, intentToTermuxCmd } from '../lib/core/fuzzy'
 import { makeCall, openSMS, openWhatsApp, openMaps, navigate, openUPI, vibrate, getBattery, getLocation, getNetworkInfo, pickContact, isContactPickerSupported, openCamera, keepScreenOn, releaseWakeLock, copyText, shareContent, scanNFC } from '../lib/phone/webApis'
 import { generateAndSaveTitle, startNewSession, trackSessionMessage } from '../lib/chat/autoTitle'
 import { shouldShowWeeklySummary, generateWeeklySummary, trackWeeklyChat } from '../lib/proactive/weekly'
@@ -1164,8 +1166,23 @@ Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
       openUPI(id, parseFloat(amt)); return
     }
 
+    // ── Fuzzy normalize — fix typos/voice errors ────────
+    const normalized = fuzzyNormalize(text)
+    const textForCmd = normalized !== text ? normalized : text
+
+    // ── Fuzzy intent — normalize + detect BEFORE everything ─
+    const normalizedText = normalize(text)
+    const fuzzyResult = fuzzyDetect(text)
+
     // ── Termux command check — BEFORE AI call ──────────
-    const termuxCmd = detectTermuxCommand(text)
+    // Try 1: regex match on normalized text
+    let termuxCmd = detectTermuxCommand(textForCmd)
+    // Try 2: intent-based fuzzy detection
+    if (!termuxCmd) {
+      const intent = detectIntent(textForCmd)
+      if (intent) termuxCmd = intentToTermuxCmd(intent)
+    }
+
     if (termuxCmd) {
       const available = await isTermuxAvailable()
       if (available) {
@@ -1182,10 +1199,10 @@ Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
         setLoad(false); setInput(''); setStatus('')
         return
       }
-      // Termux not running — suggest setup
+      // Termux running nahi — helpful message
       const botMsg: Msg = {
         id: 'tx' + Date.now(), role: 'assistant',
-        content: `📱 Phone control ke liye Termux server start karo!\n\nSetup: [Phone Control →](/termux) (2 min, free, MacroDroid se better)`,
+        content: `📱 **${termuxCmd.label}** ke liye Termux server start karo!\n\nTermux mein:\n\`\`\`\ntermux-wake-lock && node ~/.jarvis-server.js\n\`\`\`\nPhir "torch on karo" likhna 🔦`,
         timestamp: Date.now(), mode: 'flash'
       }
       setMsgs(m => [...m, botMsg])
