@@ -1156,14 +1156,20 @@ Puter fallback se try karta hoon...`, timestamp: Date.now(), mode:'flash' }])
       setMsgs(m=>[...m, botMsg]); setLoad(false); setInput('')
       makeCall(num); return
     }
-    // Auto WhatsApp: "whatsapp karo 9876543210" or "whatsapp pe bhejo"
-    const waMatch = text.match(/whatsapp\s*(?:karo|pe|par|bhejo|send)?\s*(\+?[\d\s\-]{8,15})/i)
-    if (waMatch) {
-      const num = waMatch[1].replace(/\s/g,'')
+    // Auto WhatsApp: "whatsapp kolo/kholo/karo/open" — number optional
+    const waKeyword = /wh?at?s?[ae]?pp?|watsapp|whtsapp/i.test(textForCmd)
+    if (waKeyword) {
+      const numMatch = textForCmd.match(/(\+?[\d]{10,13})/)
+      const msgMatch = textForCmd.match(/(?:message|msg|bolo|likho|bhejo|kaho)\s+(.+)/i)
+      const num = numMatch?.[1] || ''
+      const msg = msgMatch?.[1] || ''
       const botMsg: Msg = { id:'ph'+Date.now(), role:'assistant',
-        content:`💚 WhatsApp khul raha hai ${num}...`, timestamp:Date.now(), mode:'flash' }
+        content:`💚 WhatsApp ${num ? `khul raha hai ${num} ke liye` : 'khul raha hai'}...`,
+        timestamp:Date.now(), mode:'flash' }
       setMsgs(m=>[...m, botMsg]); setLoad(false); setInput('')
-      openWhatsApp(num); return
+      if (num) openWhatsApp(num, msg || undefined)
+      else window.open('https://web.whatsapp.com', '_blank')
+      return
     }
     // Auto navigate: "navigate to X" / "X ka rasta batao"
     const navMatch = text.match(/(?:navigate\s*to|rasta\s*batao|le\s*chalo|direction[s]?\s*(?:to|for)|route\s*to)\s+(.+)/i)

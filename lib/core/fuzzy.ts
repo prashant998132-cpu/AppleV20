@@ -36,6 +36,23 @@ const CORRECTIONS: [RegExp, string][] = [
   [/\bplz\b/gi, 'please'],
   // Yaar/ya
   [/\by[ae]+r\b/gi, 'yaar'],
+  // Open variations
+  [/\bk[oa]l[oa]\b/gi, 'kholo'],
+  [/\bkh[oa]l[oa]\b/gi, 'kholo'],
+  [/\bop[ea]n\b/gi, 'kholo'],
+  // Message variations
+  [/\bm[ae]ss[ae]g[ei]\b/gi, 'message'],
+  [/\bm[ae]s[ae]j\b/gi, 'message'],
+  // Send variations
+  [/\bbh[ae]j[oa]\b/gi, 'bhejo'],
+  [/\bs[ae]nd\b/gi, 'bhejo'],
+  // Call variations
+  [/\bc[ao]ll\b/gi, 'call'],
+  [/\bk[ao]l\b/gi, 'call'],
+  // Our → aur
+  [/\bour\b/gi, 'aur'],
+  // Karo variations
+  [/\bk[ae]r[oa]\b/gi, 'karo'],
 ]
 
 // ─── Normalize text ────────────────────────────────────────
