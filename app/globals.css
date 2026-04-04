@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500&display=swap');
+
+/* ── Themes ──────────────────────────────────────────────── */
+:root {
+  --bg:        #060b14;
+  --bg-card:   #0b1220;
+  --bg-input:  rgba(255,255,255,.05);
+  --border:    rgba(255,255,255,.07);
+  --border-a:  rgba(0,229,255,.25);
+  --text:      #dbeeff;
+  --text-2:    #98b8d0;
+  --text-3:    #3a6080;
+  --text-4:    #1e3a54;
+  --accent:    #00e5ff;
+  --accent-bg: rgba(0,229,255,.1);
+  --user-bg:   rgba(0,229,255,.1);
+  --user-bdr:  rgba(0,229,255,.28);
+  --header:    rgba(6,11,20,.96);
+  --overlay:   rgba(6,11,20,.97);
+  --j-text:    #b8d8f0;
+  --code-bg:   #0d1117;
+  --shadow:    0 2px 20px rgba(0,0,0,.5);
+}
+[data-theme=light]{
+  --bg:#f0f4f8;--bg-card:#fff;--bg-input:#fff;--border:rgba(0,0,0,.08);
+  --border-a:rgba(0,100,220,.3);--text:#0d1826;--text-2:#2a4060;
+  --text-3:#6b7a8d;--text-4:#aab5c0;--accent:#0066cc;
+  --accent-bg:rgba(0,100,200,.08);--user-bg:rgba(0,100,200,.09);
+  --user-bdr:rgba(0,100,200,.28);--header:rgba(240,244,248,.97);
+  --overlay:rgba(240,244,248,.98);--j-text:#1a2a3e;--code-bg:#1e1e2e;
+}
+[data-theme=amoled]{
+  --bg:#000;--bg-card:#0a0a0a;--bg-input:rgba(255,255,255,.04);
+  --border:rgba(255,255,255,.06);--border-a:rgba(0,255,180,.25);
+  --text:#e0fff6;--text-2:#90d8c0;--text-3:#1a4030;--text-4:#0f2018;
+  --accent:#00ffc0;--accent-bg:rgba(0,255,192,.1);
+  --user-bg:rgba(0,255,192,.08);--user-bdr:rgba(0,255,192,.25);
+  --header:rgba(0,0,0,.98);--j-text:#a0e8d0;--code-bg:#050505;
+}
+[data-theme=ocean]{
+  --bg:#081428;--bg-card:#0e1f3a;--bg-input:rgba(100,160,255,.06);
+  --border:rgba(100,160,255,.1);--border-a:rgba(100,200,255,.3);
+  --text:#c8e4ff;--text-2:#8ab8e0;--text-3:#2a5070;--text-4:#183040;
+  --accent:#4db8ff;--accent-bg:rgba(77,184,255,.12);
+  --user-bg:rgba(77,184,255,.1);--user-bdr:rgba(77,184,255,.3);
+  --header:rgba(8,20,40,.97);--j-text:#a8ccee;--code-bg:#060e1a;
+}
+
+/* ── Reset ───────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;background:var(--bg);color:var(--text);
+  font-family:'Inter','Noto Sans Devanagari',sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+  transition:background .25s,color .25s;
+}
+a{color:var(--accent);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+input,textarea,select{
+  font-family:inherit;background:var(--bg-input);
+  border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:9px 12px;font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+input:focus,textarea:focus{border-color:var(--border-a)}
+
+/* ── Grid bg ─────────────────────────────────────────────── */
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.018) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+[data-theme=light] .bg-grid{display:none}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--accent-bg);border-radius:3px}
+.no-scroll{scrollbar-width:none;-ms-overflow-style:none}
+.no-scroll::-webkit-scrollbar{display:none}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes blink{50%{opacity:0}}
+@keyframes dotpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Message layout — THE ONLY RULES THAT MATTER ────────── */
+/* User: right */
+.msg-u{
+  display:block;width:100%;text-align:right;
+  padding:3px 14px 3px 56px;
+}
+.msg-u-inner{
+  display:inline-block;text-align:left;vertical-align:top;
+  max-width:88%;padding:10px 14px;
+  border-radius:18px 18px 4px 18px;
+  background:var(--user-bg);border:1px solid var(--user-bdr);
+  color:var(--text);font-size:14px;line-height:1.65;
+  word-break:break-word;white-space:pre-wrap;
+}
+/* JARVIS: left */
+.msg-j{
+  display:block;width:100%;text-align:left;
+  padding:3px 14px 10px 14px;
+  color:var(--j-text);font-size:14px;line-height:1.75;
+  word-break:break-word;
+}
+/* Typing dots */
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--accent);animation:dotpulse 1.2s infinite ease-in-out;margin:0 2px}
+.dot:nth-child(2){animation-delay:.15s}
+.dot:nth-child(3){animation-delay:.30s}
+
+/* ── NEET options ────────────────────────────────────────── */
+.nopt{padding:9px 13px;border-radius:8px;border:1px solid var(--border);
+  background:var(--bg-card);color:var(--text-2);font-size:13px;
+  cursor:pointer;text-align:left;width:100%;display:block;margin-bottom:6px;
+  transition:border-color .12s,background .12s}
+.nopt.ok{border-color:#00e676!important;background:rgba(0,230,118,.07)!important;color:#00e676!important}
+.nopt.ng{border-color:#ff5555!important;background:rgba(255,85,85,.07)!important;color:#f66!important}
+
+/* ── Code (inside MdRenderer) ────────────────────────────── */
+.code-wrap{border:1px solid rgba(255,255,255,.09);border-radius:10px;
+  margin:10px 0;background:var(--code-bg);display:block;overflow:hidden}
+.code-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 12px;background:rgba(255,255,255,.04);
+  border-bottom:1px solid rgba(255,255,255,.07)}
+.code-pre{margin:0;padding:12px 14px;overflow-x:auto;font-size:12.5px;
+  line-height:1.6;background:transparent;font-family:'JetBrains Mono',monospace;
+  color:#e0f0ff;white-space:pre}
+
+/* Inline code */
+.ic{background:var(--accent-bg);color:var(--accent);padding:1px 6px;
+  border-radius:4px;font-family:'JetBrains Mono',monospace;
+  font-size:.87em;border:1px solid var(--border-a)}
+
+/* ── Fade animation on new messages ─────────────────────── */
+.msg-fadein{animation:fadein .25s ease-out}
