@@ -19,6 +19,23 @@ import Toast from '../components/ui/Toast'
 
 const ChatHistorySidebar = dynamic(() => import('../components/ui/ChatHistorySidebar'), { ssr: false })
 
+/* ── Reply sound ─────────────────────────────────────────── */
+function playReplySound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.connect(g); g.connect(ctx.destination)
+    o.frequency.setValueAtTime(880, ctx.currentTime)
+    o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.12)
+    g.gain.setValueAtTime(0.15, ctx.currentTime)
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18)
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.18)
+  } catch {}
+}
+
+
+
 /* ── Types ───────────────────────────────────────────────── */
 type RichCard =
   | { type:'image'; url:string; prompt?:string }
@@ -327,6 +344,7 @@ Math: KaTeX use karo ($formula$). "As an AI" kabhi mat kaho. NEET/physics/chem: 
 
       const rt = Date.now() - start
       setMsgs(p => p.map(m => m.id === aId ? { ...m, streaming:false, responseTime:rt, mode:effectiveMode } : m))
+      if (replied) playReplySound()
 
       // Auto title
       if (msgs.filter(m => m.role==='user').length === 0) {
