@@ -7,10 +7,11 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import MdRenderer from '../components/markdown/MdRenderer'
 import { getTheme, setTheme, initTheme, THEME_META, type Theme } from '../lib/theme'
-import { addMemory, buildMemoryContext, getProfile, setProfile, saveChat, runMaintenance, createHistorySession, updateHistorySession } from '../lib/db'
+import { addMemory, getProfile, setProfile, saveChat, runMaintenance, createHistorySession, updateHistorySession, buildMemoryContext } from '../lib/db'
+import { puterStream, loadPuter } from '../lib/providers/puter'
 import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime } from '../lib/reminders'
 import { canRequest } from '../lib/rateLimit'
-import { loadPuter } from '../lib/providers/puter'
+// puter imported above
 import { freeAIChat } from '../lib/providers/freeAI'
 import { SLASH_COMMANDS, parseSlashCommand } from '../lib/chat/slashCommands'
 import { generateAndSaveTitle, startNewSession } from '../lib/chat/autoTitle'
@@ -263,64 +264,66 @@ export default function Page() {
       const memCtx = await buildMemoryContext(t).catch(() => '')
       const hist = msgs.slice(-12).filter(m => !m.isSystem && !m.streaming).map(m => ({ role:m.role, content:m.content }))
 
-      // Try server stream first
-      const route = effectiveMode === 'deep' ? '/api/jarvis/deep-stream' : '/api/jarvis/stream'
+      const SYS = `Tum JARVIS ho — "Jons Bhai". Hinglish mein baat karo. Short (1-4 lines). Sarcastic but caring. Direct.
+Math: KaTeX use karo ($formula$). "As an AI" kabhi mat kaho. NEET/physics/chem: proper formulas.`
+      const msgs_for_ai = [{ role:'system', content:SYS+(memCtx?`\n\nContext:\n${memCtx}`:'') }, ...hist, { role:'user', content:t }]
+
       let replied = false
       let full = ''
 
+      // ── Level 1: Server stream (Groq/Gemini — needs env keys) ──
       try {
+        const route = effectiveMode === 'deep' ? '/api/jarvis/deep-stream' : '/api/jarvis/stream'
         const res = await fetch(route, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ message:t, chatMode:effectiveMode, history:hist, memoryContext:memCtx }),
-          signal: ab.signal,
+          signal: AbortSignal.timeout(12000),
         })
-
         if (res.ok && res.body) {
-          const reader = res.body.getReader()
-          const dec = new TextDecoder()
+          const reader = res.body.getReader(); const dec = new TextDecoder()
           while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
+            const { done, value } = await reader.read(); if (done) break
             for (const line of dec.decode(value).split('\n')) {
               if (!line.startsWith('data: ') || line === 'data: [DONE]') continue
               try {
                 const d = JSON.parse(line.slice(6))
-                if (d.type === 'token' && d.token) {
-                  full += d.token
-                  replied = true
-                  setMsgs(p => p.map(m => m.id === aId ? { ...m, content:full } : m))
-                }
-                if (d.type === 'card') {
-                  setMsgs(p => p.map(m => m.id === aId ? { ...m, card:d.card } : m))
-                }
-                if (d.type === 'learn') {
-                  addMemory(d.content, d.memType || 'fact').catch(() => {})
-                }
+                if (d.type === 'token' && d.token) { full += d.token; replied = true; setMsgs(p => p.map(m => m.id===aId?{...m,content:full}:m)) }
+                if (d.type === 'card') setMsgs(p => p.map(m => m.id===aId?{...m,card:d.card}:m))
+                if (d.type === 'learn') addMemory(d.content, d.memType||'fact').catch(()=>{})
               } catch {}
             }
           }
         }
       } catch (e: any) {
-        if (e?.name === 'AbortError') {
-          setMsgs(p => p.map(m => m.id === aId ? { ...m, streaming:false } : m))
-          setLoad(false); return
-        }
+        if (e?.name === 'AbortError') { setMsgs(p => p.map(m => m.id===aId?{...m,streaming:false}:m)); setLoad(false); return }
+        // Server failed — try fallbacks
       }
 
-      // Fallback: Puter / free AI
+      // ── Level 2: Puter.js (GPT-4o-mini, free, no server key needed) ──
       if (!replied || !full.trim()) {
-        await freeAIChat(
-          [{ role:'system', content:'Tum JARVIS ho. Hinglish mein baat karo. Short answers.' }, ...hist, { role:'user', content:t }],
-          (tok) => { full += tok; setMsgs(p => p.map(m => m.id === aId ? { ...m, content:full } : m)) },
-          (done) => {
-            replied = true; full = done
-            setMsgs(p => p.map(m => m.id === aId ? { ...m, content:full } : m))
-          },
-          () => {
-            setMsgs(p => p.map(m => m.id === aId ? { ...m, content:'Network error. Check internet.' } : m))
-          }
+        full = ''
+        await puterStream(
+          msgs_for_ai,
+          (tok) => { full += tok; replied = true; setMsgs(p => p.map(m => m.id===aId?{...m,content:full}:m)) },
+          (done) => { replied = true; full = done; setMsgs(p => p.map(m => m.id===aId?{...m,content:full}:m)) },
+          () => {}
         )
+      }
+
+      // ── Level 3: Pollinations (no key, browser direct) ──
+      if (!replied || !full.trim()) {
+        full = ''
+        await freeAIChat(
+          msgs_for_ai,
+          (tok) => { full += tok; replied = true; setMsgs(p => p.map(m => m.id===aId?{...m,content:full}:m)) },
+          (done) => { replied = true; full = done; setMsgs(p => p.map(m => m.id===aId?{...m,content:full}:m)) },
+          () => {}
+        )
+      }
+
+      // ── Level 4: Give up ──
+      if (!replied || !full.trim()) {
+        setMsgs(p => p.map(m => m.id===aId?{...m,content:'API keys set karo Settings mein — Groq ya Gemini. Ya Puter login karo.'}:m))
       }
 
       const rt = Date.now() - start
