@@ -14,6 +14,7 @@ import { canRequest } from '../lib/rateLimit'
 import { freeAIChat } from '../lib/providers/freeAI'
 import { SLASH_COMMANDS, parseSlashCommand } from '../lib/chat/slashCommands'
 import { generateAndSaveTitle, startNewSession } from '../lib/chat/autoTitle'
+import { checkProactive } from '../lib/proactive/engine'
 import NavDrawer from '../components/ui/NavDrawer'
 import Toast from '../components/ui/Toast'
 
@@ -139,6 +140,9 @@ export default function Page() {
   const [micActive, setMicActive] = useState(false)
   const [scrolledUp, setScrolledUp] = useState(false)
   const [puterReady, setPuterReady] = useState(false)
+  const [modelName, setModelName] = useState('')
+  const [proactive, setProactive] = useState<string|null>(null)
+  const [urlChip, setUrlChip] = useState('')
 
   const taRef = useRef<HTMLTextAreaElement>(null)
   const botRef = useRef<HTMLDivElement>(null)
@@ -182,6 +186,10 @@ export default function Page() {
 
     // Puter
     loadPuter().then(ok => setPuterReady(ok)).catch(() => {})
+    // Proactive
+    checkProactive().then(ev => {
+      if (ev?.message) setTimeout(() => setProactive(ev.message), 3000)
+    }).catch(() => {})
 
     // SW
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
@@ -213,6 +221,8 @@ export default function Page() {
   /* ── Input handling ──────────────────────────────────── */
   const handleInput = (v: string) => {
     setInput(v)
+    const urlM = v.match(/https?:\/\/[^\s]{10,}/)
+    setUrlChip(urlM ? urlM[0] : '')
     if (taRef.current) {
       taRef.current.style.height = 'auto'
       taRef.current.style.height = Math.min(taRef.current.scrollHeight, 130) + 'px'
@@ -304,6 +314,7 @@ Math: KaTeX use karo ($formula$). "As an AI" kabhi mat kaho. NEET/physics/chem: 
               try {
                 const d = JSON.parse(line.slice(6))
                 if (d.type === 'token' && d.token) { full += d.token; replied = true; setMsgs(p => p.map(m => m.id===aId?{...m,content:full}:m)) }
+                if (d.type === 'model' && d.name) setModelName(d.name)
                 if (d.type === 'card') setMsgs(p => p.map(m => m.id===aId?{...m,card:d.card}:m))
                 if (d.type === 'learn') addMemory(d.content, d.memType||'fact').catch(()=>{})
               } catch {}
@@ -514,6 +525,7 @@ Math: KaTeX use karo ($formula$). "As an AI" kabhi mat kaho. NEET/physics/chem: 
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:4, flexWrap:'wrap' }}>
                       {m.responseTime && <span style={{ fontSize:9, color:'var(--text-4)', fontFamily:"'JetBrains Mono',monospace" }}>⚡{(m.responseTime/1000).toFixed(1)}s</span>}
                       {m.mode && <span style={{ fontSize:9, color:'var(--text-4)', background:'rgba(255,255,255,.04)', padding:'1px 5px', borderRadius:4 }}>{m.mode==='flash'?'⚡':m.mode==='think'?'🧠':m.mode==='deep'?'🔬':'🤖'} {m.mode}</span>}
+                      {modelName && msgs.filter(x=>x.role==='assistant').slice(-1)[0]?.id===m.id && <span style={{ fontSize:9, color:'#3a8060', background:'rgba(0,229,100,.06)', padding:'1px 6px', borderRadius:4, border:'1px solid rgba(0,229,100,.15)' }}>🤖 {modelName}</span>}
                       <button onClick={() => navigator.clipboard.writeText(m.content).then(() => showToast('Copied!','success')).catch(()=>{})}
                         style={{ background:'none', border:'none', color:'var(--text-4)', fontSize:10, cursor:'pointer', padding:'1px 5px' }}>⎘</button>
                       <button onClick={() => setMsgs(p => p.map(x => x.id===m.id?{...x,feedback:'up'}:x))}
@@ -546,6 +558,24 @@ Math: KaTeX use karo ($formula$). "As an AI" kabhi mat kaho. NEET/physics/chem: 
             <button key={c} onClick={() => send(c)}
               style={{ padding:'4px 11px', borderRadius:16, background:'transparent', border:'1px solid var(--border)', color:'var(--text-3)', fontSize:11, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>{c}</button>
           ))}
+        </div>
+      )}
+
+      {/* Proactive banner */}
+      {proactive && (
+        <div style={{ margin:'0 14px 4px', padding:'9px 14px', background:'rgba(0,229,255,.04)', border:'1px solid rgba(0,229,255,.1)', borderRadius:12, display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          <span style={{ fontSize:12, color:'var(--text-3)', flex:1 }}>💡 {proactive}</span>
+          <button onClick={() => { send(proactive!); setProactive(null) }} style={{ padding:'3px 10px', borderRadius:10, background:'var(--accent-bg)', border:'1px solid var(--border-a)', color:'var(--accent)', fontSize:11, cursor:'pointer' }}>Haan</button>
+          <button onClick={() => setProactive(null)} style={{ background:'none', border:'none', color:'var(--text-4)', fontSize:14, cursor:'pointer' }}>✕</button>
+        </div>
+      )}
+
+      {/* URL chip */}
+      {urlChip && (
+        <div style={{ padding:'4px 12px', display:'flex', alignItems:'center', gap:8, flexShrink:0, borderTop:'1px solid rgba(255,255,255,.04)' }}>
+          <span style={{ fontSize:10, color:'var(--text-3)' }}>🔗 URL detect hua —</span>
+          <button onClick={() => { send(`Yeh URL summarize karo: ${urlChip}`); setInput(''); setUrlChip('') }} style={{ padding:'3px 10px', borderRadius:10, background:'var(--accent-bg)', border:'1px solid var(--border-a)', color:'var(--accent)', fontSize:11, cursor:'pointer' }}>✨ Summarize?</button>
+          <button onClick={() => setUrlChip('')} style={{ background:'none', border:'none', color:'var(--text-4)', fontSize:13, cursor:'pointer' }}>✕</button>
         </div>
       )}
 

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
               }
             }catch{}
           }
-          if(!ok && gkT) ok=!!(await streamGemini('gemini-2.0-flash',gkT,sys,msgs,send,2048))
+          if(!ok && gkT) ok=!!(await streamGemini('gemini-2.5-flash-preview-04-17',gkT,sys,msgs,send,2048))
           // Pollinations fallback for think mode too
           if(!ok){
             try {
@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
 
         // L1: Groq (fastest)
         if(groqKey){
+          send({type:'model',name:'Groq · Llama 4 Scout'})
           ok=await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',
             {Authorization:`Bearer ${groqKey}`},
             {model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
 
         // L2: Together AI
         if(!ok && toKey2){
+          if(!ok) send({type:'model',name:'Together · Llama 3.3 70B'})
           ok=await streamOpenAI('https://api.together.xyz/v1/chat/completions',
             {Authorization:`Bearer ${toKey2}`},
             {model:'meta-llama/Llama-3.3-70B-Instruct-Turbo',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},
@@ -131,6 +133,7 @@ export async function POST(req: NextRequest) {
 
         // L3: Gemini (1500/day free)
         if(!ok && gemKey2){
+          if(!ok) send({type:'model',name:'Gemini 2.5 Flash'})
           ok=await streamGemini('gemini-2.5-flash-preview-04-17',gemKey2,sys,msgs,send)
         }
 
