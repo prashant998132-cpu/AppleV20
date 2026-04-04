@@ -7,11 +7,10 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import MdRenderer from '../components/markdown/MdRenderer'
 import { getTheme, setTheme, initTheme, THEME_META, type Theme } from '../lib/theme'
-import { addMemory, getProfile, setProfile, saveChat, runMaintenance, createHistorySession, updateHistorySession, buildMemoryContext } from '../lib/db'
+import { addMemory, getProfile, setProfile, runMaintenance, createHistorySession, updateHistorySession, buildMemoryContext } from '../lib/db'
 import { puterStream, loadPuter } from '../lib/providers/puter'
-import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime } from '../lib/reminders'
+import { checkAndFireReminders, requestNotifPermission, addReminder, parseReminderTime } from '../lib/reminders/index'
 import { canRequest } from '../lib/rateLimit'
-// puter imported above
 import { freeAIChat } from '../lib/providers/freeAI'
 import { SLASH_COMMANDS, parseSlashCommand } from '../lib/chat/slashCommands'
 import { generateAndSaveTitle, startNewSession } from '../lib/chat/autoTitle'
@@ -382,7 +381,7 @@ Math: KaTeX use karo ($formula$). "As an AI" kabhi mat kaho. NEET/physics/chem: 
   return (
     <div style={{ position:'fixed', inset:0, display:'flex', flexDirection:'column', background:'var(--bg)' }}>
       <div className="bg-grid"/>
-      <NavDrawer isOpen={navOpen} onClose={() => setNavOpen(false)}/>
+      <NavDrawer open={navOpen} onClose={() => setNavOpen(false)}/>
       <ChatHistorySidebar
         open={histOpen} onClose={() => setHistOpen(false)} currentSessionId={currentSessionId}
         onNewChat={async () => {
