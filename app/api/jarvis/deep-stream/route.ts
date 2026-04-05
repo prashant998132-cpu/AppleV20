@@ -12,6 +12,7 @@ export const runtime = 'edge'
 export const maxDuration = 30
 
 const JARVIS_PERSONALITY = `Tum JARVIS ho — "Jons Bhai". Tony Stark ka AI + Grok attitude.
+India-first: INR prices, Hinglish, Indian context preferred.
 Hinglish mein baat karo. Short (1-4 lines max). Sarcastic but caring. Direct answers only.
 Math → seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
 NEET/JEE: proper formulas aur LaTeX use karo.
@@ -272,7 +273,7 @@ export async function POST(req: NextRequest) {
     let res: Response
     try {
       res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${gemKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -487,6 +488,7 @@ export async function POST(req: NextRequest) {
         appCommand = 'openSearch'
     } catch {}
 
+    send({ type: 'model', name: 'Gemini 2.5 Flash · Deep' })
     send({ type: 'done', toolsUsed, reply, card, appCommand: appCommand || undefined, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
 
     w.close()

@@ -1,159 +1,86 @@
 'use client'
-// components/shared/NavDrawer.tsx — JARVIS Navigation v25
-// Categorized slide-up drawer — ALL pages included
-
+// NavDrawer v2 — All pages including new ones
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect } from 'react'
 
-// ── Nav structure with categories ─────────────────────────
-const NAV_SECTIONS = [
-  {
-    label: 'MAIN',
-    items: [
-      { path: '/',          icon: '💬', label: 'Chat',        color: '#00e5ff', desc: 'AI assistant' },
-      { path: '/briefing',  icon: '🌅', label: 'Briefing',    color: '#fbbf24', desc: 'Morning brief' },
-    ]
-  },
-  {
-    label: 'LEARN',
-    items: [
-      { path: '/learn',    icon: '🧠', label: 'Learn',       color: '#34d399', desc: 'AI courses' },
-      { path: '/study',    icon: '📚', label: 'Study',       color: '#a78bfa', desc: 'Goal tracker' },
-    ]
-  },
-  {
-    label: 'EXPLORE',
-    items: [
-      { path: '/anime',    icon: '🌸', label: 'Anime',       color: '#f472b6', desc: 'Watchlist' },
-      { path: '/studio',   icon: '🎨', label: 'Studio',      color: '#f59e0b', desc: 'AI art' },
-      { path: '/canva',    icon: '🖼️', label: 'Canva',       color: '#7c3aed', desc: 'Designs' },
-      { path: '/india',    icon: '🇮🇳', label: 'India Hub',  color: '#fb923c', desc: 'Bharat' },
-    ]
-  },
-  {
-    label: 'TOOLS',
-    items: [
-      { path: '/apps',     icon: '🔗', label: 'Apps',        color: '#86efac', desc: '150+ apps' },
-      { path: '/tools',    icon: '🧮', label: 'Calculators', color: '#fbbf24', desc: 'SIP/EMI/GST' },
-      { path: '/media',    icon: '📁', label: 'Media',       color: '#60a5fa', desc: 'Files' },
-      { path: '/voice',    icon: '🎤', label: 'Voice',       color: '#e879f9', desc: 'Speech' },
-      { path: '/dashboard', icon: '📊', label: 'Dashboard',   color: '#00ff88', desc: 'Tasks + Notes + Goals' },
-      { path: '/system',   icon: '⚡', label: 'System',      color: '#22d3ee', desc: 'Dashboard' },
-    ]
-  },
-  {
-    label: 'SYSTEM',
-    items: [
-      { path: '/termux',    icon: '📱', label: 'Phone',      color: '#00ff88', desc: 'Termux Control' },
-      { path: '/connected', icon: '🔌', label: 'APIs',       color: '#00e5ff', desc: 'Integrations' },
-      { path: '/settings',  icon: '⚙️', label: 'Settings',   color: '#94a3b8', desc: 'Preferences' },
-    ]
-  },
+interface Props { open: boolean; onClose: () => void }
+
+const NAV_ITEMS = [
+  { path:'/',          icon:'🤖', label:'JARVIS',      color:'#00e5ff', desc:'Main chat' },
+  { path:'/dashboard', icon:'📊', label:'Dashboard',   color:'#60a5fa', desc:'Overview' },
+  { path:'/study',     icon:'📚', label:'NEET Study',  color:'#f59e0b', desc:'Prepare' },
+  { path:'/briefing',  icon:'🗞️', label:'Briefing',    color:'#a78bfa', desc:'Daily news' },
+  { path:'/widgets',   icon:'🧩', label:'Widgets',     color:'#34d399', desc:'Live data', badge:'NEW' },
+  { path:'/todo',      icon:'✅', label:'Todo',        color:'#22c55e', desc:'Tasks', badge:'NEW' },
+  { path:'/notes',     icon:'📝', label:'Notes',       color:'#60a5fa', desc:'Quick notes', badge:'NEW' },
+  { path:'/habits',    icon:'🔥', label:'Habits',      color:'#f97316', desc:'Streaks', badge:'NEW' },
+  { path:'/timer',     icon:'⏱️', label:'Timer',       color:'#f43f5e', desc:'Pomodoro', badge:'NEW' },
+  { path:'/india',     icon:'🇮🇳', label:'India Hub',  color:'#fb923c', desc:'Bharat' },
+  { path:'/media',     icon:'🎵', label:'Media',       color:'#ec4899', desc:'Music & more' },
+  { path:'/anime',     icon:'🌸', label:'Anime',       color:'#f472b6', desc:'Discover' },
+  { path:'/studio',    icon:'🎨', label:'Studio',      color:'#818cf8', desc:'AI create' },
+  { path:'/voice',     icon:'🎙️', label:'Voice',       color:'#34d399', desc:'Voice mode' },
+  { path:'/learn',     icon:'🧠', label:'Learn',       color:'#60a5fa', desc:'Courses' },
+  { path:'/tools',     icon:'🔧', label:'Tools',       color:'#94a3b8', desc:'Utilities' },
+  { path:'/apps',      icon:'📱', label:'Apps',        color:'#60a5fa', desc:'App launcher' },
+  { path:'/connected', icon:'🔌', label:'Connected',   color:'#34d399', desc:'Integrations' },
+  { path:'/canva',     icon:'✏️', label:'Canva',       color:'#a78bfa', desc:'Design' },
+  { path:'/system',    icon:'⚙️', label:'System',      color:'#94a3b8', desc:'Status' },
+  { path:'/settings',  icon:'🔑', label:'Settings',    color:'#6b7280', desc:'Keys & profile' },
 ]
 
-interface Props {
-  open: boolean
-  onClose: () => void
-}
-
 export default function NavDrawer({ open, onClose }: Props) {
-  const router   = useRouter()
+  const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
-  function go(path: string) {
-    onClose()
-    setTimeout(() => router.push(path), 100)
-  }
-
-  // Count total pages
-  const totalPages = NAV_SECTIONS.reduce((a, s) => a + s.items.length, 0)
+  const go = (path: string) => { onClose(); router.push(path) }
 
   return (
     <>
-      {/* Backdrop */}
-      <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, zIndex: 98,
-        background: 'rgba(0,0,0,.65)',
-        backdropFilter: 'blur(6px)',
-        opacity: open ? 1 : 0,
-        pointerEvents: open ? 'auto' : 'none',
-        transition: 'opacity .25s',
-      }}/>
-
-      {/* Drawer */}
+      {open && <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:98, background:'rgba(0,0,0,.6)', backdropFilter:'blur(4px)' }}/>}
       <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 99,
-        background: 'var(--bg-card)',
-        borderTop: '1px solid var(--border-acc)',
-        borderRadius: '22px 22px 0 0',
-        padding: '0 16px 32px',
-        transform: open ? 'translateY(0)' : 'translateY(108%)',
-        transition: 'transform .3s cubic-bezier(.32,.72,0,1)',
-        boxShadow: '0 -24px 80px rgba(0,0,0,.6)',
-        maxHeight: '88vh',
-        overflowY: 'auto',
+        position:'fixed', top:0, left:0, bottom:0, zIndex:99, width:260,
+        background:'var(--bg-card)', borderRight:'1px solid var(--border)',
+        transform: open ? 'translateX(0)' : 'translateX(-100%)',
+        transition:'transform .25s ease', display:'flex', flexDirection:'column',
+        boxShadow: open ? '4px 0 32px rgba(0,0,0,.4)' : 'none'
       }}>
-        {/* Handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 14 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-acc)' }}/>
-        </div>
-
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 11,
-            background: 'linear-gradient(135deg, rgba(0,229,255,.2), rgba(109,40,217,.2))',
-            border: '1px solid var(--border-acc)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: 800, color: 'var(--accent)',
-            fontFamily: "'Space Mono',monospace",
-          }}>J</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700, letterSpacing: 2, fontFamily: "'Space Mono',monospace" }}>JARVIS</div>
-            <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 1 }}>v25 · {totalPages} sections</div>
+        <div style={{ padding:'16px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:'var(--accent-bg)', border:'1px solid var(--border-a)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:800, color:'var(--accent)', fontFamily:'monospace' }}>J</div>
+          <div>
+            <div style={{ fontSize:15, fontWeight:800, color:'var(--text)' }}>JARVIS</div>
+            <div style={{ fontSize:10, color:'var(--text-3)' }}>Your AI · v27</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}>✕</button>
+          <button onClick={onClose} style={{ marginLeft:'auto', background:'none', border:'none', color:'var(--text-3)', fontSize:18, cursor:'pointer' }}>✕</button>
         </div>
 
-        {/* Sections */}
-        {NAV_SECTIONS.map(section => (
-          <div key={section.label} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: 2, marginBottom: 8, paddingLeft: 2 }}>{section.label}</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {section.items.map(item => {
-                const isActive = pathname === item.path
-                return (
-                  <button key={item.path} onClick={() => go(item.path)} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '11px 12px',
-                    borderRadius: 13,
-                    border: `1px solid ${isActive ? item.color + '50' : 'var(--border)'}`,
-                    background: isActive ? item.color + '12' : 'var(--bg-surface)',
-                    cursor: 'pointer',
-                    textAlign: 'left' as const,
-                    transition: 'all .15s',
-                  }}>
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: isActive ? item.color : 'var(--text)', fontWeight: isActive ? 700 : 500, fontFamily: "'Space Mono',monospace" }}>
-                        {item.label}
-                      </div>
-                      <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 1 }}>{item.desc}</div>
-                      {isActive && <div style={{ fontSize: 8, color: item.color, marginTop: 2 }}>● here</div>}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+        {/* Nav items */}
+        <div style={{ flex:1, overflowY:'auto', padding:'8px 0' }} className="no-scroll">
+          {NAV_ITEMS.map(item => (
+            <button key={item.path} onClick={() => go(item.path)} style={{
+              width:'100%', display:'flex', alignItems:'center', gap:12, padding:'10px 16px',
+              background: pathname===item.path ? 'var(--accent-bg)' : 'transparent',
+              border: 'none', borderRight: pathname===item.path ? `2px solid var(--accent)` : '2px solid transparent',
+              cursor:'pointer', textAlign:'left', transition:'background .15s'
+            }}>
+              <span style={{ fontSize:18, width:24, textAlign:'center' }}>{item.icon}</span>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{ fontSize:13, fontWeight:600, color: pathname===item.path ? 'var(--accent)' : 'var(--text)' }}>{item.label}</span>
+                  {item.badge && <span style={{ fontSize:8, fontWeight:700, color:'#22c55e', background:'rgba(34,197,94,.12)', padding:'1px 5px', borderRadius:4, border:'1px solid rgba(34,197,94,.2)' }}>{item.badge}</span>}
+                </div>
+                <div style={{ fontSize:10, color:'var(--text-3)' }}>{item.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:'12px 16px', borderTop:'1px solid var(--border)' }}>
+          <div style={{ fontSize:10, color:'var(--text-4)', textAlign:'center' }}>
+            apple-v20.vercel.app · ₹0 cost
           </div>
-        ))}
+        </div>
       </div>
     </>
   )

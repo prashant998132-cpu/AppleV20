@@ -3,6 +3,10 @@
     {
       "path": "/api/scheduler?task=multi&cache_warmup=1&secret=jarvis-cron-2025",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

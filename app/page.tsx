@@ -24,6 +24,31 @@ import Toast from '../components/ui/Toast'
 
 const ChatHistorySidebar = dynamic(() => import('../components/ui/ChatHistorySidebar'), { ssr: false })
 
+/* ── TTS — speak JARVIS reply ────────────────────────────── */
+async function speakText(text: string) {
+  const clean = text.replace(/[*_`#>]/g,'').replace(/\$[^$]+\$/g,'').slice(0,500)
+  // Browser TTS first (instant, free)
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+    const utt = new SpeechSynthesisUtterance(clean)
+    utt.lang = 'hi-IN'; utt.rate = 1.1; utt.pitch = 1
+    // Try Hindi voice
+    const voices = window.speechSynthesis.getVoices()
+    const hiVoice = voices.find(v => v.lang.startsWith('hi')) || voices.find(v => v.lang.startsWith('en-IN'))
+    if (hiVoice) utt.voice = hiVoice
+    window.speechSynthesis.speak(utt)
+    return
+  }
+  // Fallback: Pollinations TTS
+  try {
+    const res = await fetch('/api/speech', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:clean}) })
+    const d = await res.json()
+    if (d.url) { const a=new Audio(d.url); a.play() }
+  } catch {}
+}
+
+
+
 /* ── Types ───────────────────────────────────────────────── */
 type RichCard =
   | { type:'image'; url:string; prompt?:string }
@@ -552,6 +577,7 @@ Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: pr
                       <button onClick={()=>setMsgs(p=>p.map(x=>x.id===m.id?{...x,feedback:'up'}:x))} style={{background:'none',border:'none',color:m.feedback==='up'?'#22c55e':'var(--text-4)',fontSize:11,cursor:'pointer'}}>👍</button>
                       <button onClick={()=>setMsgs(p=>p.map(x=>x.id===m.id?{...x,feedback:'down'}:x))} style={{background:'none',border:'none',color:m.feedback==='down'?'#ef4444':'var(--text-4)',fontSize:11,cursor:'pointer'}}>👎</button>
                       <button onClick={()=>setMsgs(p=>p.map(x=>x.id===m.id?{...x,pinned:!x.pinned}:x))} style={{background:'none',border:'none',color:m.pinned?'#f59e0b':'var(--text-4)',fontSize:11,cursor:'pointer'}}>📌</button>
+                      <button onClick={()=>speakText(m.content)} style={{background:'none',border:'none',color:'var(--text-4)',fontSize:11,cursor:'pointer'}} title='Sunao'>🔊</button>
                     </div>
                   </>
                 )}

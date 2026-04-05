@@ -138,3 +138,41 @@ input:focus,textarea:focus{border-color:var(--border-a)}
 
 /* ── Fade animation on new messages ─────────────────────── */
 .msg-fadein{animation:fadein .25s ease-out}
+
+/* ── Keyboard shortcut hint ──────────────────────────────── */
+.kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+/* ── Pulse animation for live badges ─────────────────────── */
+@keyframes livepulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+.live-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: livepulse 1.5s infinite;
+  margin-right: 4px;
+}
+
+/* ── Skeleton loader ─────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, rgba(255,255,255,.08) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
