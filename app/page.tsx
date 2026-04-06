@@ -194,6 +194,7 @@ export default function Page() {
   const [installPrompt,setInstallPrompt]=useState<any>(null)
   const [showInstall,setShowInstall]=useState(false)
   const [modelName,setModelName]=useState('')
+  const [userLocation,setUserLocation]=useState<{lat:number;lon:number;city:string}|null>(null)
   const [persona,setPersona]=useState<'jarvis'|'desi'|'sherlock'|'yoda'>('jarvis')
 
   const taRef=useRef<HTMLTextAreaElement>(null)
@@ -239,6 +240,17 @@ export default function Page() {
     if(shouldShowWeeklySummary()) setTimeout(()=>setWeeklyPrompt(true),5000)
     if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{})
     loadPuter().catch(()=>{})
+    // Auto-fetch user location
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(async p=>{
+        try{
+          const{latitude:lat,longitude:lon}=p.coords
+          // Reverse geocode with Nominatim
+          const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,{headers:{'User-Agent':'JARVIS/1.0'}})
+          if(r.ok){const d=await r.json();const city=d.address?.city||d.address?.town||d.address?.village||d.address?.state||'Your Location';setUserLocation({lat,lon,city})}
+        }catch{}
+      },()=>{},{timeout:8000,maximumAge:300000})
+    }
 
     ;(async()=>{
       const n=await getProfile('name') as string|null
@@ -283,8 +295,19 @@ export default function Page() {
 
   const getEffectiveMode=(text:string,m:typeof mode)=>{
     if(m!=='auto') return m
-    if(/neet|jee|physics|chem|bio|math|solve|proof|theorem/i.test(text)) return 'think'
-    if(/news|weather|image|map|song|movie/i.test(text)) return 'deep'
+    const words = text.trim().split(/\s+/).length
+    const t = text.toLowerCase()
+
+    // DEEP mode: needs tools/live data
+    if(/weather|mausam|news|khabar|song|music|map|price|rate|gold|silver|bitcoin|crypto|movie|film|wiki|search|image|photo|draw/i.test(t)) return 'deep'
+
+    // THINK mode: complex reasoning needed
+    if(/syllabus|explain.*detail|kaise kaam|difference between|compare|pros.*cons|why|kyon|mechanism|reaction|formula|theorem|proof|essay|article|long|detail|elaborate|comprehensive|full.*explain/i.test(t)) return 'think'
+
+    // THINK for long questions (>12 words = complex)
+    if(words > 12) return 'think'
+
+    // FLASH for short simple questions (<5 words or simple patterns)
     return 'flash'
   }
 
@@ -313,6 +336,8 @@ export default function Page() {
     let replied=false, full=''
     const hist=msgs.slice(-12).filter(m=>!m.isSystem&&!m.streaming).map(m=>({role:m.role,content:m.content}))
     const memCtx=await buildMemoryContext().catch(()=>'')
+    // Inject live location into context
+    const locCtx = userLocation ? `User ki current location: ${userLocation.city} (${userLocation.lat.toFixed(4)},${userLocation.lon.toFixed(4)})` : ''
 
     const PERSONAS = {
       jarvis: `Tum JARVIS ho — "Jons Bhai". Hinglish mein baat karo. Short (1-4 lines). Sarcastic but caring. Direct.`,
@@ -323,14 +348,15 @@ export default function Page() {
     const SYS=PERSONAS[persona]+`
 Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
 Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
-    const aiMsgs=[{role:'system',content:SYS+(memCtx?`\n\nContext:\n${memCtx}`:'')}, ...hist, {role:'user',content:t}]
+    const locStr = userLocation ? `\n\nUser Location: ${userLocation.city} (${userLocation.lat.toFixed(3)},${userLocation.lon.toFixed(3)})` : ''
+    const aiMsgs=[{role:'system',content:SYS+(memCtx?`\n\nContext:\n${memCtx}`:'')+locStr}, ...hist, {role:'user',content:t}]
 
     // ── Level 1: Server stream (Groq Llama4 → Together → Gemini 2.5) ──────
     try{
       const route=effectiveMode==='deep'?'/api/jarvis/deep-stream':'/api/jarvis/stream'
       const res=await fetch(route,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message:t,chatMode:effectiveMode,history:hist,memoryContext:memCtx}),
+        body:JSON.stringify({message:t,chatMode:effectiveMode,history:hist,memoryContext:memCtx+(locCtx?'\n\n'+locCtx:''),userLat:userLocation?.lat,userLon:userLocation?.lon,userCity:userLocation?.city}),
         signal:AbortSignal.timeout(25000),
       })
       if(res.ok&&res.body){
@@ -517,6 +543,7 @@ Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: pr
           <button onClick={()=>setNavOpen(true)} style={{width:28,height:28,borderRadius:8,background:'var(--accent-bg)',border:'1px solid var(--border-a)',color:'var(--accent)',fontSize:14,fontWeight:800,fontFamily:"'JetBrains Mono',monospace"}}>J</button>
           <button onClick={()=>setHistOpen(true)} style={{width:28,height:28,borderRadius:8,background:'rgba(255,255,255,.04)',border:'1px solid var(--border)',color:'var(--text-3)',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}}>🕐</button>
           <WeatherBadge/>
+          {userLocation&&<span style={{fontSize:9,color:'var(--text-4)',display:'flex',alignItems:'center',gap:2}}>📍{userLocation.city.split(',')[0].slice(0,10)}</span>}
           <BatteryBadge/>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,position:'relative'}}>

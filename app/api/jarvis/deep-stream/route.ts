@@ -11,6 +11,13 @@ import { cachedFetch }    from '../../../../lib/tools/cache'
 export const runtime = 'edge'
 export const maxDuration = 30
 
+const makeSystemPrompt = (locHint: string) => `Tum JARVIS ho — "Jons Bhai". Tony Stark ka AI + Grok attitude.
+Hinglish mein baat karo. Short (1-4 lines max). Sarcastic but caring. Direct answers only.
+${locHint ? `User ki current location: ${locHint}. Agar koi location-specific question poocha toh automatically yahi use karo.` : ''}
+Math → seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
+[LEARN: type=data] format mein user ke baare mein naya fact yaad rakho.
+APP CONTROL: /settings, /study, /apps etc. commands support hain.`
+
 const JARVIS_PERSONALITY = `Tum JARVIS ho — "Jons Bhai". Tony Stark ka AI + Grok attitude.
 India-first: INR prices, Hinglish, Indian context preferred.
 Hinglish mein baat karo. Short (1-4 lines max). Sarcastic but caring. Direct answers only.
@@ -181,7 +188,7 @@ function formatToolData(results: Array<{ id: string; data: any; fromCache: boole
 
 // ═══════════════════════════════════════════════════════════════════════════
 export async function POST(req: NextRequest) {
-  const { message, history = [], memoryContext, chatMode } = await req.json()
+  const { message, history = [], memoryContext, chatMode , userLat, userLon, userCity } = await req.json()
   const gemKey = process.env.GEMINI_API_KEY
 
   const enc = new TextEncoder()

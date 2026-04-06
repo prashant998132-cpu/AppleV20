@@ -46,7 +46,7 @@ async function streamGemini(model: string, key: string, sys: string, msgs: any[]
 }
 
 export async function POST(req: NextRequest) {
-  const { message, chatMode='flash', history=[], memoryContext, systemOverride } = await req.json()
+  const { message, chatMode='flash', history=[], memoryContext, systemOverride, userLat, userLon, userCity } = await req.json()
   if (!message?.trim()) return new Response('No message', { status: 400 })
 
   const enc = new TextEncoder()
@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
       try {
         const h=new Date().getHours()
         const timeNote=h<6?'[Raat]':h<12?'[Subah]':h<17?'[Din]':h<22?'[Shaam]':'[Raat]'
+        const locNote=userCity?`\n[User Location: ${userCity}${userLat?` (${Number(userLat).toFixed(3)},${Number(userLon).toFixed(3)})`:''} — automatically use this for weather/map/local queries]`:''
         const mem=memoryContext?`\n\nCONTEXT:\n${memoryContext}`:''
-        const sys=systemOverride||`${JARVIS_BASE}\n${timeNote}${mem}`
+        const sys=systemOverride||`${JARVIS_BASE}\n${timeNote}${locNote}${mem}`
         const msgs=[...history.slice(-10).map((m:any)=>({role:m.role==='user'?'user':'assistant',content:m.content})),{role:'user',content:message}]
 
         // ── THINK: DeepSeek R1 → Gemini → Pollinations ───
