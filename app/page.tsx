@@ -194,6 +194,7 @@ export default function Page() {
   const [installPrompt,setInstallPrompt]=useState<any>(null)
   const [showInstall,setShowInstall]=useState(false)
   const [modelName,setModelName]=useState('')
+  const [persona,setPersona]=useState<'jarvis'|'desi'|'sherlock'|'yoda'>('jarvis')
 
   const taRef=useRef<HTMLTextAreaElement>(null)
   const botRef=useRef<HTMLDivElement>(null)
@@ -313,7 +314,14 @@ export default function Page() {
     const hist=msgs.slice(-12).filter(m=>!m.isSystem&&!m.streaming).map(m=>({role:m.role,content:m.content}))
     const memCtx=await buildMemoryContext().catch(()=>'')
 
-    const SYS=`Tum JARVIS ho — "Jons Bhai". Hinglish mein baat karo. Short (1-4 lines). Sarcastic but caring. Direct.
+    const PERSONAS = {
+      jarvis: `Tum JARVIS ho — "Jons Bhai". Hinglish mein baat karo. Short (1-4 lines). Sarcastic but caring. Direct.`,
+      desi: `Tu ek desi yaar hai. Hinglish mein baat kar. Shuruaat mein "Yaar," ya "Bhai," se karo. Bahut casual, funny, street-smart. Short answers.`,
+      sherlock: `You are Sherlock Holmes. Respond with deductive reasoning, sharp observations, slight condescension but helpfulness. Occasionally say "Elementary". Concise.`,
+      yoda: `Like Yoda, speak you must. Word order inverted, wise you are. Short sentences. "Hmmmm." often say. Help you I will.`
+    }
+    const SYS=PERSONAS[persona]+`
+Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
 Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
     const aiMsgs=[{role:'system',content:SYS+(memCtx?`\n\nContext:\n${memCtx}`:'')}, ...hist, {role:'user',content:t}]
 
@@ -643,6 +651,14 @@ Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: pr
       {/* Input */}
       <div style={{padding:'8px 12px 10px',borderTop:'1px solid var(--border)',background:'var(--header)',flexShrink:0,position:'relative'}}>
         {plusOpen&&<><div onClick={()=>setPlusOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/><div style={{position:'absolute',bottom:'calc(100% + 6px)',left:12,zIndex:50,background:'rgba(8,12,22,.98)',border:'1px solid var(--border-a)',borderRadius:14,padding:10,width:185,boxShadow:'0 -6px 24px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
+          <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:6}}>PERSONA</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:8}}>
+            {([['jarvis','🤖','JARVIS'],['desi','🇮🇳','Desi Yaar'],['sherlock','🔍','Sherlock'],['yoda','🌟','Yoda']] as const).map(([p,ic,lb])=>(
+              <button key={p} onClick={()=>setPersona(p)} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 7px',borderRadius:8,background:persona===p?'var(--accent-bg)':'rgba(255,255,255,.03)',border:`1px solid ${persona===p?'var(--border-a)':'rgba(255,255,255,.05)'}`,cursor:'pointer'}}>
+                <span style={{fontSize:12}}>{ic}</span><span style={{fontSize:10,color:persona===p?'var(--accent)':'#8899aa',fontWeight:persona===p?600:400}}>{lb}</span>
+              </button>
+            ))}
+          </div>
           <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:6}}>MODE</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
             {([['auto','🤖','Auto'],['flash','⚡','Flash'],['think','🧠','Think'],['deep','🔬','Deep']] as const).map(([m,ic,lb])=>(

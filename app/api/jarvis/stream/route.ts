@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
         // ── FLASH: 4-level cascade ────────────────────────
         let ok=false
 
+        // Support user-provided keys (sent in request body)
         const groqKey=process.env.GROQ_API_KEY
         const toKey2=process.env.TOGETHER_API_KEY
         const gemKey2=process.env.GEMINI_API_KEY
