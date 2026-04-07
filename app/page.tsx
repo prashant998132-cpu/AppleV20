@@ -24,6 +24,82 @@ import Toast from '../components/ui/Toast'
 
 const ChatHistorySidebar = dynamic(() => import('../components/ui/ChatHistorySidebar'), { ssr: false })
 
+/* ── Model Info ──────────────────────────────────────────── */
+const MODEL_CHAIN = {
+  flash: [
+    { name:'Groq · Llama 4 Scout 17B', speed:'~1s', free:true, note:'Fastest. Server key chahiye.' },
+    { name:'Together · Llama 3.3 70B', speed:'~2s', free:true, note:'Fallback. Better quality.' },
+    { name:'Gemini 2.5 Flash', speed:'~3s', free:true, note:'Google. Agar Groq+Together fail.' },
+    { name:'Pollinations (OpenAI)', speed:'~5s', free:true, note:'No key. Browser direct call.' },
+    { name:'Puter · GPT-4o-mini', speed:'~6s', free:true, note:'Last resort. Puter login chahiye.' },
+  ],
+  think: [
+    { name:'OpenRouter · DeepSeek R1', speed:'~8s', free:false, note:'Best reasoning. Key chahiye.' },
+    { name:'Gemini 2.5 Flash', speed:'~5s', free:true, note:'Fallback. Good reasoning.' },
+    { name:'Pollinations (OpenAI)', speed:'~5s', free:true, note:'No key fallback.' },
+    { name:'Puter · GPT-4o-mini', speed:'~6s', free:true, note:'Last resort.' },
+  ],
+  deep: [
+    { name:'Gemini 2.5 Flash + Tools', speed:'~5s', free:true, note:'Tools use karta hai. Weather, news etc.' },
+    { name:'Pollinations (OpenAI)', speed:'~5s', free:true, note:'Fallback.' },
+    { name:'Puter · GPT-4o-mini', speed:'~6s', free:true, note:'Last resort.' },
+  ],
+}
+
+function ModelInfoDrawer({ open, onClose }: { open:boolean; onClose:()=>void }) {
+  const [tab, setTab] = React.useState<'flash'|'think'|'deep'>('flash')
+  if (!open) return null
+  const chain = MODEL_CHAIN[tab]
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,.85)',display:'flex',alignItems:'flex-end'}} onClick={onClose}>
+      <div style={{width:'100%',background:'var(--bg-card)',borderRadius:'20px 20px 0 0',padding:'0 0 24px',maxHeight:'80vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'16px 16px 10px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,fontWeight:700}}>🤖 AI Model Chain</div>
+            <div style={{fontSize:10,color:'var(--text-3)',marginTop:2}}>Pehle wala fail → agla try hota hai</div>
+          </div>
+          <button onClick={onClose} style={{background:'none',border:'none',color:'var(--text-3)',fontSize:20,cursor:'pointer'}}>✕</button>
+        </div>
+
+        {/* Mode tabs */}
+        <div style={{display:'flex',padding:'8px 16px',gap:6}}>
+          {(['flash','think','deep'] as const).map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:'7px',borderRadius:10,background:tab===t?'var(--accent-bg)':'rgba(255,255,255,.04)',border:`1px solid ${tab===t?'var(--border-a)':'var(--border)'}`,color:tab===t?'var(--accent)':'var(--text-3)',fontSize:12,fontWeight:600,cursor:'pointer'}}>
+              {t==='flash'?'⚡ Flash':t==='think'?'🧠 Think':'🔬 Deep'}
+            </button>
+          ))}
+        </div>
+
+        {/* Chain */}
+        <div style={{padding:'0 16px'}}>
+          {chain.map((m,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 0',borderBottom:i<chain.length-1?'1px solid var(--border)':'none'}}>
+              <div style={{width:22,height:22,borderRadius:'50%',background:i===0?'var(--accent-bg)':'rgba(255,255,255,.06)',border:`1px solid ${i===0?'var(--border-a)':'var(--border)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:i===0?'var(--accent)':'var(--text-3)',flexShrink:0,marginTop:2}}>{i+1}</div>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                  <span style={{fontSize:13,fontWeight:700,color:i===0?'var(--text)':'var(--text-2)'}}>{m.name}</span>
+                  <span style={{fontSize:9,color:'#22c55e',background:'rgba(34,197,94,.1)',padding:'1px 6px',borderRadius:4}}>FREE</span>
+                  <span style={{fontSize:9,color:'var(--text-4)',background:'rgba(255,255,255,.05)',padding:'1px 6px',borderRadius:4}}>{m.speed}</span>
+                </div>
+                <div style={{fontSize:11,color:'var(--text-3)'}}>{m.note}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Info box */}
+        <div style={{margin:'10px 16px 0',padding:'10px 12px',background:'rgba(0,229,255,.04)',border:'1px solid rgba(0,229,255,.1)',borderRadius:10}}>
+          <div style={{fontSize:11,color:'var(--text-3)',lineHeight:1.6}}>
+            <strong style={{color:'var(--accent)'}}>Auto mode:</strong> Short question → ⚡ Flash · Long/deep question → 🧠 Think · Weather/news/image → 🔬 Deep
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+
 /* ── TTS — speak JARVIS reply ────────────────────────────── */
 async function speakText(text: string) {
   const clean = text.replace(/[*_`#>]/g,'').replace(/\$[^$]+\$/g,'').slice(0,500)
@@ -194,6 +270,7 @@ export default function Page() {
   const [installPrompt,setInstallPrompt]=useState<any>(null)
   const [showInstall,setShowInstall]=useState(false)
   const [modelName,setModelName]=useState('')
+  const [modelDrawerOpen,setModelDrawerOpen]=useState(false)
   const [userLocation,setUserLocation]=useState<{lat:number;lon:number;city:string}|null>(null)
   const [persona,setPersona]=useState<'jarvis'|'desi'|'sherlock'|'yoda'>('jarvis')
 
@@ -607,7 +684,7 @@ Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: pr
                     <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4,flexWrap:'wrap'}}>
                       {m.responseTime&&<span style={{fontSize:9,color:'var(--text-4)',fontFamily:"'JetBrains Mono',monospace"}}>⚡{(m.responseTime/1000).toFixed(1)}s</span>}
                       {m.mode&&<span style={{fontSize:9,color:'var(--text-4)',background:'rgba(255,255,255,.04)',padding:'1px 5px',borderRadius:4}}>{m.mode==='flash'?'⚡':m.mode==='think'?'🧠':m.mode==='deep'?'🔬':'🤖'} {m.mode}</span>}
-                      {modelName&&msgs.filter(x=>x.role==='assistant').slice(-1)[0]?.id===m.id&&<span style={{fontSize:9,color:'#3a8060',background:'rgba(0,229,100,.06)',padding:'1px 6px',borderRadius:4,border:'1px solid rgba(0,200,80,.15)'}}>🤖 {modelName}</span>}
+                      {modelName&&msgs.filter(x=>x.role==='assistant').slice(-1)[0]?.id===m.id&&<button onClick={()=>setModelDrawerOpen(true)} style={{fontSize:9,color:'#3a8060',background:'rgba(0,229,100,.06)',padding:'2px 8px',borderRadius:4,border:'1px solid rgba(0,200,80,.2)',cursor:'pointer'}}>🤖 {modelName} ▾</button>}
                       <button onClick={()=>navigator.clipboard.writeText(m.content).then(()=>showToast('Copied!','success')).catch(()=>{})} style={{background:'none',border:'none',color:'var(--text-4)',fontSize:10,cursor:'pointer',padding:'1px 5px'}}>⎘</button>
                       <button onClick={()=>setMsgs(p=>p.map(x=>x.id===m.id?{...x,feedback:'up'}:x))} style={{background:'none',border:'none',color:m.feedback==='up'?'#22c55e':'var(--text-4)',fontSize:11,cursor:'pointer'}}>👍</button>
                       <button onClick={()=>setMsgs(p=>p.map(x=>x.id===m.id?{...x,feedback:'down'}:x))} style={{background:'none',border:'none',color:m.feedback==='down'?'#ef4444':'var(--text-4)',fontSize:11,cursor:'pointer'}}>👎</button>
@@ -705,7 +782,7 @@ Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: pr
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 8px 8px'}}>
             <div style={{display:'flex',gap:1,alignItems:'center'}}>
               <button onClick={()=>setPlusOpen(p=>!p)} style={{width:30,height:28,borderRadius:7,background:plusOpen?'var(--accent-bg)':'transparent',border:`1px solid ${plusOpen?'var(--border-a)':'transparent'}`,color:plusOpen?'var(--accent)':'var(--text-3)',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>{plusOpen?'×':'+'}</button>
-              <span style={{padding:'3px 9px',fontSize:10,color:'var(--text-4)'}}>{mode==='auto'?'🤖 Auto':mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}</span>
+              <button onClick={()=>setModelDrawerOpen(true)} style={{padding:'3px 9px',fontSize:10,color:'var(--text-4)',background:'none',border:'none',cursor:'pointer'}}>{mode==='auto'?'🤖 Auto':mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}</button>
               {input.length>50&&<span style={{fontSize:9,color:input.length>800?'#ff6060':input.length>400?'#ffab00':'var(--text-4)',padding:'2px 5px'}}>{input.length}</span>}
             </div>
             <div style={{display:'flex',gap:3}}>
@@ -720,6 +797,7 @@ Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: pr
       </div>
 
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
+      <ModelInfoDrawer open={modelDrawerOpen} onClose={()=>setModelDrawerOpen(false)}/>
     </div>
   )
 }
