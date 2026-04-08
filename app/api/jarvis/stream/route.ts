@@ -46,7 +46,7 @@ async function streamGemini(model: string, key: string, sys: string, msgs: any[]
 }
 
 export async function POST(req: NextRequest) {
-  const { message, chatMode='flash', history=[], memoryContext, systemOverride, userLat, userLon, userCity } = await req.json()
+  const { message, chatMode='flash', history=[], memoryContext, systemOverride, userLat, userLon, userCity, forceProvider } = await req.json()
   if (!message?.trim()) return new Response('No message', { status: 400 })
 
   const enc = new TextEncoder()
@@ -65,7 +65,10 @@ export async function POST(req: NextRequest) {
         if(chatMode==='think'){
           const orKey=process.env.OPENROUTER_API_KEY; const gkT=process.env.GEMINI_API_KEY
           let ok=false
-          if(orKey){
+          // forceProvider: skip to specific model
+          if(forceProvider==='gemini' && gkT){ send({type:'model',name:'Gemini 2.5 Flash'}); ok=!!(await streamGemini('gemini-2.5-flash-preview-04-17',gkT,sys,msgs,send,2048)); if(ok){send({type:'done'});ctrl.close();return} }
+          if(forceProvider==='pollinations'){ /* fall through to pollinations below */ }
+          else if(orKey){
             try{
               const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
                 method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${orKey}`,'HTTP-Referer':'https://jarvis-ai.vercel.app','X-Title':'JARVIS'},
@@ -107,36 +110,46 @@ export async function POST(req: NextRequest) {
           send({type:'done'}); ctrl.close(); return
         }
 
-        // ── FLASH: 4-level cascade ────────────────────────
+        // ── FLASH: 4-level cascade (or forceProvider) ───────
         let ok=false
 
-        // Support user-provided keys (sent in request body)
         const groqKey=process.env.GROQ_API_KEY
         const toKey2=process.env.TOGETHER_API_KEY
         const gemKey2=process.env.GEMINI_API_KEY
 
-        // L1: Groq (fastest)
-        if(groqKey){
+        // forceProvider: jump directly to specific model
+        if(forceProvider==='groq' && groqKey){
           send({type:'model',name:'Groq · Llama 4 Scout'})
-          ok=await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',
-            {Authorization:`Bearer ${groqKey}`},
-            {model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},
-            send)
+          ok=await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',{Authorization:`Bearer ${groqKey}`},{model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},send)
+          if(ok){send({type:'done'});ctrl.close();return}
         }
-
-        // L2: Together AI
-        if(!ok && toKey2){
-          if(!ok) send({type:'model',name:'Together · Llama 3.3 70B'})
-          ok=await streamOpenAI('https://api.together.xyz/v1/chat/completions',
-            {Authorization:`Bearer ${toKey2}`},
-            {model:'meta-llama/Llama-3.3-70B-Instruct-Turbo',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},
-            send)
+        if(forceProvider==='together' && toKey2){
+          send({type:'model',name:'Together · Llama 3.3 70B'})
+          ok=await streamOpenAI('https://api.together.xyz/v1/chat/completions',{Authorization:`Bearer ${toKey2}`},{model:'meta-llama/Llama-3.3-70B-Instruct-Turbo',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},send)
+          if(ok){send({type:'done'});ctrl.close();return}
         }
-
-        // L3: Gemini (1500/day free)
-        if(!ok && gemKey2){
-          if(!ok) send({type:'model',name:'Gemini 2.5 Flash'})
-          ok=await streamGemini('gemini-2.5-flash-preview-04-17',gemKey2,sys,msgs,send)
+        if(forceProvider==='gemini' && gemKey2){
+          send({type:'model',name:'Gemini 2.5 Flash'})
+          ok=!!(await streamGemini('gemini-2.5-flash-preview-04-17',gemKey2,sys,msgs,send))
+          if(ok){send({type:'done'});ctrl.close();return}
+        }
+        if(forceProvider==='pollinations'){ /* skip to pollinations below */ }
+        else if(!forceProvider || forceProvider==='auto'){
+          // L1: Groq (fastest)
+          if(groqKey){
+            send({type:'model',name:'Groq · Llama 4 Scout'})
+            ok=await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',{Authorization:`Bearer ${groqKey}`},{model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},send)
+          }
+          // L2: Together AI
+          if(!ok && toKey2){
+            send({type:'model',name:'Together · Llama 3.3 70B'})
+            ok=await streamOpenAI('https://api.together.xyz/v1/chat/completions',{Authorization:`Bearer ${toKey2}`},{model:'meta-llama/Llama-3.3-70B-Instruct-Turbo',messages:[{role:'system',content:sys},...msgs],stream:true,max_tokens:1024,temperature:0.85},send)
+          }
+          // L3: Gemini (1500/day free)
+          if(!ok && gemKey2){
+            send({type:'model',name:'Gemini 2.5 Flash'})
+            ok=!!(await streamGemini('gemini-2.5-flash-preview-04-17',gemKey2,sys,msgs,send))
+          }
         }
 
         // L4: Pollinations AI — FREE, no key, no login needed!

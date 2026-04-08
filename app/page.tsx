@@ -275,6 +275,7 @@ export default function Page() {
   const [persona,setPersona]=useState<'jarvis'|'desi'|'sherlock'|'yoda'>('jarvis')
   const [attachedFile,setAttachedFile]=useState<{name:string;content:string;type:'file'|'image'}|null>(null)
   const [plusTab,setPlusTab]=useState<'attach'|'mode'|'persona'>('attach')
+  const [forcedProvider,setForcedProvider]=useState<string|null>(null)
 
   const taRef=useRef<HTMLTextAreaElement>(null)
   const botRef=useRef<HTMLDivElement>(null)
@@ -438,7 +439,7 @@ export default function Page() {
       const route=effectiveMode==='deep'?'/api/jarvis/deep-stream':'/api/jarvis/stream'
       const res=await fetch(route,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message:t,chatMode:effectiveMode,history:hist,memoryContext:memCtx+(locCtx?'\n\n'+locCtx:''),userLat:userLocation?.lat,userLon:userLocation?.lon,userCity:userLocation?.city}),
+        body:JSON.stringify({message:t,chatMode:effectiveMode,history:hist,memoryContext:memCtx+(locCtx?'\n\n'+locCtx:''),userLat:userLocation?.lat,userLon:userLocation?.lon,userCity:userLocation?.city,forceProvider:forcedProvider||undefined}),
         signal:AbortSignal.timeout(25000),
       })
       if(res.ok&&res.body){
@@ -466,6 +467,16 @@ export default function Page() {
     if(!replied||!full.trim()){
       full=''
       await freeAIChat(aiMsgs,
+        tok=>{full+=tok;replied=true;setMsgs(p=>p.map(m=>m.id===aId?{...m,content:full}:m))},
+        done=>{replied=true;full=done;setMsgs(p=>p.map(m=>m.id===aId?{...m,content:full}:m))},
+        ()=>{}
+      )
+    }
+
+    // ── Level 2.5: If forcedProvider=puter skip to puter ─────────────────
+    if(forcedProvider==='puter' && (!replied||!full.trim())){
+      full=''; setModelName('Puter · GPT-4o-mini')
+      await puterStream(aiMsgs,
         tok=>{full+=tok;replied=true;setMsgs(p=>p.map(m=>m.id===aId?{...m,content:full}:m))},
         done=>{replied=true;full=done;setMsgs(p=>p.map(m=>m.id===aId?{...m,content:full}:m))},
         ()=>{}
@@ -836,26 +847,66 @@ export default function Page() {
 
             {/* MODE tab */}
             {plusTab==='mode'&&<div style={{padding:10}}>
-              <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>SELECT MODE</div>
-              {([
-                {m:'auto' as const,  ic:'🤖', lb:'Auto',  color:'var(--accent)', desc:'Smart router — type se decide', chain:['⚡ Flash ya 🔬 Deep — auto detect']},
-                {m:'flash' as const, ic:'⚡', lb:'Flash', color:'#f59e0b', desc:'Short answers, fastest', chain:['Groq Llama4 Scout','→ Together 70B','→ Gemini 2.5','→ Pollinations','→ Puter']},
-                {m:'think' as const, ic:'🧠', lb:'Think', color:'#818cf8', desc:'Deep reasoning, long answer', chain:['OpenRouter DeepSeek R1','→ Gemini 2.5 Flash','→ Pollinations','→ Puter']},
-                {m:'deep' as const,  ic:'🔬', lb:'Deep',  color:'#34d399', desc:'Live data: weather/news/maps', chain:['Gemini 2.5 + Tools','→ Pollinations','→ Puter']},
-              ] as const).map(({m,ic,lb,color,desc,chain})=>(
-                <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}}
-                  style={{width:'100%',marginBottom:5,padding:'9px 10px',borderRadius:10,background:mode===m?`${color}10`:'rgba(255,255,255,.03)',border:`1px solid ${mode===m?color+'35':'rgba(255,255,255,.06)'}`,cursor:'pointer',textAlign:'left' as const,transition:'all .15s'}}>
-                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
-                    <span style={{fontSize:14}}>{ic}</span>
-                    <span style={{fontSize:12,fontWeight:700,color:mode===m?color:'var(--text)'}}>{lb}</span>
-                    {mode===m&&<span style={{fontSize:8,background:`${color}20`,color,padding:'1px 5px',borderRadius:6,fontWeight:700,marginLeft:'auto'}}>ACTIVE</span>}
+              <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:6}}>MODE + PROVIDER</div>
+              <div style={{fontSize:9,color:'var(--text-4)',marginBottom:8,lineHeight:1.4}}>Mode → auto cascade, ya neeche koi provider lock karo</div>
+
+              {/* Mode select row */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:4,marginBottom:10}}>
+                {([['auto','🤖','Auto','var(--accent)'],['flash','⚡','Flash','#f59e0b'],['think','🧠','Think','#818cf8'],['deep','🔬','Deep','#34d399']] as const).map(([m,ic,lb,col])=>(
+                  <button key={m} onClick={()=>{setMode(m);setForcedProvider(null)}}
+                    style={{padding:'7px 4px',borderRadius:9,cursor:'pointer',textAlign:'center' as const,background:mode===m?`${col}15`:'rgba(255,255,255,.03)',border:`1px solid ${mode===m?col+'40':'rgba(255,255,255,.06)'}`,transition:'all .15s'}}>
+                    <div style={{fontSize:15}}>{ic}</div>
+                    <div style={{fontSize:10,fontWeight:mode===m?700:400,color:mode===m?col as string:'#778',marginTop:2}}>{lb}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Provider chips for selected mode */}
+              {(()=>{
+                const providers:{key:string;label:string;color:string;note:string}[] =
+                  mode==='think'?[
+                    {key:'auto',    label:'Auto',           color:'var(--accent)', note:'Best available'},
+                    {key:'deepseek',label:'DeepSeek R1',    color:'#60a5fa',       note:'Best reasoning'},
+                    {key:'gemini',  label:'Gemini 2.5',     color:'#4ade80',       note:'Google'},
+                    {key:'pollinations',label:'Pollinations',color:'#e879f9',      note:'No key'},
+                    {key:'puter',   label:'Puter',          color:'#00e5ff',       note:'Last resort'},
+                  ]:mode==='deep'?[
+                    {key:'auto',    label:'Auto',           color:'var(--accent)', note:'Best available'},
+                    {key:'gemini',  label:'Gemini+Tools',   color:'#4ade80',       note:'Weather/news'},
+                    {key:'pollinations',label:'Pollinations',color:'#e879f9',      note:'No key'},
+                    {key:'puter',   label:'Puter',          color:'#00e5ff',       note:'Last resort'},
+                  ]:mode==='auto'?[
+                    {key:'auto',    label:'Auto detect',    color:'var(--accent)', note:'Recommended'},
+                  ]:[
+                    {key:'auto',    label:'Auto',           color:'var(--accent)', note:'Full cascade'},
+                    {key:'groq',    label:'Groq Llama4',    color:'#f59e0b',       note:'~1s fastest'},
+                    {key:'together',label:'Together 70B',   color:'#fb923c',       note:'~2s quality'},
+                    {key:'gemini',  label:'Gemini 2.5',     color:'#4ade80',       note:'~3s google'},
+                    {key:'pollinations',label:'Pollinations',color:'#e879f9',      note:'~5s no key'},
+                    {key:'puter',   label:'Puter',          color:'#00e5ff',       note:'~6s fallback'},
+                  ]
+                const cur=forcedProvider||'auto'
+                return (
+                  <div>
+                    <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:1.5,fontWeight:700,marginBottom:5}}>LOCK PROVIDER</div>
+                    <div style={{display:'flex',flexWrap:'wrap' as const,gap:5}}>
+                      {providers.map(p=>(
+                        <button key={p.key} onClick={()=>{setForcedProvider(p.key==='auto'?null:p.key);if(p.key!=='auto')showToast(`🔒 ${p.label} locked`,'info')}}
+                          style={{padding:'5px 9px',borderRadius:8,cursor:'pointer',fontSize:10,fontWeight:cur===p.key?700:400,
+                            background:cur===p.key?`${p.color}20`:'rgba(255,255,255,.03)',
+                            border:`1px solid ${cur===p.key?p.color+'50':'rgba(255,255,255,.07)'}`,
+                            color:cur===p.key?p.color as string:'#667',
+                            display:'flex',alignItems:'center',gap:4,
+                          }}>
+                          {cur===p.key&&<span style={{fontSize:8}}>🔒</span>}
+                          <span>{p.label}</span>
+                          <span style={{fontSize:8,color:'#445'}}>{p.note}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{fontSize:10,color:'var(--text-3)',marginBottom:4}}>{desc}</div>
-                  <div style={{display:'flex',flexWrap:'wrap' as const,gap:3}}>
-                    {chain.map((step,i)=><span key={i} style={{fontSize:9,color:i===0?color:'#556',background:'rgba(255,255,255,.03)',padding:'1px 5px',borderRadius:4}}>{step}</span>)}
-                  </div>
-                </button>
-              ))}
+                )
+              })()}
             </div>}
 
             {/* PERSONA tab */}
@@ -889,7 +940,9 @@ export default function Page() {
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 8px 8px'}}>
             <div style={{display:'flex',gap:1,alignItems:'center'}}>
               <button onClick={()=>{setPlusTab('attach');setPlusOpen(p=>!p)}} style={{width:30,height:28,borderRadius:7,background:plusOpen?'var(--accent-bg)':'transparent',border:`1px solid ${plusOpen?'var(--border-a)':'transparent'}`,color:plusOpen?'var(--accent)':'var(--text-3)',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>{plusOpen?'×':'+'}</button>
-              <button onClick={()=>{setPlusTab('mode');setPlusOpen(true)}} style={{padding:'3px 9px',fontSize:10,color:'var(--accent)',background:'var(--accent-bg)',border:'1px solid var(--border-acc)',borderRadius:6,cursor:'pointer',fontWeight:600}}>{mode==='auto'?'🤖 Auto':mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}</button>
+              <button onClick={()=>{setPlusTab('mode');setPlusOpen(true)}} style={{padding:'3px 9px',fontSize:10,color:forcedProvider?'#f59e0b':'var(--accent)',background:forcedProvider?'rgba(245,158,11,.1)':'var(--accent-bg)',border:`1px solid ${forcedProvider?'rgba(245,158,11,.3)':'var(--border-acc)'}`,borderRadius:6,cursor:'pointer',fontWeight:600}}>
+                {forcedProvider?`🔒 ${forcedProvider}`:mode==='auto'?'🤖 Auto':mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}
+              </button>
               {input.length>50&&<span style={{fontSize:9,color:input.length>800?'#ff6060':input.length>400?'#ffab00':'var(--text-4)',padding:'2px 5px'}}>{input.length}</span>}
             </div>
             <div style={{display:'flex',gap:3}}>
