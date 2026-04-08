@@ -273,12 +273,17 @@ export default function Page() {
   const [modelDrawerOpen,setModelDrawerOpen]=useState(false)
   const [userLocation,setUserLocation]=useState<{lat:number;lon:number;city:string}|null>(null)
   const [persona,setPersona]=useState<'jarvis'|'desi'|'sherlock'|'yoda'>('jarvis')
+  const [attachedFile,setAttachedFile]=useState<{name:string;content:string;type:'file'|'image'}|null>(null)
+  const [plusTab,setPlusTab]=useState<'attach'|'mode'|'persona'>('attach')
 
   const taRef=useRef<HTMLTextAreaElement>(null)
   const botRef=useRef<HTMLDivElement>(null)
   const mainRef=useRef<HTMLDivElement>(null)
   const abortRef=useRef<AbortController|null>(null)
   const micRef=useRef<any>(null)
+  const fileInputRef=useRef<HTMLInputElement>(null)
+  const cameraInputRef=useRef<HTMLInputElement>(null)
+  const galleryInputRef=useRef<HTMLInputElement>(null)
   const router=useRouter()
 
   const lastAI=msgs.filter(m=>m.role==='assistant'&&!m.streaming).slice(-1)[0]?.content||''
@@ -390,7 +395,9 @@ export default function Page() {
 
   /* ── SEND ── correct cascade: Server(Groq→Gemini) → Pollinations → Puter ─ */
   const send=useCallback(async(text:string)=>{
-    const t=text.trim(); if(!t||loading) return
+    const fileCtx=attachedFile?`\n\n[Attached ${attachedFile.type==='image'?'Image':'File'}: ${attachedFile.name}]\n${attachedFile.type==='file'?attachedFile.content:'[Image data attached]'}`:''
+    const t=(text.trim()+(fileCtx?'\n'+fileCtx:'')).trim(); if(!t||loading) return
+    if(attachedFile)setAttachedFile(null)
     if(!canRequest()){showToast('Thoda ruk — rate limit!','error');return}
     setInput(''); setSlashHints([]); setUrlChip('')
     if(taRef.current)taRef.current.style.height='auto'
@@ -491,6 +498,30 @@ export default function Page() {
     processAndSave(t,full,'neutral').catch(()=>{})
     setLoad(false)
   },[msgs,loading,mode,currentSessionId,execAppCmd])
+
+  /* ── File attach handler ────────────────────────────── */
+  const handleFileAttach=(e:React.ChangeEvent<HTMLInputElement>,type:'file'|'image')=>{
+    const file=e.target.files?.[0]; if(!file) return
+    if(type==='image'){
+      const reader=new FileReader()
+      reader.onload=()=>{
+        const b64=(reader.result as string).split(',')[1]||''
+        setAttachedFile({name:file.name,content:b64,type:'image'})
+        showToast(`📷 ${file.name} attached`,'success')
+      }
+      reader.readAsDataURL(file)
+    } else {
+      const reader=new FileReader()
+      reader.onload=()=>{
+        const text=(reader.result as string).slice(0,8000)
+        setAttachedFile({name:file.name,content:text,type:'file'})
+        showToast(`📄 ${file.name} attached`,'success')
+      }
+      reader.readAsText(file)
+    }
+    e.target.value=''
+    setPlusOpen(false)
+  }
 
   /* ── Mic ─────────────────────────────────────────────── */
   const toggleMic=()=>{
@@ -750,26 +781,104 @@ export default function Page() {
         </button>)}
       </div>}
 
+      {/* Attached file chip */}
+      {attachedFile&&<div style={{padding:'4px 12px',display:'flex',alignItems:'center',gap:8,flexShrink:0,borderTop:'1px solid rgba(0,229,255,.08)',background:'rgba(0,229,255,.03)'}}>
+        <span style={{fontSize:13}}>{attachedFile.type==='image'?'🖼️':'📄'}</span>
+        <span style={{fontSize:11,color:'var(--accent)',flex:1}}>{attachedFile.name}</span>
+        <span style={{fontSize:9,color:'var(--text-4)'}}>attached</span>
+        <button onClick={()=>setAttachedFile(null)} style={{background:'none',border:'none',color:'#f87171',fontSize:14,cursor:'pointer',padding:'0 2px'}}>✕</button>
+      </div>}
+
       {/* Input */}
       <div style={{padding:'8px 12px 10px',borderTop:'1px solid var(--border)',background:'var(--header)',flexShrink:0,position:'relative'}}>
-        {plusOpen&&<><div onClick={()=>setPlusOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/><div style={{position:'absolute',bottom:'calc(100% + 6px)',left:12,zIndex:50,background:'rgba(8,12,22,.98)',border:'1px solid var(--border-a)',borderRadius:14,padding:10,width:185,boxShadow:'0 -6px 24px rgba(0,0,0,.7)',backdropFilter:'blur(20px)'}}>
-          <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:6}}>PERSONA</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:8}}>
-            {([['jarvis','🤖','JARVIS'],['desi','🇮🇳','Desi Yaar'],['sherlock','🔍','Sherlock'],['yoda','🌟','Yoda']] as const).map(([p,ic,lb])=>(
-              <button key={p} onClick={()=>setPersona(p)} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 7px',borderRadius:8,background:persona===p?'var(--accent-bg)':'rgba(255,255,255,.03)',border:`1px solid ${persona===p?'var(--border-a)':'rgba(255,255,255,.05)'}`,cursor:'pointer'}}>
-                <span style={{fontSize:12}}>{ic}</span><span style={{fontSize:10,color:persona===p?'var(--accent)':'#8899aa',fontWeight:persona===p?600:400}}>{lb}</span>
-              </button>
-            ))}
+        {plusOpen&&<>
+          {/* Hidden file inputs */}
+          <input ref={fileInputRef} type="file" accept=".txt,.pdf,.md,.csv,.js,.ts,.py,.json,.html,.css" style={{display:'none'}} onChange={e=>handleFileAttach(e,'file')}/>
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={e=>handleFileAttach(e,'image')}/>
+          <input ref={galleryInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFileAttach(e,'image')}/>
+          <div onClick={()=>setPlusOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
+          <div style={{position:'absolute',bottom:'calc(100% + 8px)',left:8,zIndex:50,background:'rgba(6,10,20,.97)',border:'1px solid var(--border-a)',borderRadius:16,width:260,boxShadow:'0 -8px 32px rgba(0,0,0,.8)',backdropFilter:'blur(24px)',overflow:'hidden'}}>
+            {/* Tab bar */}
+            <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,.07)'}}>
+              {([['attach','📎','Attach'],['mode','⚡','Mode'],['persona','🎭','Persona']] as const).map(([t,ic,lb])=>(
+                <button key={t} onClick={()=>setPlusTab(t)}
+                  style={{flex:1,padding:'9px 4px',background:plusTab===t?'rgba(0,229,255,.06)':'transparent',border:'none',borderBottom:`2px solid ${plusTab===t?'var(--accent)':'transparent'}`,color:plusTab===t?'var(--accent)':'#667',fontSize:11,fontWeight:600,cursor:'pointer',transition:'all .15s'}}>
+                  {ic} {lb}
+                </button>
+              ))}
+            </div>
+
+            {/* ATTACH tab */}
+            {plusTab==='attach'&&<div style={{padding:10}}>
+              <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>ATTACH TO MESSAGE</div>
+              <div style={{display:'flex',flexDirection:'column' as const,gap:5}}>
+                {[
+                  {icon:'📁',label:'File',sub:'txt, pdf, code...',ref:fileInputRef,color:'#60a5fa'},
+                  {icon:'📷',label:'Camera',sub:'Photo leke bhejo',ref:cameraInputRef,color:'#34d399'},
+                  {icon:'🖼️',label:'Gallery',sub:'Photo library',ref:galleryInputRef,color:'#a78bfa'},
+                ].map(it=>(
+                  <button key={it.label} onClick={()=>it.ref.current?.click()}
+                    style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.04)',border:`1px solid rgba(255,255,255,.07)`,cursor:'pointer',textAlign:'left' as const}}>
+                    <div style={{width:32,height:32,borderRadius:8,background:`${it.color}18`,border:`1px solid ${it.color}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>{it.icon}</div>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>{it.label}</div>
+                      <div style={{fontSize:10,color:'var(--text-4)',marginTop:1}}>{it.sub}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {attachedFile&&<div style={{marginTop:8,padding:'7px 10px',background:'rgba(0,229,255,.06)',border:'1px solid rgba(0,229,255,.15)',borderRadius:8,display:'flex',alignItems:'center',gap:6}}>
+                <span style={{fontSize:14}}>{attachedFile.type==='image'?'🖼️':'📄'}</span>
+                <span style={{fontSize:11,color:'var(--accent)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{attachedFile.name}</span>
+                <button onClick={()=>setAttachedFile(null)} style={{background:'none',border:'none',color:'#f87171',fontSize:13,cursor:'pointer'}}>✕</button>
+              </div>}
+            </div>}
+
+            {/* MODE tab */}
+            {plusTab==='mode'&&<div style={{padding:10}}>
+              <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>SELECT MODE</div>
+              {([
+                {m:'auto' as const,  ic:'🤖', lb:'Auto',  color:'var(--accent)', desc:'Smart router — type se decide', chain:['⚡ Flash ya 🔬 Deep — auto detect']},
+                {m:'flash' as const, ic:'⚡', lb:'Flash', color:'#f59e0b', desc:'Short answers, fastest', chain:['Groq Llama4 Scout','→ Together 70B','→ Gemini 2.5','→ Pollinations','→ Puter']},
+                {m:'think' as const, ic:'🧠', lb:'Think', color:'#818cf8', desc:'Deep reasoning, long answer', chain:['OpenRouter DeepSeek R1','→ Gemini 2.5 Flash','→ Pollinations','→ Puter']},
+                {m:'deep' as const,  ic:'🔬', lb:'Deep',  color:'#34d399', desc:'Live data: weather/news/maps', chain:['Gemini 2.5 + Tools','→ Pollinations','→ Puter']},
+              ] as const).map(({m,ic,lb,color,desc,chain})=>(
+                <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}}
+                  style={{width:'100%',marginBottom:5,padding:'9px 10px',borderRadius:10,background:mode===m?`${color}10`:'rgba(255,255,255,.03)',border:`1px solid ${mode===m?color+'35':'rgba(255,255,255,.06)'}`,cursor:'pointer',textAlign:'left' as const,transition:'all .15s'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                    <span style={{fontSize:14}}>{ic}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:mode===m?color:'var(--text)'}}>{lb}</span>
+                    {mode===m&&<span style={{fontSize:8,background:`${color}20`,color,padding:'1px 5px',borderRadius:6,fontWeight:700,marginLeft:'auto'}}>ACTIVE</span>}
+                  </div>
+                  <div style={{fontSize:10,color:'var(--text-3)',marginBottom:4}}>{desc}</div>
+                  <div style={{display:'flex',flexWrap:'wrap' as const,gap:3}}>
+                    {chain.map((step,i)=><span key={i} style={{fontSize:9,color:i===0?color:'#556',background:'rgba(255,255,255,.03)',padding:'1px 5px',borderRadius:4}}>{step}</span>)}
+                  </div>
+                </button>
+              ))}
+            </div>}
+
+            {/* PERSONA tab */}
+            {plusTab==='persona'&&<div style={{padding:10}}>
+              <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>JARVIS PERSONA</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
+                {([
+                  ['jarvis','🤖','JARVIS','Default — Hinglish sarcastic'],
+                  ['desi','🇮🇳','Desi Yaar','Casual street-smart'],
+                  ['sherlock','🔍','Sherlock','Deductive, sharp'],
+                  ['yoda','🌟','Yoda','Wise inverted speech'],
+                ] as const).map(([p,ic,lb,sub])=>(
+                  <button key={p} onClick={()=>setPersona(p)}
+                    style={{padding:'8px 7px',borderRadius:9,background:persona===p?'var(--accent-bg)':'rgba(255,255,255,.03)',border:`1px solid ${persona===p?'var(--border-a)':'rgba(255,255,255,.05)'}`,cursor:'pointer',textAlign:'left' as const}}>
+                    <div style={{fontSize:18,marginBottom:3}}>{ic}</div>
+                    <div style={{fontSize:11,fontWeight:700,color:persona===p?'var(--accent)':'var(--text)'}}>{lb}</div>
+                    <div style={{fontSize:9,color:'var(--text-4)',marginTop:1,lineHeight:1.3}}>{sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>}
           </div>
-          <div style={{fontSize:8,color:'var(--text-4)',letterSpacing:2,fontWeight:700,marginBottom:6}}>MODE</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-            {([['auto','🤖','Auto'],['flash','⚡','Flash'],['think','🧠','Think'],['deep','🔬','Deep']] as const).map(([m,ic,lb])=>(
-              <button key={m} onClick={()=>{setMode(m);setPlusOpen(false)}} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 7px',borderRadius:8,background:mode===m?'var(--accent-bg)':'rgba(255,255,255,.03)',border:`1px solid ${mode===m?'var(--border-a)':'rgba(255,255,255,.05)'}`,cursor:'pointer'}}>
-                <span style={{fontSize:13}}>{ic}</span><span style={{fontSize:11,color:mode===m?'var(--accent)':'#8899aa',fontWeight:mode===m?600:400}}>{lb}</span>
-              </button>
-            ))}
-          </div>
-        </div></>}
+        </>}
 
         <div style={{background:'var(--bg-input)',border:`1.5px solid ${loading?'var(--accent)':'var(--border)'}`,borderRadius:20,overflow:'hidden',transition:'border-color .2s'}}>
           <textarea ref={taRef} value={input} onChange={e=>handleInput(e.target.value)}
@@ -779,8 +888,8 @@ export default function Page() {
           />
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 8px 8px'}}>
             <div style={{display:'flex',gap:1,alignItems:'center'}}>
-              <button onClick={()=>setPlusOpen(p=>!p)} style={{width:30,height:28,borderRadius:7,background:plusOpen?'var(--accent-bg)':'transparent',border:`1px solid ${plusOpen?'var(--border-a)':'transparent'}`,color:plusOpen?'var(--accent)':'var(--text-3)',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>{plusOpen?'×':'+'}</button>
-              <button onClick={()=>setModelDrawerOpen(true)} style={{padding:'3px 9px',fontSize:10,color:'var(--text-4)',background:'none',border:'none',cursor:'pointer'}}>{mode==='auto'?'🤖 Auto':mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}</button>
+              <button onClick={()=>{setPlusTab('attach');setPlusOpen(p=>!p)}} style={{width:30,height:28,borderRadius:7,background:plusOpen?'var(--accent-bg)':'transparent',border:`1px solid ${plusOpen?'var(--border-a)':'transparent'}`,color:plusOpen?'var(--accent)':'var(--text-3)',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>{plusOpen?'×':'+'}</button>
+              <button onClick={()=>{setPlusTab('mode');setPlusOpen(true)}} style={{padding:'3px 9px',fontSize:10,color:'var(--accent)',background:'var(--accent-bg)',border:'1px solid var(--border-acc)',borderRadius:6,cursor:'pointer',fontWeight:600}}>{mode==='auto'?'🤖 Auto':mode==='flash'?'⚡ Flash':mode==='think'?'🧠 Think':'🔬 Deep'}</button>
               {input.length>50&&<span style={{fontSize:9,color:input.length>800?'#ff6060':input.length>400?'#ffab00':'var(--text-4)',padding:'2px 5px'}}>{input.length}</span>}
             </div>
             <div style={{display:'flex',gap:3}}>
