@@ -422,9 +422,7 @@ export default function Page() {
       sherlock: `You are Sherlock Holmes. Respond with deductive reasoning, sharp observations, slight condescension but helpfulness. Occasionally say "Elementary". Concise.`,
       yoda: `Like Yoda, speak you must. Word order inverted, wise you are. Short sentences. "Hmmmm." often say. Help you I will.`
     }
-    const SYS=PERSONAS[persona]+`
-Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
-Math: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
+    const SYS=PERSONAS[persona]+`\nMath: KaTeX ($formula$ inline, $$display$$). "As an AI" kabhi mat kaho. NEET: proper formulas.`
     const locStr = userLocation ? `\n\nUser Location: ${userLocation.city} (${userLocation.lat.toFixed(3)},${userLocation.lon.toFixed(3)})` : ''
     const aiMsgs=[{role:'system',content:SYS+(memCtx?`\n\nContext:\n${memCtx}`:'')+locStr}, ...hist, {role:'user',content:t}]
 

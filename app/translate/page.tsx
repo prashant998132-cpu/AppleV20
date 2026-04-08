@@ -38,7 +38,7 @@ export default function TranslatePage() {
     if(!input.trim()) return
     setLoading(true); setOutput('')
     try {
-      const r = await fetch(\`https://api.mymemory.translated.net/get?q=\${encodeURIComponent(input.slice(0,500))}&langpair=\${from}|\${to}\`)
+      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(input.slice(0,500))}&langpair=${from}|${to}`)
       const d = await r.json()
       const result = d.responseData?.translatedText || 'Translation failed'
       setOutput(result)
@@ -72,11 +72,11 @@ export default function TranslatePage() {
           </select>
         </div>
 
-        <textarea value={input} onChange={e=>setInput(e.target.value)} placeholder={\`\${fromLang?.label} mein type karo...\`} rows={5}
+        <textarea value={input} onChange={e=>setInput(e.target.value)} placeholder={`\${fromLang?.label} mein type karo...`} rows={5}
           style={{width:'100%',background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:12,padding:'12px',color:'var(--text)',fontSize:14,resize:'none',outline:'none',fontFamily:'inherit',lineHeight:1.7,marginBottom:10}}/>
 
         <button onClick={translate} disabled={loading||!input.trim()} style={{width:'100%',padding:'13px',background:input.trim()?'var(--accent)':' rgba(255,255,255,.04)',color:input.trim()?'#000':'var(--text-3)',border:'none',borderRadius:12,fontWeight:700,fontSize:14,cursor:input.trim()?'pointer':'not-allowed',marginBottom:12}}>
-          {loading?'Translating...':\`Translate to \${toLang?.label} →\`}
+          {loading?'Translating...':`Translate to \${toLang?.label} →`}
         </button>
 
         {output&&(

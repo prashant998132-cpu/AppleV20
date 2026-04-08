@@ -69,7 +69,7 @@ export default function ColorPage() {
 
         {/* Presets */}
         <div style={{display:'flex',gap:6,overflowX:'auto',marginBottom:14}} className="no-scroll">
-          {PRESETS.map(p=><div key={p} onClick={()=>pick(p)} style={{width:36,height:36,borderRadius:10,background:p,cursor:'pointer',flexShrink:0,border:`2px solid ${color===p?'#fff':'transparent'}`,flexShrink:0}}/>)}
+          {PRESETS.map(p=><div key={p} onClick={()=>pick(p)} style={{width:36,height:36,borderRadius:10,background:p,cursor:'pointer',flexShrink:0,border:`2px solid ${color===p?'#fff':'transparent'}`}}/>)}
         </div>
 
         {/* Palette */}
