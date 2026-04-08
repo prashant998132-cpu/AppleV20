@@ -1,7 +1,7 @@
 // lib/personality/index.ts — JARVIS Character Engine v28
 // "Jons Bhai" — Tony Stark AI + Grok attitude + Cross-session learning
 
-import { getAllProfile, getImportantMemories } from '../db'
+import { getAllProfile, getImportantMemories } from './db/index'
 
 // ── Core character ──────────────────────────────────────
 export const CORE_CHARACTER = `Tum JARVIS ho — "Jons Bhai". Tony Stark ka AI + best friend.

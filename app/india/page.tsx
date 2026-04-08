@@ -3,7 +3,7 @@
 // India-specific: News, Gold/Silver, Train PNR, Cricket, Petrol, NSE, Pincode
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import NavDrawer from '../../components/shared/NavDrawer'
+import NavDrawer from '../../components/ui/NavDrawer'
 import { initTheme } from '../../lib/theme'
 
 // ── Types ──────────────────────────────────────────────────
@@ -194,7 +194,7 @@ export default function IndiaPage() {
   return (
     <div style={S.page}>
       <div className="bg-grid" />
-      <NavDrawer isOpen={navOpen} onClose={() => setNavOpen(false)} />
+      <NavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
 
       {/* Header */}
       <div style={S.header}>
