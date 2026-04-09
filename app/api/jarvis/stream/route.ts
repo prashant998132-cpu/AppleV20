@@ -30,19 +30,32 @@ async function streamOpenAI(url: string, headers: Record<string,string>, body: o
 }
 
 async function streamGemini(model: string, key: string, sys: string, msgs: any[], send: (d:object)=>void, maxTok=1024): Promise<boolean> {
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ system_instruction:{parts:[{text:sys}]}, contents:msgs.map(m=>({role:m.role==='user'?'user':'model',parts:[{text:m.content}]})), generationConfig:{temperature:0.85,maxOutputTokens:maxTok} }),
-      signal:AbortSignal.timeout(20000)
-    })
-    if(!res.ok) return false
-    const data=await res.json(); const text=data.candidates?.[0]?.content?.parts?.[0]?.text||''
-    if(!text) return false
-    const chunks=text.split('').reduce((acc:string[],ch:string)=>{ if(acc.length===0||acc[acc.length-1].length>=6) acc.push(ch); else acc[acc.length-1]+=ch; return acc; },[])||[]
-    for(const c of chunks){ send({type:'token',token:c}); await new Promise(r=>setTimeout(r,8)) }
-    return true
-  } catch { return false }
+  // Try provided model first, fallback to gemini-2.0-flash if 404
+  const modelsToTry = ['gemini-2.0-flash', model, 'gemini-1.5-flash', 'gemini-pro']
+  for (const m of modelsToTry) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ system_instruction:{parts:[{text:sys}]}, contents:msgs.map((msg:any)=>({role:msg.role==='user'?'user':'model',parts:[{text:msg.content}]})), generationConfig:{temperature:0.85,maxOutputTokens:maxTok} }),
+        signal:AbortSignal.timeout(25000)
+      })
+      if(!res.ok) {
+        const errText = await res.text().catch(()=>'')
+        // 404 = model not found, try next; 429 = quota; 400 = bad request
+        if(res.status===404 || res.status===400) continue
+        send({type:'model',name:`Gemini (${res.status})`})
+        return false
+      }
+      const data=await res.json()
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||''
+      if(!text) { if(data.error) continue; return false }
+      send({type:'model',name:`Gemini · ${m.replace('gemini-','').replace('-preview-04-17','')}`})
+      const chunks=text.split('').reduce((acc:string[],ch:string)=>{ if(acc.length===0||acc[acc.length-1].length>=6) acc.push(ch); else acc[acc.length-1]+=ch; return acc; },[])||[]
+      for(const c of chunks){ send({type:'token',token:c}); await new Promise(r=>setTimeout(r,8)) }
+      return true
+    } catch { continue }
+  }
+  return false
 }
 
 export async function POST(req: NextRequest) {
