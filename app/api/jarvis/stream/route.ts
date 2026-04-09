@@ -22,7 +22,7 @@ async function streamOpenAI(url: string, headers: Record<string,string>, body: o
       const{done,value}=await reader.read(); if(done) break
       for(const line of dec.decode(value).split('\n')){
         if(!line.startsWith('data: ')||line==='data: [DONE]') continue
-        try{ const d=JSON.parse(line.slice(6)); const tok=d.choices?.[0]?.delta?.content||''; if(tok) send({type:'token',token:tok}) }catch{}
+        try{ const d=JSON.parse(line.slice(6)); let tok=d.choices?.[0]?.delta?.content||''; tok=tok.replace(/\[LEARN:[^\]]*\]/g,''); if(tok) send({type:'token',token:tok}) }catch{}
       }
     }
     return true

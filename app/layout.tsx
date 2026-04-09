@@ -21,8 +21,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="hi" data-theme="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com"/>
-        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"/>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"/>
+        <script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"/>
       </head>
       <body>{children}</body>
     </html>

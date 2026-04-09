@@ -1,6 +1,5 @@
 'use client'
-// MdRenderer.tsx — v2: Pure React + KaTeX math rendering
-// Zero dangerouslySetInnerHTML on structure — KaTeX only (safe, no JS injection)
+// MdRenderer.tsx — v3: Multi-line math fixed + LEARN strip hardened
 
 import React, { useState, useCallback } from 'react'
 
@@ -15,7 +14,7 @@ function renderKaTeX(formula: string, display: boolean): string {
   } catch {}
   // Fallback: styled raw formula
   return display
-    ? `<div style="padding:8px 12px;background:rgba(0,229,255,.06);border-radius:6px;text-align:center;font-family:monospace;color:#00e5ff;overflow-x:auto">$$${formula}$$</div>`
+    ? `<div style="padding:8px 12px;background:rgba(0,229,255,.06);border-radius:6px;text-align:center;font-family:monospace;color:#00e5ff;overflow-x:auto;font-size:13px">${formula.trim()}</div>`
     : `<code style="color:#00e5ff;background:rgba(0,229,255,.08);padding:1px 5px;border-radius:3px;font-family:monospace">${formula}</code>`
 }
 
@@ -66,39 +65,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
   )
 }
 
-/* ── InlineText: bold/italic/code/links/math ─────────────── */
-function InlineText({ text }: { text: string }) {
-  // First: extract $$...$$ display math blocks
-  const parts: React.ReactNode[] = []
-  let remaining = text
-  let key = 0
-
-  // Process display math $$...$$ first
-  const dispRe = /\$\$([\s\S]+?)\$\$/g
-  let lastIdx = 0
-  let m: RegExpExecArray | null
-  const segments: Array<{ type:'text'|'dispmath'; content:string }> = []
-
-  while ((m = dispRe.exec(text)) !== null) {
-    if (m.index > lastIdx) segments.push({ type:'text', content:text.slice(lastIdx, m.index) })
-    segments.push({ type:'dispmath', content:m[1] })
-    lastIdx = m.index + m[0].length
-  }
-  if (lastIdx < text.length) segments.push({ type:'text', content:text.slice(lastIdx) })
-
-  return (
-    <>
-      {segments.map((seg, si) => {
-        if (seg.type === 'dispmath') {
-          return <MathSpan key={si} formula={seg.content} display={true}/>
-        }
-        return <InlineSegment key={si} text={seg.content}/>
-      })}
-    </>
-  )
-}
-
-/* ── InlineSegment: handles inline math + formatting ────── */
+/* ── InlineSegment: handles inline math $...$ + formatting ─ */
 function InlineSegment({ text }: { text: string }) {
   const nodes: React.ReactNode[] = []
   let i = 0, key = 0
@@ -109,8 +76,7 @@ function InlineSegment({ text }: { text: string }) {
       const e = text.indexOf('$', i+1)
       if (e > -1 && e > i+1) {
         const formula = text.slice(i+1, e)
-        // Only treat as math if it looks like math
-        if (/[+\-=^_{}\\]|\\[a-zA-Z]|\d|frac|sqrt|sum|int/.test(formula)) {
+        if (/[+\-=^_{}\\]|\\[a-zA-Z]|\d|frac|sqrt|sum|int|alpha|beta|theta|pi/.test(formula)) {
           nodes.push(<MathSpan key={key++} formula={formula} display={false}/>)
           i = e + 1; continue
         }
@@ -161,9 +127,32 @@ function InlineSegment({ text }: { text: string }) {
   return <>{nodes}</>
 }
 
+/* ── InlineText: handles inline $$ display math + segments ─ */
+function InlineText({ text }: { text: string }) {
+  const segments: Array<{ type:'text'|'dispmath'; content:string }> = []
+  const dispRe = /\$\$([\s\S]+?)\$\$/g
+  let lastIdx = 0
+  let m: RegExpExecArray | null
+  while ((m = dispRe.exec(text)) !== null) {
+    if (m.index > lastIdx) segments.push({ type:'text', content:text.slice(lastIdx, m.index) })
+    segments.push({ type:'dispmath', content:m[1] })
+    lastIdx = m.index + m[0].length
+  }
+  if (lastIdx < text.length) segments.push({ type:'text', content:text.slice(lastIdx) })
+  return (
+    <>
+      {segments.map((seg, si) => {
+        if (seg.type === 'dispmath') return <MathSpan key={si} formula={seg.content} display={true}/>
+        return <InlineSegment key={si} text={seg.content}/>
+      })}
+    </>
+  )
+}
+
 /* ── Block types ─────────────────────────────────────────── */
 type Block =
   | { t:'code'; lang:string; code:string }
+  | { t:'math'; formula:string }              // NEW: display math block
   | { t:'h1'|'h2'|'h3'; text:string }
   | { t:'hr' }
   | { t:'bq'; text:string }
@@ -175,22 +164,36 @@ type Block =
 /* ── Parser ──────────────────────────────────────────────── */
 function parse(raw: string): Block[] {
   const blocks: Block[] = []
-  const segs: Array<{isCode:boolean;lang?:string;code?:string;text?:string}> = []
-  const re = /```(\w*)\n([\s\S]*?)```/g
+
+  // Step 1: Extract code blocks AND display math blocks FIRST (before line-splitting)
+  type Seg = { isCode:boolean; isMath?:boolean; lang?:string; code?:string; formula?:string; text?:string }
+  const segs: Seg[] = []
+
+  // Regex to match ``` code ``` OR $$ display math $$ (both can be multi-line)
+  const re = /```(\w*)\n([\s\S]*?)```|\$\$([\s\S]+?)\$\$/g
   let last=0, m: RegExpExecArray|null
   while ((m=re.exec(raw))!==null) {
     if (m.index>last) segs.push({isCode:false,text:raw.slice(last,m.index)})
-    segs.push({isCode:true,lang:m[1],code:m[2]})
+    if (m[0].startsWith('`')) {
+      segs.push({isCode:true,lang:m[1],code:m[2]})
+    } else {
+      segs.push({isCode:false,isMath:true,formula:m[3]})
+    }
     last=m.index+m[0].length
   }
   if (last<raw.length) segs.push({isCode:false,text:raw.slice(last)})
 
+  // Step 2: Process each segment
   for (const seg of segs) {
     if (seg.isCode) { blocks.push({t:'code',lang:seg.lang||'',code:seg.code||''}); continue }
+    if (seg.isMath) { blocks.push({t:'math',formula:seg.formula||''}); continue }
+
     const lines=(seg.text||'').split('\n')
-    let ulI:string[]=[],olI:string[]=[]
+    let ulI:string[]=[],olI:string[]=[],tableRows:string[][]=[]
     const fUL=()=>{if(ulI.length){blocks.push({t:'ul',items:[...ulI]});ulI=[]}}
     const fOL=()=>{if(olI.length){blocks.push({t:'ol',items:[...olI]});olI=[]}}
+    const fTB=()=>{tableRows=[]}
+
     for (const line of lines) {
       const lt=line.trim()
       if(lt.startsWith('### ')){fUL();fOL();blocks.push({t:'h3',text:lt.slice(4)});continue}
@@ -209,19 +212,27 @@ function parse(raw: string): Block[] {
   return blocks
 }
 
-/* ── Preprocess: normalize math + strip internal tags ───── */
+/* ── Preprocess: strip internal tags + normalize math ──────── */
 function preprocess(raw: string): string {
-  // Strip [LEARN: ...] tags (internal memory tags, never show to user)
-  let s = raw.replace(/\[LEARN:[^\]]+\]/g, '').trim()
+  let s = raw
 
-  // Convert LaTeX display math \[...\] → $$...$$
+  // Strip ALL [LEARN: ...] tags — internal memory tags, never show to user
+  // Handles: [LEARN: key=value], [LEARN: type=data], multiline etc.
+  s = s.replace(/\[LEARN:[^\]]*\]/g, '')
+  s = s.replace(/\[LEARN:[^\n]*\n?/g, '')  // also catch unclosed tags
+
+  // Convert LaTeX display math \[...\] → $$ ... $$
+  // Handles both single-line and multi-line
   s = s.replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_: string, f: string) => `$$${f.trim()}$$`)
 
   // Convert LaTeX inline math \(...\) → $...$
   s = s.replace(/\\\(([^)]+)\\\)/g, (_: string, f: string) => `$${f.trim()}$`)
 
+  // Also handle \( ... \) with multiline (rare but possible)
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, (_: string, f: string) => `$${f.trim()}$`)
+
   // Clean up multiple blank lines
-  s = s.replace(/\n{3,}/g, '\n\n')
+  s = s.replace(/\n{3,}/g, '\n\n').trim()
 
   return s
 }
@@ -233,16 +244,17 @@ export default function MdRenderer({ content }: { content: string }) {
     <div style={{minWidth:0,width:'100%'}}>
       {blocks.map((b,i) => {
         switch(b.t) {
-          case 'code': return <CodeBlock key={i} lang={b.lang} code={b.code}/>
-          case 'h1':   return <div key={i} style={{fontSize:18,fontWeight:900,color:'var(--text)',margin:'14px 0 8px',lineHeight:1.3}}><InlineText text={b.text}/></div>
-          case 'h2':   return <div key={i} style={{fontSize:16,fontWeight:800,color:'var(--text)',margin:'12px 0 6px',borderBottom:'1px solid var(--border)',paddingBottom:4}}><InlineText text={b.text}/></div>
-          case 'h3':   return <div key={i} style={{fontSize:14,fontWeight:700,color:'var(--text)',margin:'10px 0 5px'}}><InlineText text={b.text}/></div>
-          case 'hr':   return <div key={i} style={{height:1,background:'var(--border)',margin:'10px 0'}}/>
-          case 'bq':   return <div key={i} style={{borderLeft:'3px solid var(--accent)',padding:'4px 12px',margin:'6px 0',color:'var(--text-3)',fontStyle:'italic',background:'var(--accent-bg)',borderRadius:'0 6px 6px 0'}}><InlineText text={b.text}/></div>
-          case 'ul':   return <ul key={i} style={{margin:'5px 0',paddingLeft:20,display:'block',listStyle:'disc'}}>{b.items.map((it,j)=><li key={j} style={{fontSize:13.5,lineHeight:1.65,marginBottom:3,color:'var(--text)'}}><InlineText text={it}/></li>)}</ul>
-          case 'ol':   return <ol key={i} style={{margin:'5px 0',paddingLeft:22,display:'block'}}>{b.items.map((it,j)=><li key={j} style={{fontSize:13.5,lineHeight:1.65,marginBottom:3,color:'var(--text)'}}><InlineText text={it}/></li>)}</ol>
+          case 'code':  return <CodeBlock key={i} lang={b.lang} code={b.code}/>
+          case 'math':  return <MathSpan key={i} formula={b.formula} display={true}/>
+          case 'h1':    return <div key={i} style={{fontSize:18,fontWeight:900,color:'var(--text)',margin:'14px 0 8px',lineHeight:1.3}}><InlineText text={b.text}/></div>
+          case 'h2':    return <div key={i} style={{fontSize:16,fontWeight:800,color:'var(--text)',margin:'12px 0 6px',borderBottom:'1px solid var(--border)',paddingBottom:4}}><InlineText text={b.text}/></div>
+          case 'h3':    return <div key={i} style={{fontSize:14,fontWeight:700,color:'var(--text)',margin:'10px 0 5px'}}><InlineText text={b.text}/></div>
+          case 'hr':    return <div key={i} style={{height:1,background:'var(--border)',margin:'10px 0'}}/>
+          case 'bq':    return <div key={i} style={{borderLeft:'3px solid var(--accent)',padding:'4px 12px',margin:'6px 0',color:'var(--text-3)',fontStyle:'italic',background:'var(--accent-bg)',borderRadius:'0 6px 6px 0'}}><InlineText text={b.text}/></div>
+          case 'ul':    return <ul key={i} style={{margin:'5px 0',paddingLeft:20,display:'block',listStyle:'disc'}}>{b.items.map((it,j)=><li key={j} style={{fontSize:13.5,lineHeight:1.65,marginBottom:3,color:'var(--text)'}}><InlineText text={it}/></li>)}</ul>
+          case 'ol':    return <ol key={i} style={{margin:'5px 0',paddingLeft:22,display:'block'}}>{b.items.map((it,j)=><li key={j} style={{fontSize:13.5,lineHeight:1.65,marginBottom:3,color:'var(--text)'}}><InlineText text={it}/></li>)}</ol>
           case 'blank': return <div key={i} style={{height:5}}/>
-          case 'p':    return <div key={i} style={{margin:'0 0 3px',fontSize:13.5,lineHeight:1.7,color:'inherit',display:'block'}}><InlineText text={b.text}/></div>
+          case 'p':     return <div key={i} style={{margin:'0 0 3px',fontSize:13.5,lineHeight:1.7,color:'inherit',display:'block'}}><InlineText text={b.text}/></div>
         }
       })}
     </div>
