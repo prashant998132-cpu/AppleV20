@@ -450,7 +450,7 @@ export default function Page() {
             if(!line.startsWith('data: ')||line==='data: [DONE]') continue
             try{
               const d=JSON.parse(line.slice(6))
-              if(d.type==='token'&&d.token){full+=d.token;replied=true;setMsgs(p=>p.map(m=>m.id===aId?{...m,content:full}:m))}
+              if(d.type==='token'&&d.token){full+=d.token;replied=true;const disp=full.replace(/\[LEARN:[^\]]+\]/g,'').trimEnd();setMsgs(p=>p.map(m=>m.id===aId?{...m,content:disp}:m))}
               if(d.type==='model'&&d.name)setModelName(d.name)
               if(d.type==='card')setMsgs(p=>p.map(m=>m.id===aId?{...m,card:d.card}:m))
               if(d.type==='learn')addMemory(d.content,d.memType||'fact').catch(()=>{})

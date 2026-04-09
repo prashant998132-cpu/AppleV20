@@ -41,7 +41,7 @@ async function edgeTTS({ text, lang = 'hi', speed = 1, voiceName, pitch = 'norma
   })
   if (!res.ok) throw new Error('edge_' + res.status)
   const buf = await res.arrayBuffer()
-  return { audioBase64: Buffer.from(buf).toString('base64'), mimeType: 'audio/mp3', provider: 'Edge TTS (Microsoft, No Key)', voice }
+  return { audioBase64: btoa(String.fromCharCode(...new Uint8Array(buf))), mimeType: 'audio/mp3', provider: 'Edge TTS (Microsoft, No Key)', voice }
 }
 
 // ── 1. Google Cloud TTS ──────────────────────────────────
@@ -75,7 +75,7 @@ async function elevenLabsTTS({ text, speed = 1 }: TTSOptions): Promise<TTSResult
   })
   if (!res.ok) throw new Error('eleven_' + res.status)
   const buf = await res.arrayBuffer()
-  return { audioBase64: Buffer.from(buf).toString('base64'), mimeType: 'audio/mp3', provider: 'ElevenLabs' }
+  return { audioBase64: btoa(String.fromCharCode(...new Uint8Array(buf))), mimeType: 'audio/mp3', provider: 'ElevenLabs' }
 }
 
 // ── 3. Azure Neural TTS ──────────────────────────────────
@@ -90,7 +90,7 @@ async function azureTTS({ text, lang = 'hi', speed = 1, voiceName }: TTSOptions)
     body: ssml, signal: AbortSignal.timeout(10000)
   })
   if (!res.ok) throw new Error('azure_' + res.status)
-  return { audioBase64: Buffer.from(await res.arrayBuffer()).toString('base64'), mimeType: 'audio/mp3', provider: 'Azure Neural TTS', voice }
+  return { audioBase64: btoa(String.fromCharCode(...new Uint8Array(await res.arrayBuffer()))), mimeType: 'audio/mp3', provider: 'Azure Neural TTS', voice }
 }
 
 // ── 4. OpenAI TTS ────────────────────────────────────────
@@ -102,7 +102,7 @@ async function openaiTTS({ text, speed = 1 }: TTSOptions): Promise<TTSResult> {
     signal: AbortSignal.timeout(15000)
   })
   if (!res.ok) throw new Error('openai_tts_' + res.status)
-  return { audioBase64: Buffer.from(await res.arrayBuffer()).toString('base64'), mimeType: 'audio/mp3', provider: 'OpenAI TTS' }
+  return { audioBase64: btoa(String.fromCharCode(...new Uint8Array(await res.arrayBuffer()))), mimeType: 'audio/mp3', provider: 'OpenAI TTS' }
 }
 
 // ── 5. HuggingFace MMS-Hindi ─────────────────────────────
@@ -114,7 +114,7 @@ async function huggingFaceTTS({ text }: TTSOptions): Promise<TTSResult> {
     method: 'POST', headers, body: JSON.stringify({ inputs: text }), signal: AbortSignal.timeout(30000)
   })
   if (!res.ok) throw new Error('hf_tts_' + res.status)
-  return { audioBase64: Buffer.from(await res.arrayBuffer()).toString('base64'), mimeType: 'audio/wav', provider: 'HuggingFace MMS-Hindi (No Key)' }
+  return { audioBase64: btoa(String.fromCharCode(...new Uint8Array(await res.arrayBuffer()))), mimeType: 'audio/wav', provider: 'HuggingFace MMS-Hindi (No Key)' }
 }
 
 // ── 6. Browser Speech API (always works) ─────────────────

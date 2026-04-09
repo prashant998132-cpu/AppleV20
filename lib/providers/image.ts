@@ -89,7 +89,7 @@ export async function huggingFaceImage({ prompt, style }: ImageOptions): Promise
     method: 'POST', headers, body: JSON.stringify({ inputs: enhanced }), signal: AbortSignal.timeout(45000)
   })
   if (!res.ok) throw new Error('hf_img_' + res.status)
-  const b64 = Buffer.from(await res.arrayBuffer()).toString('base64')
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(await res.arrayBuffer())))
   return { url: `data:image/png;base64,${b64}`, provider: 'HuggingFace FLUX (Free)', model: 'FLUX.1-schnell' }
 }
 

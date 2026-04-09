@@ -19,7 +19,9 @@ export async function isTermuxAvailable(): Promise<boolean> {
   }
 }
 
-export async function termuxRun(cmd: string): Promise<string> {
+export interface TermuxResult { ok: boolean; output: string }
+
+export async function termuxRun(cmd: string): Promise<TermuxResult> {
   try {
     const res = await fetch(`${TERMUX_URL}/run`, {
       method: 'POST',
@@ -27,11 +29,11 @@ export async function termuxRun(cmd: string): Promise<string> {
       body: JSON.stringify({ cmd }),
       signal: AbortSignal.timeout(10000)
     })
-    if (!res.ok) throw new Error('Termux server error')
+    if (!res.ok) return { ok: false, output: 'Termux server error' }
     const d = await res.json()
-    return d.output || d.result || 'Done'
+    return { ok: true, output: d.output || d.result || 'Done' }
   } catch (e: any) {
-    throw new Error(`Termux unavailable: ${e.message}`)
+    return { ok: false, output: `Termux unavailable: ${e.message}` }
   }
 }
 

@@ -58,8 +58,8 @@ export async function ensurePuterAuth(): Promise<boolean> {
   if (!ok) return false
   try {
     if (window.puter?.auth?.isSignedIn()) return true
-    await window.puter.auth.signIn()
-    return window.puter.auth.isSignedIn()
+    await window.puter!.auth.signIn()
+    return window.puter!.auth.isSignedIn()
   } catch { return false }
 }
 
@@ -149,12 +149,12 @@ export async function puterWhisper(blob: Blob): Promise<string | null> {
 // puter.kv syncs across devices when signed in; localStorage fallback when not
 async function _kvOk(): Promise<boolean> {
   const ok = await loadPuter()
-  return ok && !!window.puter?.kv
+  return ok && !!(window.puter as any)?.kv
 }
 
 export async function kvSet(key: string, value: unknown): Promise<void> {
   if (await _kvOk()) {
-    try { await window.puter.kv.set('jarvis:' + key, JSON.stringify(value)); return } catch {}
+    try { await (window.puter as any).kv.set('jarvis:' + key, JSON.stringify(value)); return } catch {}
   }
   try { localStorage.setItem('puter_kv_' + key, JSON.stringify(value)) } catch {}
 }
@@ -162,7 +162,7 @@ export async function kvSet(key: string, value: unknown): Promise<void> {
 export async function kvGet<T = unknown>(key: string, fallback: T | null = null): Promise<T | null> {
   if (await _kvOk()) {
     try {
-      const v = await window.puter.kv.get('jarvis:' + key)
+      const v = await (window.puter as any).kv.get('jarvis:' + key)
       return v !== null && v !== undefined ? JSON.parse(String(v)) : fallback
     } catch {}
   }
@@ -174,7 +174,7 @@ export async function kvGet<T = unknown>(key: string, fallback: T | null = null)
 
 export async function kvDel(key: string): Promise<void> {
   if (await _kvOk()) {
-    try { await window.puter.kv.del('jarvis:' + key) } catch {}
+    try { await (window.puter as any).kv.del('jarvis:' + key) } catch {}
   }
   try { localStorage.removeItem('puter_kv_' + key) } catch {}
 }
@@ -183,7 +183,7 @@ export async function kvList(prefix = ''): Promise<string[]> {
   if (await _kvOk()) {
     try {
       const pattern = prefix ? `jarvis:${prefix}*` : 'jarvis:*'
-      const r = await window.puter.kv.list(pattern)
+      const r = await (window.puter as any).kv.list(pattern)
       return Array.isArray(r)
         ? r.map((x: any) => (x?.key || String(x)).replace(/^jarvis:/, ''))
         : []

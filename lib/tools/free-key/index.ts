@@ -491,7 +491,7 @@ export async function generate_image_quality(args: {
       );
       if (res.ok) {
         const blob = await res.blob();
-        const b64 = Buffer.from(await blob.arrayBuffer()).toString('base64');
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(await blob.arrayBuffer())));
         return {
           model: 'FLUX.1-schnell (HuggingFace)',
           prompt: fullPrompt,

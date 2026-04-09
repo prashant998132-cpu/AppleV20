@@ -18,7 +18,7 @@ export interface PuterAuth {
 }
 
 export interface PuterFS {
-  write:   (path: string, data: Blob | string, opts?: { createMissingParents?: boolean }) => Promise<any>
+  write:   (path: string, data: Blob | string, opts?: { createMissingParents?: boolean; overwrite?: boolean }) => Promise<any>
   read:    (path: string) => Promise<Blob>
   delete:  (path: string, opts?: { recursive?: boolean }) => Promise<void>
   readdir: (path: string) => Promise<Array<{ name: string; is_dir: boolean; size: number }>>
@@ -27,10 +27,20 @@ export interface PuterFS {
   move:    (from: string, to: string) => Promise<void>
 }
 
+export interface PuterKV {
+  set:    (key: string, value: string) => Promise<void>
+  get:    (key: string) => Promise<string | null>
+  del:    (key: string) => Promise<void>
+  list:   (pattern?: string) => Promise<Array<{ key: string; value: string }> | string[]>
+  incr:   (key: string, amount?: number) => Promise<number>
+  flush:  () => Promise<void>
+}
+
 export interface PuterSDK {
   ai:   PuterAI
   auth: PuterAuth
   fs:   PuterFS
+  kv:   PuterKV
 }
 
 declare global {

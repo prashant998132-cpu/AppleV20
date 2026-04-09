@@ -209,9 +209,26 @@ function parse(raw: string): Block[] {
   return blocks
 }
 
+/* ── Preprocess: normalize math + strip internal tags ───── */
+function preprocess(raw: string): string {
+  // Strip [LEARN: ...] tags (internal memory tags, never show to user)
+  let s = raw.replace(/\[LEARN:[^\]]+\]/g, '').trim()
+
+  // Convert LaTeX display math \[...\] → $$...$$
+  s = s.replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_: string, f: string) => `$$${f.trim()}$$`)
+
+  // Convert LaTeX inline math \(...\) → $...$
+  s = s.replace(/\\\(([^)]+)\\\)/g, (_: string, f: string) => `$${f.trim()}$`)
+
+  // Clean up multiple blank lines
+  s = s.replace(/\n{3,}/g, '\n\n')
+
+  return s
+}
+
 /* ── Main renderer ───────────────────────────────────────── */
 export default function MdRenderer({ content }: { content: string }) {
-  const blocks = parse(content)
+  const blocks = parse(preprocess(content))
   return (
     <div style={{minWidth:0,width:'100%'}}>
       {blocks.map((b,i) => {

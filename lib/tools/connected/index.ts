@@ -807,7 +807,7 @@ export async function spotify_search(args: { query: string; type?: 'track'|'arti
     const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${Buffer.from(`${ENV.SPOTIFY_ID}:${ENV.SPOTIFY_SECRET}`).toString('base64')}`,
+        Authorization: `Basic ${btoa(`${ENV.SPOTIFY_ID}:${ENV.SPOTIFY_SECRET}`)}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: 'grant_type=client_credentials',
