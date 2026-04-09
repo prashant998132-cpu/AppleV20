@@ -226,14 +226,14 @@ function Clock({name}:{name:string}) {
 }
 
 const STARTERS = [
-  {icon:'🌤️',t:'Rewa ka mausam?',sub:'Aaj ka temp + forecast'},
-  {icon:'📰',t:'Aaj ki top khabar?',sub:'India & world news'},
-  {icon:'🧠',t:'Python sikhana hai',sub:'Beginner se shuru'},
-  {icon:'🎵',t:'Song recommend karo',sub:'Mood batao'},
+  {icon:'📚',t:'Newton ke laws explain karo',sub:'NEET Physics + LaTeX'},
+  {icon:'🌤️',t:'Aaj ka mausam kaisa hai?',sub:'Live forecast + temp'},
+  {icon:'📰',t:'Aaj ki top khabar?',sub:'India + world headlines'},
+  {icon:'🧪',t:'Organic chemistry reactions',sub:'NEET Chem + mechanism'},
   {icon:'🪙',t:'Bitcoin aaj kitna hai?',sub:'Live crypto price'},
-  {icon:'🥇',t:'Sone ka bhav?',sub:'Gold + silver 10g rate'},
-  {icon:'📚',t:'NEET physics doubt',sub:'Formula + explanation'},
-  {icon:'🚀',t:'JARVIS setup karo',sub:'Goals + reminders set'},
+  {icon:'🥇',t:'Sone ka bhav aaj?',sub:'Gold 10g MCX rate'},
+  {icon:'🎵',t:'Mood ke hisaab se song do',sub:'Deezer preview'},
+  {icon:'⚡',t:'JARVIS quick setup',sub:'Name + goals set karo'},
 ]
 
 /* ── Main ────────────────────────────────────────────────── */
@@ -381,16 +381,18 @@ export default function Page() {
     const words = text.trim().split(/\s+/).length
     const t = text.toLowerCase()
 
-    // DEEP mode: needs tools/live data
-    if(/weather|mausam|news|khabar|song|music|map|price|rate|gold|silver|bitcoin|crypto|movie|film|wiki|search|image|photo|draw/i.test(t)) return 'deep'
+    // DEEP: needs live data / tools
+    if(/weather|mausam|forecast|temperature|humidity|aaj.*mausam|^(aaj |kal |abhi )|news|khabar|breaking|headlines|top.*news|song|music|play.*song|baja|deezer|map|location|kahan|directions|price|rate|bhav|gold|sone.*bhav|silver|bitcoin|crypto|btc|eth|market|sensex|nifty|movie|film|trailer|imdb|wiki|wikipedia|image|photo|draw|generate.*image|banao.*image|search.*web/i.test(t)) return 'deep'
 
-    // THINK mode: complex reasoning needed
-    if(/syllabus|explain.*detail|kaise kaam|difference between|compare|pros.*cons|why|kyon|mechanism|reaction|formula|theorem|proof|essay|article|long|detail|elaborate|comprehensive|full.*explain/i.test(t)) return 'think'
+    // THINK: NEET / science / math / complex reasoning
+    if(/neet|jee|physics|chemistry|biology|ncert|formula|theorem|proof|reaction|mechanism|organic|inorganic|genetics|evolution|ecology|thermodynamics|optics|mechanics|electricity|magnetism|calculus|integration|differentiation|derivative|matrix|vector|probability|statistics|explain.*detail|kaise kaam|difference between|compare|pros.*cons|why.*work|kyon.*hota|essay|article|elaborate|comprehensive|full.*explain|step.*step|derive|derivation|solve.*problem|calculate.*detailed/i.test(t)) return 'think'
 
-    // THINK for long questions (>12 words = complex)
-    if(words > 12) return 'think'
+    // THINK for genuinely long/complex questions
+    if(words > 15) return 'think'
 
-    // FLASH for short simple questions (<5 words or simple patterns)
+    // Short NEET formulas → think (needs LaTeX)
+    if(words <= 6 && /formula|equation|law|theorem|rule|define|kya hai|meaning/i.test(t)) return 'think'
+
     return 'flash'
   }
 
@@ -439,7 +441,7 @@ export default function Page() {
       const route=effectiveMode==='deep'?'/api/jarvis/deep-stream':'/api/jarvis/stream'
       const res=await fetch(route,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message:t,chatMode:effectiveMode,history:hist,memoryContext:memCtx+(locCtx?'\n\n'+locCtx:''),userLat:userLocation?.lat,userLon:userLocation?.lon,userCity:userLocation?.city,forceProvider:forcedProvider||undefined}),
+        body:JSON.stringify({message:t,chatMode:effectiveMode,history:hist,memoryContext:memCtx+(locCtx?'\n\n'+locCtx:''),userLat:userLocation?.lat,userLon:userLocation?.lon,userCity:userLocation?.city,forceProvider:forcedProvider||undefined,persona}),
         signal:AbortSignal.timeout(25000),
       })
       if(res.ok&&res.body){
@@ -573,12 +575,17 @@ export default function Page() {
   /* ── Smart chips ─────────────────────────────────────── */
   const chips=(()=>{
     const c=lastAI.toLowerCase()
-    if(/formula|physics|chemistry|neet/.test(c)) return ['Aur formulas do','Example solve karo','Hindi mein','MCQ do']
-    if(/weather|mausam/.test(c)) return ['Agle 3 din?','Humidity?','AQI batao','Wind speed?']
-    if(/code|python|javascript|function/.test(c)) return ['Explain karo','Better version?','Test cases do','Bugs?']
-    if(/news|khabar/.test(c)) return ['Aur news do','Hindi mein','Background?','Impact kya?']
-    if(/song|music|artist/.test(c)) return ['Similar songs?','Lyrics chahiye','Artist info','Play karo']
-    return ['Aur detail mein','Example do','Hindi mein','Ek line mein']
+    // NEET-specific chips
+    if(/newton|law|force|motion|momentum|energy|work|power/.test(c)) return ['MCQ do','Derivation?','Previous year questions','Trick batao']
+    if(/formula|physics|mechanics|thermodynamics|optics|wave/.test(c)) return ['Aur formulas do','Example solve karo','MCQ do','NCERT page?']
+    if(/reaction|organic|inorganic|chemistry|mole|acid|base/.test(c)) return ['Mechanism batao','MCQ do','Exception kya?','Remember kaise karein?']
+    if(/cell|genetics|biology|evolution|ecology|plant|animal/.test(c)) return ['Diagram describe karo','MCQ do','NCERT se?','Easy trick?']
+    if(/weather|mausam|forecast/.test(c)) return ['Agle 3 din?','AQI?','Rain aayegi?','Humidity?']
+    if(/code|python|javascript|typescript|function|error/.test(c)) return ['Explain karo','Fix karo','Better version?','Test case do']
+    if(/news|khabar|breaking/.test(c)) return ['Aur detail?','Hindi mein','Impact kya?','Background?']
+    if(/song|music|artist|album/.test(c)) return ['Similar songs?','Artist info','Play karo','Lyrics?']
+    if(/crypto|bitcoin|price|rate|market/.test(c)) return ['7 din trend?','Buy/sell advice?','Alt coins?','INR mein?']
+    return ['Aur detail mein','Example do','Ek line mein','Hindi mein']
   })()
 
   /* ── Onboard ─────────────────────────────────────────── */
