@@ -185,7 +185,7 @@ function ImageTab({ onSaved }: { onSaved: ()=>void }) {
   // AI Prompt Enhancer via Gemini
   const enhancePrompt = async () => {
     if (!prompt.trim()) return
-    const gemKey = localStorage.getItem('jarvis_key_GEMINI_API_KEY') || localStorage.getItem('jarvis_key_NEXT_PUBLIC_GEMINI_API_KEY') || ''
+    const gemKey = localStorage.getItem('jarvis_key_GEMINI_API_KEY')  || ''
     if (!gemKey) { alert('Settings mein Gemini key daalo pehle') ; return }
     setEnhancing(true)
     try {

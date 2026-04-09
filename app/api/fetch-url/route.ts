@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const { url } = await req.json()
   if (!url?.trim()) return NextResponse.json({ error: 'No URL' }, { status: 400 })
 
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+  const geminiKey = process.env.GEMINI_API_KEY
 
   try {
     // Fetch the URL

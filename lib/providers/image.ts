@@ -65,7 +65,7 @@ export function pollinationsDirectUrl(prompt: string, model: PollinationsModel =
 
 // ── 2. Gemini Imagen ─────────────────────────────────────
 export async function geminiImage({ prompt, style }: ImageOptions): Promise<ImageResult> {
-  const key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY; if (!key) throw new Error('no_key')
+  const key = process.env.GEMINI_API_KEY; if (!key) throw new Error('no_key')
   const enhanced = enhancePrompt(prompt, style)
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

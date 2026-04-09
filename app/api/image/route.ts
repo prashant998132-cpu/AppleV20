@@ -28,7 +28,7 @@ function pollinationsUrl(prompt: string, w=1024, h=1024, model='flux'): string {
 
 // ── Gemini Imagen — streams binary (key privacy reason) ───
 async function geminiStream(prompt: string): Promise<ArrayBuffer | null> {
-  const key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+  const key = process.env.GEMINI_API_KEY
   if (!key) return null
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${key}`,

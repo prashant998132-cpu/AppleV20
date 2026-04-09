@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     const { message, history = [], memoryContext } = await req.json()
     if (!message?.trim()) return NextResponse.json({ error: 'No message' }, { status: 400 })
-    const gemKey = (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+    const gemKey = (process.env.GEMINI_API_KEY)
     if (!gemKey) return NextResponse.json({ reply: 'Gemini key missing', error: true })
 
     // Intent + select tools (same logic as deep-stream)

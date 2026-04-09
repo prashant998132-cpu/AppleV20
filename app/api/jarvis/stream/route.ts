@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
         // ── THINK: DeepSeek R1 → Gemini → Pollinations ───
         if(chatMode==='think'){
-          const orKey=process.env.OPENROUTER_API_KEY; const gkT=(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+          const orKey=process.env.OPENROUTER_API_KEY; const gkT=(process.env.GEMINI_API_KEY)
           let ok=false
           // forceProvider: skip to specific model
           if(forceProvider==='gemini' && gkT){ send({type:'model',name:'Gemini 2.5 Flash'}); ok=!!(await streamGemini('gemini-2.5-flash-preview-04-17',gkT,sys,msgs,send,2048)); if(ok){send({type:'done'});ctrl.close();return} }
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
 
         const groqKey=process.env.GROQ_API_KEY
         const toKey2=process.env.TOGETHER_API_KEY
-        const gemKey2=(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+        const gemKey2=(process.env.GEMINI_API_KEY)
 
         // forceProvider: jump directly to specific model
         if(forceProvider==='groq' && groqKey){

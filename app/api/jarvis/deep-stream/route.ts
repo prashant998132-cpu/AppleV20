@@ -189,7 +189,7 @@ function formatToolData(results: Array<{ id: string; data: any; fromCache: boole
 // ═══════════════════════════════════════════════════════════════════════════
 export async function POST(req: NextRequest) {
   const { message, history = [], memoryContext, chatMode , userLat, userLon, userCity } = await req.json()
-  const gemKey = (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+  const gemKey = (process.env.GEMINI_API_KEY)
 
   const enc = new TextEncoder()
   const { readable, writable } = new TransformStream()
