@@ -10,7 +10,7 @@ export async function pollinationsChat(
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, model: 'openai', seed: Math.floor(Math.random()*9999) }),
+      body: JSON.stringify({ messages, model: 'openai-large', seed: Math.floor(Math.random()*9999) }),
       signal: AbortSignal.timeout(30000)
     })
     if (!res.ok) return null
