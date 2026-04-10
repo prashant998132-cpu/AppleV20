@@ -11,7 +11,7 @@ export async function pollinationsChat(
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: allMsgs, model: 'openai', seed: 42 }),
+      body: JSON.stringify({ messages: allMsgs, model: 'openai-large', seed: 42 }),
       signal: AbortSignal.timeout(20000)
     })
     if (!res.ok) return null
@@ -31,7 +31,7 @@ export async function pollinationsStream(
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: allMsgs, model: 'openai', stream: true }),
+      body: JSON.stringify({ messages: allMsgs, model: 'openai-large', stream: true }),
       signal: AbortSignal.timeout(25000)
     })
     if (!res.ok || !res.body) return false
