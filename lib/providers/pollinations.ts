@@ -5,7 +5,7 @@
 // ── Text Generation (OpenAI compatible) ─────────────────
 export async function pollinationsText(
   messages: { role: string; content: string }[],
-  model = 'openai',
+  model = 'openai-large',
   onToken?: (t: string) => void
 ): Promise<string | null> {
   try {
@@ -70,7 +70,7 @@ export async function speakText(text: string, voice = 'alloy'): Promise<void> {
 
 // ── Available Models ──────────────────────────────────────
 export const POLLINATIONS_TEXT_MODELS = [
-  { id: 'openai',         name: 'GPT-4o',          desc: 'Best quality' },
+  { id: 'openai-large',    name: 'GPT-4o Large',    desc: 'Best quality — upgraded' },
   { id: 'mistral',        name: 'Mistral',          desc: 'Fast, good Hindi' },
   { id: 'deepseek-r1',    name: 'DeepSeek R1',      desc: 'Reasoning' },
   { id: 'llama',          name: 'Llama 3',          desc: 'Open source' },
