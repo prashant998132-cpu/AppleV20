@@ -1,4 +1,4 @@
-// app/api/jarvis/route.ts — v18 Autonomous (non-streaming fallback)
+// app/api/jarvis/route.ts â v18 Autonomous (non-streaming fallback)
 import { NextRequest, NextResponse } from 'next/server'
 import { detectIntent }   from '../../../lib/tools/intent'
 import { getToolsByCategory, getToolById, type ToolMeta } from '../../../lib/tools/registry'
@@ -6,8 +6,8 @@ import { cachedFetch }    from '../../../lib/tools/cache'
 
 export const runtime = 'nodejs'
 
-const SYS = `Tum JARVIS ho — "Jons Bhai". Hinglish. Short (1-3 lines). Sarcastic but caring.
-Math → seedha number. "As an AI" kabhi mat. KaTeX math: $inline$ aur $$display$$.`
+const SYS = `Tum JARVIS ho â "Jons Bhai". Hinglish. Short (1-3 lines). Sarcastic but caring.
+Math â seedha number. "As an AI" kabhi mat. KaTeX math: $inline$ aur $$display$$.`
 
 export async function POST(req: NextRequest) {
   const t0 = Date.now()
@@ -79,11 +79,11 @@ export async function POST(req: NextRequest) {
     ]
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ system_instruction: { parts: [{ text: sys }] }, contents: msgs, generationConfig: { temperature: 0.85, maxOutputTokens: 512 } }), signal: AbortSignal.timeout(15000) }
     )
     const d = await res.json()
-    const reply = (d.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || '').join('').trim() || 'Kuch gadbad ho gayi 😅'
+    const reply = (d.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || '').join('').trim() || 'Kuch gadbad ho gayi ð'
     return NextResponse.json({ reply, toolsUsed, ms: Date.now() - t0 })
   } catch (e: any) {
     return NextResponse.json({ reply: `Error: ${e.message}`, error: true })
