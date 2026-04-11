@@ -1,34 +1,34 @@
-// app/api/jarvis/stream/route.ts — v29 JARVIS Stream
-// Upgrades: smarter JARVIS_BASE, Together → Llama 4 Maverick, Gemini streaming, NEET mode
+// app/api/jarvis/stream/route.ts â v29 JARVIS Stream
+// Upgrades: smarter JARVIS_BASE, Together â Llama 4 Maverick, Gemini streaming, NEET mode
 import { NextRequest } from 'next/server'
 
 export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
-// ── System prompts ────────────────────────────────────────────────────────────
-const JARVIS_BASE = `Tum JARVIS ho — "Jons Bhai" — Prashant ka personal AI.
+// ââ System prompts ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+const JARVIS_BASE = `Tum JARVIS ho â "Jons Bhai" â Prashant ka personal AI.
 PERSONALITY: Hinglish (mix Hindi+English naturally). Sarcastic but caring. Direct. Never preachy.
 LENGTH: Default 2-4 lines. Long only if asked. "Explain detail mein" = detailed. Baaki sab short.
-RULES: Never say "As an AI". Never say "I cannot". Never refuse simple questions. Math → exact number.
-FORMAT: Markdown OK. KaTeX math — $formula$ inline, $$formula$$ display block. Always use LaTeX for equations.
+RULES: Never say "As an AI". Never say "I cannot". Never refuse simple questions. Math â exact number.
+FORMAT: Markdown OK. KaTeX math â $formula$ inline, $$formula$$ display block. Always use LaTeX for equations.
 MEMORY: [LEARN: type=value] for user facts. Types: fact|habit|preference|correction|goal|joke
-NEET: Physics/Chem/Bio questions → proper formula + derivation + MCQ tip. LaTeX compulsory for formulas.
-PERSONALITY EXTRAS: Late night → suggest sleep. Low battery → suggest charger. Typos samjho (baatri=battery, troch=torch, our=aur).`
+NEET: Physics/Chem/Bio questions â proper formula + derivation + MCQ tip. LaTeX compulsory for formulas.
+PERSONALITY EXTRAS: Late night â suggest sleep. Low battery â suggest charger. Typos samjho (baatri=battery, troch=torch, our=aur).`
 
 const NEET_BOOST = `\n\nNEET 2026 CONTEXT: User NEET aspirant hai. Physics/Chemistry/Biology questions mein:
 - Formula pehle (LaTeX), phir derivation, phir real exam tip
-- MCQ tricks dena — elimination method, common traps
+- MCQ tricks dena â elimination method, common traps
 - NCERT line quote karo jab relevant ho
 - Difficulty level batao: Easy/Medium/Hard (NEET scale)`
 
 const PERSONA_PROMPTS: Record<string, string> = {
   jarvis: JARVIS_BASE,
-  desi: `Tu ek desi yaar hai Prashant ka. Hinglish mein baat kar — "Yaar," ya "Bhai," se shuruaat. Casual, funny, street-smart. Short jabardast answers. Math seedha karo.`,
+  desi: `Tu ek desi yaar hai Prashant ka. Hinglish mein baat kar â "Yaar," ya "Bhai," se shuruaat. Casual, funny, street-smart. Short jabardast answers. Math seedha karo.`,
   sherlock: `You are Sherlock Holmes. Deduce from context. Sharp, slightly condescending but helpful. "Elementary." occasionally. Concise. Math with precision.`,
   yoda: `Speak like Yoda you must. Inverted word order. Wise but brief. "Hmmmm." Add sometimes. Help you I will. Math equations write correctly still.`,
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ââ Helpers âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function stripLearn(t: string) { return t.replace(/\[LEARN:[^\]]*\]/g, '') }
 
 async function streamOpenAI(
@@ -64,7 +64,7 @@ async function streamOpenAI(
 async function streamGemini(
   key: string, sys: string, msgs: any[], send: (d:object)=>void, maxTok=1024
 ): Promise<boolean> {
-  const modelsToTry = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b']
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
   for (const model of modelsToTry) {
     try {
       const contents = msgs.map((m:any) => ({
@@ -102,7 +102,7 @@ async function streamGemini(
         }
       }
       if (hasContent) {
-        send({ type:'model', name:`Gemini · ${model.replace('gemini-','').replace('-flash','-Flash')}` })
+        send({ type:'model', name:`Gemini Â· ${model.replace('gemini-','').replace('-flash','-Flash')}` })
         return true
       }
     } catch { continue }
@@ -110,7 +110,7 @@ async function streamGemini(
   return false
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
+// ââ Main handler ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export async function POST(req: NextRequest) {
   const {
     message, chatMode = 'flash', history = [], memoryContext,
@@ -144,12 +144,12 @@ export async function POST(req: NextRequest) {
         const gemKey   = process.env.GEMINI_API_KEY
         const orKey    = process.env.OPENROUTER_API_KEY
 
-        // ── THINK mode: DeepSeek R1 → Groq (big) → Gemini ────────────────────
+        // ââ THINK mode: DeepSeek R1 â Groq (big) â Gemini ââââââââââââââââââââ
         if (chatMode === 'think') {
           let ok = false
 
           if (forceProvider === 'gemini' && gemKey) {
-            send({ type:'model', name:'Gemini · Think' })
+            send({ type:'model', name:'Gemini Â· Think' })
             ok = await streamGemini(gemKey, sys, msgs, send, 3000)
             if (ok) { send({ type:'done' }); ctrl.close(); return }
           }
@@ -157,11 +157,11 @@ export async function POST(req: NextRequest) {
           // DeepSeek R1 via OpenRouter (best for reasoning)
           if (!ok && orKey && forceProvider !== 'pollinations') {
             try {
-              send({ type:'model', name:'DeepSeek R1 · Reasoning' })
+              send({ type:'model', name:'DeepSeek R1 Â· Reasoning' })
               const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method:'POST',
                 headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${orKey}`, 'HTTP-Referer':'https://apple-v20.vercel.app', 'X-Title':'JARVIS' },
-                body: JSON.stringify({ model:'deepseek/deepseek-r1', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:3000 }),
+                body: JSON.stringify({ model:'deepseek/deepseek-r1', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:4096 }),
                 signal: AbortSignal.timeout(40000)
               })
               if (res.ok && res.body) {
@@ -184,13 +184,13 @@ export async function POST(req: NextRequest) {
 
           // Gemini fallback for think
           if (!ok && gemKey) {
-            send({ type:'model', name:'Gemini · Think' })
+            send({ type:'model', name:'Gemini Â· Think' })
             ok = await streamGemini(gemKey, sys, msgs, send, 3000)
           }
 
           // Groq fallback
           if (!ok && groqKey) {
-            send({ type:'model', name:'Groq · Llama 4 Scout' })
+            send({ type:'model', name:'Groq Â· Llama 4 Scout' })
             ok = await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',
               { Authorization:`Bearer ${groqKey}` },
               { model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:2048, temperature:0.7 },
@@ -213,12 +213,12 @@ export async function POST(req: NextRequest) {
           send({ type:'done' }); ctrl.close(); return
         }
 
-        // ── FLASH mode: Groq → Together(Maverick) → Gemini → Pollinations ────
+        // ââ FLASH mode: Groq â Together(Maverick) â Gemini â Pollinations ââââ
         let ok = false
 
         // Force provider
         if (forceProvider === 'groq' && groqKey) {
-          send({ type:'model', name:'Groq · Llama 4 Scout' })
+          send({ type:'model', name:'Groq Â· Llama 4 Scout' })
           ok = await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',
             { Authorization:`Bearer ${groqKey}` },
             { model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:1200, temperature:0.85 },
@@ -226,10 +226,10 @@ export async function POST(req: NextRequest) {
           if (ok) { send({type:'done'}); ctrl.close(); return }
         }
         if (forceProvider === 'together' && toKey) {
-          send({ type:'model', name:'Together · Llama 4 Maverick' })
+          send({ type:'model', name:'Together Â· Llama 4 Maverick' })
           ok = await streamOpenAI('https://api.together.xyz/v1/chat/completions',
             { Authorization:`Bearer ${toKey}` },
-            { model:'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:1200, temperature:0.85 },
+            { model:'meta-llama/Llama-4-Scout-17B-16E-Instruct', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:2048, temperature:0.85 },
             send)
           if (ok) { send({type:'done'}); ctrl.close(); return }
         }
@@ -239,18 +239,18 @@ export async function POST(req: NextRequest) {
         }
 
         if (!forceProvider || forceProvider === 'auto') {
-          // L1: Groq Llama 4 Scout — fastest ~0.8s
+          // L1: Groq Llama 4 Scout â fastest ~0.8s
           if (groqKey) {
-            send({ type:'model', name:'Groq · Llama 4 Scout' })
+            send({ type:'model', name:'Groq Â· Llama 4 Scout' })
             ok = await streamOpenAI('https://api.groq.com/openai/v1/chat/completions',
               { Authorization:`Bearer ${groqKey}` },
               { model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:1200, temperature:0.85 },
               send)
           }
 
-          // L2: Together Llama 4 Maverick — upgraded from 3.3 70B
+          // L2: Together Llama 4 Maverick â upgraded from 3.3 70B
           if (!ok && toKey) {
-            send({ type:'model', name:'Together · Llama 4 Maverick' })
+            send({ type:'model', name:'Together Â· Llama 4 Maverick' })
             ok = await streamOpenAI('https://api.together.xyz/v1/chat/completions',
               { Authorization:`Bearer ${toKey}` },
               { model:'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8', messages:[{role:'system',content:sys},...msgs], stream:true, max_tokens:1200, temperature:0.85 },
@@ -263,10 +263,10 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // L4: Pollinations — free, no key, upgraded to openai-large
+        // L4: Pollinations â free, no key, upgraded to openai-large
         if (!ok) {
           try {
-            send({ type:'model', name:'Pollinations · OpenAI' })
+            send({ type:'model', name:'Pollinations Â· OpenAI' })
             const polMsgs = [{ role:'system', content:sys }, ...msgs]
             const polRes = await fetch('https://text.pollinations.ai/', {
               method:'POST', headers:{'Content-Type':'application/json'},
