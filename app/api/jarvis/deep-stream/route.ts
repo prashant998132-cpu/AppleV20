@@ -1,5 +1,5 @@
-// app/api/jarvis/deep-stream/route.ts — v18 Autonomous
-// Architecture: Intent → Pre-fetch (parallel, cached) → 1 Gemini call → Stream
+// app/api/jarvis/deep-stream/route.ts â v18 Autonomous
+// Architecture: Intent â Pre-fetch (parallel, cached) â 1 Gemini call â Stream
 // OLD: 5 Gemini round-trips, ALL 33 tools loaded, zero cache
 // NEW: 1 Gemini call always, 2 tools max, lazy category loading, TTL cache
 
@@ -11,31 +11,31 @@ import { cachedFetch }    from '../../../../lib/tools/cache'
 export const runtime = 'edge'
 export const maxDuration = 30
 
-const makeSystemPrompt = (locHint: string) => `Tum JARVIS ho — "Jons Bhai". Tony Stark ka AI + Grok attitude.
+const makeSystemPrompt = (locHint: string) => `Tum JARVIS ho â "Jons Bhai". Tony Stark ka AI + Grok attitude.
 Hinglish mein baat karo. Short (1-4 lines max). Sarcastic but caring. Direct answers only.
 ${locHint ? `User ki current location: ${locHint}. Agar koi location-specific question poocha toh automatically yahi use karo.` : ''}
-Math → seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
+Math â seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
 [LEARN: type=data] format mein user ke baare mein naya fact yaad rakho.
 APP CONTROL: /settings, /study, /apps etc. commands support hain.`
 
-const JARVIS_PERSONALITY = `Tum JARVIS ho — "Jons Bhai". Tony Stark ka AI + Grok attitude.
+const JARVIS_PERSONALITY = `Tum JARVIS ho â "Jons Bhai". Tony Stark ka AI + Grok attitude.
 India-first: INR prices, Hinglish, Indian context preferred.
 Hinglish mein baat karo. Short (1-4 lines max). Sarcastic but caring. Direct answers only.
-Math → seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
+Math â seedha number. "As an AI" kabhi mat bolna. KaTeX math: $inline$ aur $$display$$.
 NEET/JEE: proper formulas aur LaTeX use karo.
 [LEARN: type=data] format mein user ke baare mein naya fact yaad rakho.
 Memory types: fact, habit, preference, correction
 
 APP CONTROL: Tum poori JARVIS app control kar sakte ho. 
 Jab user navigate karna chahe:
-- "Study/NEET kholo" → seedha /study page pe le jao
-- "Settings kholo" → /settings pe le jao
-- "Apps kholo" → /apps pe le jao
-- "India Hub kholo" → /india pe le jao
-- "Studio kholo" → /studio pe le jao
-- "Voice mode" → /voice pe le jao
-- "Mode change karo" → flash/think/deep switch
-- "Chat clear karo" → chat khali karo
+- "Study/NEET kholo" â seedha /study page pe le jao
+- "Settings kholo" â /settings pe le jao
+- "Apps kholo" â /apps pe le jao
+- "India Hub kholo" â /india pe le jao
+- "Studio kholo" â /studio pe le jao
+- "Voice mode" â /voice pe le jao
+- "Mode change karo" â flash/think/deep switch
+- "Chat clear karo" â chat khali karo
 Tum actual Tony Stark ke JARVIS jaisi full app control rakhte ho.`
 
 // Module cache - lazy loaded once per category
@@ -154,7 +154,7 @@ function buildArgs(tool: ToolMeta, query: string, extracted: Record<string, stri
   if ((id === 'get_recipe' || id === 'get_joke') && !args.query) args.query = q
   if (id === 'translate_text') {
     if (!args.text) args.text = q.replace(/translate|anuvad|hindi mein|english mein/gi, '').trim()
-    args.to = /hindi|हिंदी/.test(q.toLowerCase()) ? 'hi' : 'en'
+    args.to = /hindi|à¤¹à¤¿à¤à¤¦à¥/.test(q.toLowerCase()) ? 'hi' : 'en'
   }
   if ((id === 'solve_math' || id === 'calculate') && !args.expression) args.expression = q
   if (id === 'get_periodic_element' && !args.query) args.query = q
@@ -186,7 +186,7 @@ function formatToolData(results: Array<{ id: string; data: any; fromCache: boole
   return `\n\n[REAL_TIME_DATA]\n${parts.join('\n\n')}\n[/REAL_TIME_DATA]\nIs data ko use karo. Concise Hinglish response do. Markdown + KaTeX OK.`
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export async function POST(req: NextRequest) {
   const { message, history = [], memoryContext, chatMode , userLat, userLon, userCity } = await req.json()
   const gemKey = (process.env.GEMINI_API_KEY)
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
   ;(async () => {
     const t0 = Date.now()
 
-    // No Gemini key → use Pollinations free AI directly
+    // No Gemini key â use Pollinations free AI directly
     if (!gemKey) {
       const h = new Date().getHours()
       const tod = h < 12 ? 'Subah' : h < 17 ? 'Din' : h < 22 ? 'Shaam' : 'Raat'
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
         const polRes = await fetch('https://text.pollinations.ai/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: [{ role: 'system', content: sys }, ...msgs], model: 'openai', stream: true }),
+          body: JSON.stringify({ messages: [{ role: 'system', content: sys }, ...msgs], model: 'openai-large', stream: true }),
           signal: AbortSignal.timeout(25000)
         })
         if (polRes.ok && polRes.body) {
@@ -238,13 +238,13 @@ export async function POST(req: NextRequest) {
       w.close(); return
     }
 
-    // ── 1. Intent detection — <1ms, zero API ─────────────────────────────
+    // ââ 1. Intent detection â <1ms, zero API âââââââââââââââââââââââââââââ
     const intent = detectIntent(message)
 
-    // ── 2. Select tools ───────────────────────────────────────────────────
+    // ââ 2. Select tools âââââââââââââââââââââââââââââââââââââââââââââââââââ
     const selectedTools = selectTools(intent)
 
-    // ── 3. Execute tools in parallel ─────────────────────────────────────
+    // ââ 3. Execute tools in parallel âââââââââââââââââââââââââââââââââââââ
     const toolsUsed: string[] = []
     let toolData = ''
 
@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
       toolData = formatToolData(results)
     }
 
-    // ── 4. Single Gemini call (NO function calling loops) ─────────────────
+    // ââ 4. Single Gemini call (NO function calling loops) âââââââââââââââââ
     const h = new Date().getHours()
     const tod = h < 6 ? 'Raat' : h < 12 ? 'Subah' : h < 17 ? 'Din' : h < 22 ? 'Shaam' : 'Raat'
     const mem = memoryContext ? `\n\nMEMORY:\n${memoryContext}` : ''
@@ -280,7 +280,7 @@ export async function POST(req: NextRequest) {
     let res: Response
     try {
       res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${gemKey}&alt=sse`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${gemKey}&alt=sse`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -305,13 +305,13 @@ export async function POST(req: NextRequest) {
 
     if (!reply) { send({ type: 'error', message: 'Gemini returned empty response' }); w.close(); return }
 
-    // ── 5. Stream tokens ─────────────────────────────────────────────────
+    // ââ 5. Stream tokens âââââââââââââââââââââââââââââââââââââââââââââââââ
     for (const token of reply.split(/(\s+)/)) {
       send({ type: 'token', token })
       await new Promise(r => setTimeout(r, 12))
     }
 
-    // ── 6. Generate rich card from tool results ───────────────────────────
+    // ââ 6. Generate rich card from tool results âââââââââââââââââââââââââââ
     let card: Record<string,unknown> | null = null
     try {
       const q = message.toLowerCase()
@@ -324,7 +324,7 @@ export async function POST(req: NextRequest) {
         card = { type:'image', url, prompt }
       }
 
-      // MUSIC card — deezer result
+      // MUSIC card â deezer result
       if (firstResult?.id?.includes('deezer') || /music|song|gana|deezer|spotify|track|play.*song/i.test(q)) {
         const d = firstResult?.data
         if (d?.data?.[0]) {
@@ -333,7 +333,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // MOVIE card — omdb result
+      // MOVIE card â omdb result
       if (firstResult?.id?.includes('omdb') || firstResult?.id?.includes('movie') || /movie|film|series|imdb/i.test(q)) {
         const d = firstResult?.data
         if (d?.Title) {
@@ -349,11 +349,11 @@ export async function POST(req: NextRequest) {
           const feels = d.feelsLike || d.current?.apparent_temperature
           const desc = d.description || d.conditions || ''
           const city = d.city || d.location || 'Your Location'
-          const humidity = d.humidity ? `${d.humidity}%` : '—'
-          const wind = d.windSpeed ? `${d.windSpeed} km/h` : '—'
-          const icons: Record<string,string> = {'clear':'☀️','cloud':'⛅','rain':'🌧️','thunder':'⛈️','snow':'❄️','mist':'🌫️','haze':'🌫️'}
-          const icon = Object.entries(icons).find(([k])=>desc.toLowerCase().includes(k))?.[1] || '🌡️'
-          card = { type:'weather', city, temp:`${Math.round(temp)}°C`, feels:`${Math.round(feels||temp)}°C`, desc, humidity, wind, icon }
+          const humidity = d.humidity ? `${d.humidity}%` : 'â'
+          const wind = d.windSpeed ? `${d.windSpeed} km/h` : 'â'
+          const icons: Record<string,string> = {'clear':'âï¸','cloud':'â','rain':'ð§ï¸','thunder':'âï¸','snow':'âï¸','mist':'ð«ï¸','haze':'ð«ï¸'}
+          const icon = Object.entries(icons).find(([k])=>desc.toLowerCase().includes(k))?.[1] || 'ð¡ï¸'
+          card = { type:'weather', city, temp:`${Math.round(temp)}Â°C`, feels:`${Math.round(feels||temp)}Â°C`, desc, humidity, wind, icon }
         }
       }
 
@@ -401,10 +401,10 @@ export async function POST(req: NextRequest) {
         if (videoId) {
           card = { type:'youtube', videoId, title }
         } else {
-          // Fallback — search link card
+          // Fallback â search link card
           card = { type:'links', title:`YouTube: ${ytQuery}`, items:[
-            { icon:'▶️', label:`Search "${ytQuery}" on YouTube`, url:`https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}` },
-            { icon:'🎵', label:'YT Music', url:`https://music.youtube.com/search?q=${encodeURIComponent(ytQuery)}` },
+            { icon:'â¶ï¸', label:`Search "${ytQuery}" on YouTube`, url:`https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}` },
+            { icon:'ðµ', label:'YT Music', url:`https://music.youtube.com/search?q=${encodeURIComponent(ytQuery)}` },
           ]}
         }
       }
@@ -439,27 +439,27 @@ export async function POST(req: NextRequest) {
       // SPOTIFY / MUSIC links fallback
       if (!card && /spotify|gaana|music|playlist/i.test(q)) {
         const mq = message.replace(/spotify|gaana|music|playlist|dhundho|search/gi,'').trim()
-        card = { type:'links', title:`🎵 Music: ${mq}`, items:[
-          { icon:'🟢', label:'Spotify pe search karo', url:`https://open.spotify.com/search/${encodeURIComponent(mq)}` },
-          { icon:'🎵', label:'YouTube Music', url:`https://music.youtube.com/search?q=${encodeURIComponent(mq)}` },
-          { icon:'🟠', label:'JioSaavn', url:`https://www.jiosaavn.com/search/${encodeURIComponent(mq)}` },
-          { icon:'🔴', label:'Gaana', url:`https://gaana.com/search/${encodeURIComponent(mq)}` },
+        card = { type:'links', title:`ðµ Music: ${mq}`, items:[
+          { icon:'ð¢', label:'Spotify pe search karo', url:`https://open.spotify.com/search/${encodeURIComponent(mq)}` },
+          { icon:'ðµ', label:'YouTube Music', url:`https://music.youtube.com/search?q=${encodeURIComponent(mq)}` },
+          { icon:'ð ', label:'JioSaavn', url:`https://www.jiosaavn.com/search/${encodeURIComponent(mq)}` },
+          { icon:'ð´', label:'Gaana', url:`https://gaana.com/search/${encodeURIComponent(mq)}` },
         ]}
       }
 
       // FIGMA card
       if (!card && /figma|ui design|wireframe|prototype|ux design/i.test(q)) {
         const figQ = message.replace(/figma|banao|design|create|ui|ux|wireframe/gi,'').trim()
-        card = { type:'links', title:'🖊️ Figma — UI Design', items:[
-          { icon:'✨', label:'New Figma File', url:'https://www.figma.com/design/new' },
-          { icon:'🌐', label:`Community: "${figQ}"`, url:`https://www.figma.com/community/search?query=${encodeURIComponent(figQ)}` },
-          { icon:'🟡', label:'New FigJam Board', url:'https://www.figma.com/figjam/new' },
+        card = { type:'links', title:'ðï¸ Figma â UI Design', items:[
+          { icon:'â¨', label:'New Figma File', url:'https://www.figma.com/design/new' },
+          { icon:'ð', label:`Community: "${figQ}"`, url:`https://www.figma.com/community/search?query=${encodeURIComponent(figQ)}` },
+          { icon:'ð¡', label:'New FigJam Board', url:'https://www.figma.com/figjam/new' },
         ]}
       }
 
     } catch {}
 
-    // ── 7. App Control Commands ───────────────────────────────────────────
+    // ââ 7. App Control Commands âââââââââââââââââââââââââââââââââââââââââââ
     // Detect if user wants to navigate/control the app
     let appCommand = ''
     try {
@@ -495,7 +495,7 @@ export async function POST(req: NextRequest) {
         appCommand = 'openSearch'
     } catch {}
 
-    send({ type: 'model', name: 'Gemini 2.5 Flash · Deep' })
+    send({ type: 'model', name: 'Gemini 2.5 Flash Â· Deep' })
     send({ type: 'done', toolsUsed, reply, card, appCommand: appCommand || undefined, meta: { intent: intent.reason, totalMs: Date.now() - t0 } })
 
     w.close()
