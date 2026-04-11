@@ -1,7 +1,7 @@
 {
   "name": "jarvis-ai",
-  "version": "15.0.0",
-  "description": "JARVIS — Your sarcastic, caring, proactive AI companion",
+  "version": "26.0.0",
+  "description": "JARVIS â Your sarcastic, caring, proactive AI companion",
   "private": true,
   "scripts": {
     "dev": "next dev",
