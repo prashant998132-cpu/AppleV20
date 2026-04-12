@@ -1,8 +1,7 @@
-// lib/theme.ts — JARVIS Theme System v23
-// 4 themes: dark | light | amoled | ocean
-// CSS vars on :root — works with inline styles via var()
+// lib/theme.ts — JARVIS Theme System v24
+// 5 themes: dark | light | amoled | ocean | sunset
 
-export type Theme = 'dark' | 'light' | 'amoled' | 'ocean'
+export type Theme = 'dark' | 'light' | 'amoled' | 'ocean' | 'sunset'
 const THEME_KEY = 'jarvis_theme_v2'
 
 export const THEME_META: Record<Theme, { label: string; icon: string; desc: string }> = {
@@ -10,6 +9,7 @@ export const THEME_META: Record<Theme, { label: string; icon: string; desc: stri
   light:  { label: 'Light',  icon: '☀️',  desc: 'Clean white' },
   amoled: { label: 'AMOLED', icon: '⬛', desc: 'Pure black' },
   ocean:  { label: 'Ocean',  icon: '🌊', desc: 'Deep blue' },
+  sunset: { label: 'Sunset', icon: '🌅', desc: 'Warm orange' },
 }
 
 export const THEMES: Record<Theme, Record<string, string>> = {
@@ -124,7 +124,50 @@ export function setTheme(t: Theme): void {
 }
 
 export function toggleTheme(): Theme {
-  const order: Theme[] = ['dark', 'light', 'amoled', 'ocean']
+  sunset: {
+    '--bg':         '#0f0805',
+    '--bg-card':    '#1a0f0a',
+    '--bg-surface': 'rgba(255,140,60,.04)',
+    '--bg-input':   'rgba(255,140,60,.05)',
+    '--border':     'rgba(255,120,40,.08)',
+    '--border-acc': 'rgba(255,160,60,.3)',
+    '--text':       '#ffeedd',
+    '--text-dim':   '#d4a080',
+    '--text-muted': '#7a3a20',
+    '--text-faint': '#4a2010',
+    '--accent':     '#ff8040',
+    '--accent-bg':  'rgba(255,128,64,.12)',
+    '--accent-dim': 'rgba(255,128,64,.06)',
+    '--user-bg':    'rgba(255,128,64,.1)',
+    '--user-border':'rgba(255,128,64,.28)',
+    '--grid-color': 'rgba(255,120,40,.02)',
+    '--header-bg':  'rgba(15,8,5,.97)',
+    '--overlay':    'rgba(15,8,5,.98)',
+    '--shadow':     '0 2px 20px rgba(20,5,0,.5)',
+    '--jarvis-text':'#eeccbb',
+  },
+}
+
+export function getTheme(): Theme {
+  if (typeof window === 'undefined') return 'dark'
+  return (localStorage.getItem(THEME_KEY) as Theme) || 'dark'
+}
+
+export function applyTheme(t: Theme): void {
+  const root = document.documentElement
+  const vars = THEMES[t]
+  for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v)
+  root.setAttribute('data-theme', t)
+}
+
+export function setTheme(t: Theme): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(THEME_KEY, t)
+  applyTheme(t)
+}
+
+export function toggleTheme(): Theme {
+  const order: Theme[] = ['dark', 'light', 'amoled', 'ocean', 'sunset']
   const cur = getTheme()
   const next = order[(order.indexOf(cur) + 1) % order.length]
   setTheme(next)
