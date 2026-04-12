@@ -37,6 +37,14 @@
   --user-bg:rgba(0,255,192,.08);--user-bdr:rgba(0,255,192,.25);
   --header:rgba(0,0,0,.98);--j-text:#a0e8d0;--code-bg:#050505;
 }
+[data-theme=sunset]{
+  --bg:#0f0805;--bg-card:#1a0f0a;--bg-input:rgba(255,140,60,.05);
+  --border:rgba(255,120,40,.08);--border-a:rgba(255,160,60,.3);
+  --text:#ffeedd;--text-2:#d4a080;--text-3:#7a3a20;--text-4:#4a2010;
+  --accent:#ff8040;--accent-bg:rgba(255,128,64,.12);
+  --user-bg:rgba(255,128,64,.1);--user-bdr:rgba(255,128,64,.28);
+  --header:rgba(15,8,5,.97);--j-text:#eeccbb;--code-bg:#0a0604;
+}
 [data-theme=ocean]{
   --bg:#081428;--bg-card:#0e1f3a;--bg-input:rgba(100,160,255,.06);
   --border:rgba(100,160,255,.1);--border-a:rgba(100,200,255,.3);
