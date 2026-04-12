@@ -16,9 +16,9 @@ const KEY_GROUPS = [
     label: '🤖 AI Engines', desc: 'Core AI — koi ek toh chahiye',
     keys: [
       { id: 'GROQ_API_KEY',       label: 'Groq',              link: 'https://console.groq.com/keys',            ph: 'gsk_...',         verify: 'groq',       req: true,  note: 'FREE 14,400/day. Flash mode. Fastest.' },
-      { id: 'GEMINI_API_KEY',     label: 'Gemini 2.0',        link: 'https://aistudio.google.com/app/apikey',   ph: 'AIza...',         verify: 'gemini',     req: true,  note: 'FREE 1500/day. Deep mode + tools.' },
+      { id: 'GEMINI_API_KEY',     label: 'Gemini 2.5 Flash',  link: 'https://aistudio.google.com/app/apikey',   ph: 'AIza...',         verify: 'gemini',     req: true,  note: 'FREE 1500/day. Deep mode + tools.' },
       { id: 'OPENROUTER_API_KEY', label: 'OpenRouter',        link: 'https://openrouter.ai/settings/keys',      ph: 'sk-or-...',       verify: 'openrouter', req: false, note: 'Think mode (DeepSeek R1). $0.55/1M.' },
-      { id: 'TOGETHER_API_KEY',   label: 'Together AI',       link: 'https://api.together.xyz/settings/api-keys', ph: 'abc...',        verify: null,         req: false, note: '$25 free credit. 70B model fallback.' },
+      { id: 'TOGETHER_API_KEY',   label: 'Together AI',       link: 'https://api.together.xyz/settings/api-keys', ph: 'abc...',        verify: null,         req: false, note: '$25 free credit. Llama 4 Scout fallback.' },
     ]
   },
   {
@@ -700,7 +700,7 @@ function AboutTab() {
 
       <div style={{ padding: '14px', background: 'rgba(0,229,255,.04)', border: '1px solid rgba(0,229,255,.08)', borderRadius: 12, marginBottom: 16, textAlign: 'center' }}>
         <div style={{ fontSize: 28, marginBottom: 6 }}>🤖</div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Space Mono',monospace", letterSpacing: 2 }}>JARVIS v13</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Space Mono',monospace", letterSpacing: 2 }}>JARVIS v26</div>
         <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>"Jons Bhai" — Your proactive AI companion</div>
       </div>
 
