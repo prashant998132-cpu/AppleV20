@@ -1,7 +1,6 @@
 'use client'
-// app/page.tsx — JARVIS v27 Complete
-// All features from v25 + MdRenderer (no overlap) + correct AI cascade
-// Cascade: Server(Groq→Together→Gemini) → Pollinations → Puter(last)
+// app/page.tsx — JARVIS v28
+// Upgrades: Gemini 2.5 Flash, Llama 4 Scout, keyboard shortcuts, sunset theme, smart chips++, stale closure fix
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -28,7 +27,7 @@ const ChatHistorySidebar = dynamic(() => import('../components/ui/ChatHistorySid
 const MODEL_CHAIN = {
   flash: [
     { name:'Groq · Llama 4 Scout 17B', speed:'~1s', free:true, note:'Fastest. Server key chahiye.' },
-    { name:'Together · Llama 3.3 70B', speed:'~2s', free:true, note:'Fallback. Better quality.' },
+    { name:'Together · Llama 4 Scout', speed:'~2s', free:true, note:'Fallback. Fast & efficient.' },
     { name:'Gemini 2.5 Flash', speed:'~3s', free:true, note:'Google. Agar Groq+Together fail.' },
     { name:'Pollinations (OpenAI)', speed:'~5s', free:true, note:'No key. Browser direct call.' },
     { name:'Puter · GPT-4o-mini', speed:'~6s', free:true, note:'Last resort. Puter login chahiye.' },
@@ -226,13 +225,13 @@ function Clock({name}:{name:string}) {
 }
 
 const STARTERS = [
-  {icon:'📚',t:'Newton ke laws explain karo',sub:'NEET Physics + LaTeX'},
+  {icon:'⚛️',t:'Newton ke laws explain karo LaTeX ke sath',sub:'NEET Physics + derivation'},
+  {icon:'🧪',t:'Organic chemistry ke important reactions',sub:'NEET Chem + mechanism'},
+  {icon:'🧬',t:'Cell division — Mitosis vs Meiosis',sub:'NEET Bio + diagram'},
   {icon:'🌤️',t:'Aaj ka mausam kaisa hai?',sub:'Live forecast + temp'},
   {icon:'📰',t:'Aaj ki top khabar?',sub:'India + world headlines'},
-  {icon:'🧪',t:'Organic chemistry reactions',sub:'NEET Chem + mechanism'},
-  {icon:'🪙',t:'Bitcoin aaj kitna hai?',sub:'Live crypto price'},
-  {icon:'🥇',t:'Sone ka bhav aaj?',sub:'Gold 10g MCX rate'},
-  {icon:'🎵',t:'Mood ke hisaab se song do',sub:'Deezer preview'},
+  {icon:'🪙',t:'Bitcoin aaj kitna hai?',sub:'Live crypto price INR'},
+  {icon:'🎵',t:'Mood ke hisaab se song do',sub:'Deezer 30s preview'},
   {icon:'⚡',t:'JARVIS quick setup',sub:'Name + goals set karo'},
 ]
 
@@ -412,7 +411,7 @@ export default function Page() {
       /image|photo|draw/i.test(t)?'🎨 Image bana raha hoon...':
       /weather|mausam/i.test(t)?'🌤️ Mausam check kar raha hoon...':
       /news|khabar/i.test(t)?'📰 News dhoondh raha hoon...':
-      /neet|physics|math/i.test(t)?'📚 Soch raha hoon...':'💭 Soch raha hoon...'
+      /neet|physics|chemistry|biology/i.test(t)?'📚 Formula dhoondh raha hoon...':'💭 Likh raha hoon...'
 
     setMsgs(p=>[...p,uMsg,{id:aId,role:'assistant',content:statusMsg,timestamp:Date.now(),streaming:true}])
     setLoad(true)
@@ -510,7 +509,7 @@ export default function Page() {
     }
     processAndSave(t,full,'neutral').catch(()=>{})
     setLoad(false)
-  },[msgs,loading,mode,currentSessionId,execAppCmd])
+  },[msgs,loading,mode,currentSessionId,execAppCmd,forcedProvider,userLocation,persona,attachedFile])
 
   /* ── File attach handler ────────────────────────────── */
   const handleFileAttach=(e:React.ChangeEvent<HTMLInputElement>,type:'file'|'image')=>{
@@ -556,6 +555,27 @@ export default function Page() {
     setTimeout(()=>send(lastUser.content),50)
   },[msgs,loading,send])
 
+  /* ── Keyboard shortcuts ─────────────────────────────── */
+  useEffect(()=>{
+    const handler=(e:KeyboardEvent)=>{
+      if(e.key==='Escape'){
+        if(searchOpen){setSearchOpen(false);setSearchQ('');setSearchResults(null);return}
+        if(editingId){setEditingId(null);setEditText('');return}
+        if(plusOpen){setPlusOpen(false);return}
+        if(navOpen){setNavOpen(false);return}
+        if(histOpen){setHistOpen(false);return}
+        if(themeOpen){setThemeOpen(false);return}
+        if(modelDrawerOpen){setModelDrawerOpen(false);return}
+        if(loading){abortRef.current?.abort();return}
+      }
+      if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();setMsgs([]);setSessionTitle('');startNewSession();return}
+      if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();setSearchOpen(true);return}
+      if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(input.trim()&&!loading)send(input);return}
+    }
+    window.addEventListener('keydown',handler)
+    return()=>window.removeEventListener('keydown',handler)
+  },[searchOpen,editingId,plusOpen,navOpen,histOpen,themeOpen,modelDrawerOpen,loading,input,send])
+
   /* ── Edit ────────────────────────────────────────────── */
   const submitEdit=()=>{
     if(!editText.trim()||!editingId) return
@@ -584,7 +604,10 @@ export default function Page() {
     if(/code|python|javascript|typescript|function|error/.test(c)) return ['Explain karo','Fix karo','Better version?','Test case do']
     if(/news|khabar|breaking/.test(c)) return ['Aur detail?','Hindi mein','Impact kya?','Background?']
     if(/song|music|artist|album/.test(c)) return ['Similar songs?','Artist info','Play karo','Lyrics?']
-    if(/crypto|bitcoin|price|rate|market/.test(c)) return ['7 din trend?','Buy/sell advice?','Alt coins?','INR mein?']
+    if(/gold|sona|silver|chandi/.test(c)) return ['Weekly trend?','MCX rate?','Best time to buy?','1 tola price?']
+    if(/crypto|bitcoin|ethereum|price|rate|market/.test(c)) return ['7 din trend?','Buy/sell advice?','Alt coins?','INR mein?']
+    if(/map|location|kahan|direction|navigate/.test(c)) return ['Route dikhao','Nearby kya hai?','Distance?','Open Maps']
+    if(/mitosis|meiosis|dna|rna|protein|enzyme/.test(c)) return ['Difference table banao','Previous year MCQ','NCERT diagram?','Trick?']
     return ['Aur detail mein','Example do','Ek line mein','Hindi mein']
   })()
 
@@ -887,7 +910,7 @@ export default function Page() {
                   ]:[
                     {key:'auto',    label:'Auto',           color:'var(--accent)', note:'Full cascade'},
                     {key:'groq',    label:'Groq Llama4',    color:'#f59e0b',       note:'~1s fastest'},
-                    {key:'together',label:'Together 70B',   color:'#fb923c',       note:'~2s quality'},
+                    {key:'together',label:'Together Scout', color:'#fb923c',       note:'~2s fast'},
                     {key:'gemini',  label:'Gemini 2.5',     color:'#4ade80',       note:'~3s google'},
                     {key:'pollinations',label:'Pollinations',color:'#e879f9',      note:'~5s no key'},
                     {key:'puter',   label:'Puter',          color:'#00e5ff',       note:'~6s fallback'},
